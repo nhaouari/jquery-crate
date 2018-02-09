@@ -1,0 +1,3 @@
+[submodule "lib/crate-core"]
+	path = lib/crate-core
+	url = https://github.com/nhaouari/crate-core
