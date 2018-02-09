@@ -31,7 +31,11 @@
         "sorted-cmp-array": "2.0.x",
         "string-hash": "1.1.x",
         "uglify-js": "^1.3.5",
-        "unicast-definition": "0.1.x"
+        "unicast-definition": "0.1.x",
+        "simple-peer": "^8.1.1",
+        "uuid": "^3.0.1",
+        "debug": "^2.6.1"
+
     },
     "devDependencies": {
         "browserify": "6.2.x",
