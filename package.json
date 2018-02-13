@@ -19,7 +19,6 @@
         "animals": "0.0.x",
         "brace": "0.5.x",
         "clone": "^1.0.3",
-        "crate-core": "0.0.x",
         "debug": "^2.6.1",
         "jquery-qrcode": "git://github.com/lrsjng/jquery-qrcode.git#master",
         "lodash": "^4.17.4",
