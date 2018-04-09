@@ -48,9 +48,9 @@
         ]
     },
     "scripts": {
-        "debug": "browserify lib/cratify.js --debug > build/jquery-crate.bundle.debug.js",
-        "build": "browserify lib/cratify.js > build/jquery-crate.bundle.js",
-        "watch": "watchify lib/cratify.js -o build/jquery-crate.bundle.js -d -v"
+        "debug": "browserify lib/cratify.js --standalone cratify --debug > build/jquery-crate.bundle.debug.js",
+        "build": "browserify lib/cratify.js --standalone cratify > build/jquery-crate.bundle.js",
+        "watch": "watchify lib/cratify.js --standalone cratify -o build/jquery-crate.bundle.js -d -v"
     },
     "license": "MIT"
 }
