@@ -16,22 +16,24 @@
     ],
     "dependencies": {
         "BigInt": "^5.4.5",
-        "animals": "git://github.com/nhaouari/animals#master",
+        "animals": "git://github.com/nhaouari/animals.git#master",
         "brace": "0.5.x",
         "clone": "^1.0.3",
         "debug": "^2.6.1",
+        "foglet-core": "^4.0.1",
         "jquery-qrcode": "git://github.com/lrsjng/jquery-qrcode.git#master",
         "lodash": "^4.17.4",
         "lodash.merge": "^4.6.1",
         "marked": "0.3.x",
+        "shortid": "*",
         "simple-peer": "^8.1.1",
         "socket.io-client": "1.3.x",
         "sorted-cmp-array": "2.0.x",
+        "spray-wrtc": "^2.0.4",
         "string-hash": "1.1.x",
         "uglify-js": "^1.3.5",
-        "unicast-definition": "0.1.x",
-        "uuid": "^3.0.1",
-        "shortid": "*"
+        "unicast-definition": "^0.1.0",
+        "uuid": "^3.0.1"
     },
     "devDependencies": {
         "browserify": "6.2.x",
