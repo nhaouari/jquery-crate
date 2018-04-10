@@ -20,6 +20,10 @@
         "brace": "0.5.x",
         "clone": "^1.0.3",
         "debug": "^2.6.1",
+        "esdoc": "^1.0.4",
+        "esdoc-ecmascript-proposal-plugin": "^1.0.0",
+        "esdoc-node": "^1.0.3",
+        "esdoc-standard-plugin": "^1.0.0",
         "foglet-core": "^4.0.1",
         "jquery-qrcode": "git://github.com/lrsjng/jquery-qrcode.git#master",
         "lodash": "^4.17.4",
@@ -48,9 +52,10 @@
         ]
     },
     "scripts": {
-        "debug": "browserify lib/cratify.js --standalone cratify --debug > build/jquery-crate.bundle.debug.js",
-        "build": "browserify lib/cratify.js --standalone cratify > build/jquery-crate.bundle.js",
-        "watch": "watchify lib/cratify.js --standalone cratify -o build/jquery-crate.bundle.js -d -v"
+        "debug": "browserify lib/session.js --standalone session --debug > build/jquery-crate.bundle.debug.js",
+        "build": "browserify lib/session.js --standalone session > build/jquery-crate.bundle.js",
+        "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
+        "docs": "esdoc -c esdoc.json"
     },
     "license": "MIT"
 }

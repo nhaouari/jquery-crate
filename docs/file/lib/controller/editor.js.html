@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../">
+  <title data-ice="title">lib/controller/editor.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/view.js~view.html">view</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Signaling">Signaling</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#controller">controller</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/controller/editor.js~EditorController.html">EditorController</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib">crate-core/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib">crate-core/lib/CausalBroadcastDefinition/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-interfaces">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces/ipsp.js~IPSP.html">IPSP</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-messages">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages/municast.js~MUnicast.html">MUnicast</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-lseqtree-lib">crate-core/lib/LSEQTree/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-base">base</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LSEQNode">LSEQNode</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Triple">Triple</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib">crate-core/lib/spray-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/partialview.js~PartialView.html">PartialView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/spray.js~Spray.html">Spray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MExchange">MExchange</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-EventEmitter">EventEmitter</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MConnectTo">MConnectTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MDirect">MDirect</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwardTo">MForwardTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwarded">MForwarded</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib-neighborhood-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js~Neighborhood.html">Neighborhood</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MultiSet">MultiSet</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#view">view</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Marker">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">lib/controller/editor.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">
+var Marker = require(&apos;../view/marker.js&apos;)
+
+window.Marker = Marker
+
+/**
+   * EditorController this the link between the core functions and the interface.
+   */
+
+class EditorController {
+  
+
+  /**
+   * [constructor description]
+   * @param  {[doc]} model  this is the object that contains all proprieties of a document.    
+   * @param  {[string]} sessionID [description]
+   */
+  constructor(model, sessionID) {
+
+    
+    /**
+     * this is the object that contains all proprieties of a document.
+     * @type {[doc]}
+     */
+    this.model = model
+
+   /**
+    * markers contains all marks of the users: carets, avatars...
+    * @type {Marker[]}
+    */
+    this.markers ={}
+    /**
+     * startimer A timer used for sending pings
+     * @type {Timer}
+     */
+    this.startTimer= {}
+    /**
+     *  ViewEditor the used editor, here it is Quill editor 
+     *  @see  https://quilljs.com/
+     * @type {Quill}
+     */
+    this.viewEditor= {};
+
+
+    this.loadDocument()
+
+    let commentOpt = quill.options.modules.comment
+
+    commentOpt.commentAddOn = this.markers[id].animal
+    commentOpt.commentAuthorId = this.model.uid
+    commentOpt.color = this.markers[id].colorRGB
+
+
+    this.startPing(2000)
+
+    jQuery(&quot;#saveicon&quot;).click(function() {
+      this.saveDocument()
+    })
+    jQuery(&quot;#copyButton&quot;).click(function() {
+      this.copyLink()
+    })
+    jQuery(&apos;#title&apos;).focusout(function() {
+      this.changeTitle()
+    })
+
+
+    // EDITOR listeners 
+    this.viewEditor.on(&apos;selection-change&apos;, (range, oldRange, source) =&gt; {
+      if (range) {
+        this.model.core.caretMoved(range)
+      }
+    })
+
+    this.viewEditor.on(&apos;text-change&apos;, (delta, oldDelta, source) =&gt; {
+      this.textChange(delta, oldDelta, source)
+
+    })
+
+
+    // Core listeners 
+    model.core.on(&apos;remoteInsert&apos;, (element, indexp) =&gt; {
+      this.remoteInsert(element, indexp)
+    })
+
+    model.core.on(&apos;remoteRemove&apos;, (index) =&gt; {
+      this.remoteRemove(index)
+    })
+
+    model.core.on(&apos;remoteCaretMoved&apos;, (range, origin) =&gt; {
+      this.remoteCaretMoved(range, origin)
+    })
+
+    model.core.on(&apos;remoteCaretMoved&apos;, (range, origin) =&gt; {
+      this.remoteCaretMoved(range, origin)
+    })
+
+    //At the reception of Title changed operation 
+    model.core.on(&apos;changeTitle&apos;, (title) =&gt; {
+      jQuery(&apos;#title&apos;).text(title)
+    })
+
+    model.core.on(&apos;ping&apos;, (origin, pseudo) =&gt; {
+      this.atPing(origin, pseudo)
+    })
+  }
+
+  /**
+   * loadDocument load the document if it exist in the local storage
+   * @return {[type]} [description]
+   */
+  loadDocument() {
+    this.viewEditor = quill
+    Marker.cursors = this.viewEditor.getModule(&apos;cursors&apos;)
+    jQuery(&quot;#editor&quot;).attr(&apos;id&apos;, &apos;crate-&apos; + id)
+
+    // Initilise the the editor content 
+    //this.editor.setText(&apos;&apos;)
+    if (store.get(&quot;CRATE2-&quot; + sessionID)) {
+      var doc = store.get(&quot;CRATE2-&quot; + sessionID)
+      viewEditor.setContents(doc.delta, &quot;user&quot;)
+      jQuery(&quot;#title&quot;).text(doc.title)
+    }
+
+
+    // make title editable
+    jQuery(&apos;#title&apos;).click(function() {
+      jQuery(&apos;#title&apos;).attr(&apos;contenteditable&apos;, &apos;true&apos;)
+    })
+
+
+    if (store.get(&quot;CRATE2-&quot; + this.model.signalingOptions.session)) {
+      this.markers = store.get(&quot;CRATE2-&quot; + this.model.signalingOptions.session).markers
+
+      // convert the json objects to Marker object with functions 
+      for (var property in this.markers) {
+        if (this.markers.hasOwnProperty(property)) {
+          this.markers[property] = Object.assign(new Marker(property), this.markers[property])
+          this.markers[property].cursor = false
+        }
+      }
+
+    } else {
+      this.markers = {}
+    }
+
+
+    this.model.markers = this.markers
+
+    //if (!this.markers[id]) { 
+    //     console.log(&quot;Add mythis&quot;)
+    //this.markers.push(id)
+    id = this.model.uid
+    this.markers[id] = new Marker(id, 5 * 1000, {
+      index: 0,
+      length: 0
+    }, this.viewEditor.getModule(&apos;cursors&apos;), false, true)
+
+    if (store.get(&apos;myId&apos;)) {
+      this.markers[id].setPseudo(store.get(&apos;myId&apos;).pseudo)
+    } else {
+      store.set(&apos;myId&apos;, {
+        id: id,
+        pseudo: this.markers[id].pseudoName
+      })
+    }
+    this.UpdateComments()
+  }
+
+
+  /**
+   * saveDocument save the document in local storage
+   * @return {[type]} [description]
+   */
+  saveDocument() {
+    var timeNow = new Date().getTime()
+    var title = jQuery(&quot;#title&quot;).text()
+    var document = {
+      date: timeNow,
+      title: title,
+      delta: this.viewEditor.editor.editor.delta,
+      sequence: this.model.sequence,
+      causality: this.model.causality,
+      name: this.model.name,
+      webRTCOptions: this.model.webRTCOptions,
+      markers: this.markers,
+      signalingOptions: this.model.signalingOptions
+    }
+    store.set(&quot;CRATE2-&quot; + this.model.signalingOptions.session, document)
+    alert(&quot;Document is saved successfully&quot;)
+  }
+
+
+  /**
+   * copyLink copy the link of the document
+   * @return {[type]} [description]
+   */
+  copyLink() {
+    jQuery(&quot;#sessionUrl&quot;).select()
+    document.execCommand(&quot;Copy&quot;)
+  }
+
+
+  /**
+   * textChange description
+   * @param  {[type]} delta    [description]
+   * @param  {[type]} oldDelta [description]
+   * @param  {[type]} source   [description]
+   * @listens editor content changes
+   * @return {[type]}          [description]
+   */
+  textChange(delta, oldDelta, source) {
+
+    this.cleanQuill()
+
+    this.applyChanges(delta, 0)
+  }
+
+
+  /**
+   * applyChanges Send delta object with attributes character by character starting from  the position &quot;iniRetain&quot;  ]
+   * @param  {[type]} delta     [description]
+   * @param  {[type]} iniRetain [description]
+   * @return {[type]}           [description]
+   */
+  applyChanges(delta, iniRetain) {
+
+    let changes = JSON.parse(JSON.stringify(delta, null, 2))
+
+    let retain = iniRetain
+
+    let text = &quot;&quot;
+
+    changes.ops.forEach((op) =&gt; {
+      var operation = Object.keys(op)
+      var oper = &quot;&quot;
+      var att = &quot;&quot;
+      var value = &quot;&quot;
+
+      // extract attributes from the operation in the case of there existance
+      for (var i = operation.length - 1; i &gt;= 0; i--) {
+        var v = op[operation[i]]
+        if (operation[i] === &quot;attributes&quot;) {
+          att = v
+        } else {
+          oper = operation[i]
+          value = v
+
+        }
+      }
+
+      // Change the style = remove the word and insert again with attribues,  
+
+      // In the case of changing the style, delta will contain &quot;retain&quot; (the start postion) with attributes 
+
+      var isItInsertWithAtt = false // to know if we have to update comments or not, if its delete because of changing style, no update comments is needed
+
+      retain = this.sendIt(text, att, 0, value, oper, retain, isItInsertWithAtt)
+    })
+  }
+
+  /**
+   * sendIt Send the changes character by character 
+   * @param  {[type]}  text              [description]
+   * @param  {[type]}  att               [description]
+   * @param  {[type]}  start             [description]
+   * @param  {[type]}  value             [description]
+   * @param  {[type]}  oper              [description]
+   * @param  {[type]}  retain            [description]
+   * @param  {Boolean} isItInsertWithAtt [description]
+   * @return {[type]}                    [description]
+   */
+  sendIt(text, att, start, value, oper, retain, isItInsertWithAtt) {
+    switch (oper) {
+      case &quot;retain&quot;:
+        if (att != &quot;&quot;) {
+          let isItInsertWithAtt = true
+
+          // the value in this case is the end of format 
+
+          // insert the changed text with the new attributes
+
+          // 1 delete the changed text  from retain to value
+          this.sendIt(&quot;&quot;, &quot;&quot;, retain, value, &quot;delete&quot;, retain, isItInsertWithAtt)
+
+          // 2 insert with attributes
+          var Deltat = this.viewEditor.editor.delta.slice(retain, retain + value)
+
+          this.applyChanges(Deltat, retain)
+
+        } else {
+          retain += value
+
+        }
+
+        // If there is attributes than delete and then insert   
+        break
+
+      case &quot;insert&quot;:
+        text = value
+        // Insert character by character or by object for the other formats
+
+        // this is a formula
+        if (value.formula != undefined) {
+
+          att = this.viewEditor.getFormat(retain, 1)
+          this.model.core.insert({
+            type: &apos;formula&apos;,
+            text: value,
+            att: att
+          }, retain)
+        } else
+
+        {
+
+          // this is a video
+          if (value.video != undefined) {
+
+            att = this.viewEditor.getFormat(retain, 1)
+            this.model.core.insert({
+              type: &apos;video&apos;,
+              text: value,
+              att: att
+            }, retain)
+
+
+          } else {
+            // It is an image
+            if (value.image != undefined) {
+
+              att = this.viewEditor.getFormat(retain, 1)
+
+              this.model.core.insert({
+                type: &apos;image&apos;,
+                text: value,
+                att: att
+              }, retain)
+
+            } else { // text
+
+              for (var i = retain; i &lt; (retain + text.length); ++i) {
+                att = this.viewEditor.getFormat(i, 1)
+                this.model.core.insert({
+                  type: &apos;char&apos;,
+                  text: text[i - retain],
+                  att: att
+                }, i)
+              }
+              retain = retain + text.length
+            }
+          }
+        }
+        break
+
+      case &quot;delete&quot;:
+        var length = value
+
+        //to ensure that the editor contains just \n without any attributes 
+        if (!isItInsertWithAtt) {
+          this.UpdateComments()
+        }
+        if (start == 0) {
+          start = retain
+        }
+        // Delete caracter by caracter
+
+        for (var i = start; i &lt; (start + length); ++i) {
+          this.model.core.remove(start)
+
+        }
+        break
+    }
+    return retain
+  }
+
+  /**
+   * remoteInsert At the reception of insert operation
+   * @param  {[type]} element [description]
+   * @param  {[type]} indexp  [description]
+   * @return {[type]}         [description]
+   */
+  remoteInsert(element, indexp) {
+    var index = indexp - 1
+    if (index !== -1) {
+      switch (element.type) {
+        case &quot;formula&quot;:
+          this.viewEditor.insertEmbed(index, &apos;formula&apos;, element.text.formula, &apos;silent&apos;)
+
+          break
+        case &quot;image&quot;:
+          this.viewEditor.insertEmbed(index, &apos;image&apos;, element.text.image, &apos;silent&apos;)
+
+          break
+        case &quot;video&quot;:
+          this.viewEditor.insertEmbed(index, &apos;video&apos;, element.text.video, &apos;silent&apos;)
+
+          break
+        case &quot;char&quot;:
+          this.viewEditor.insertText(index, element.text, element.att, &apos;silent&apos;)
+
+          if (element.text != &quot;\n&quot;) {
+            this.viewEditor.removeFormat(index, 1, &apos;silent&apos;)
+          }
+          break
+      }
+      if (element.att) {
+        if (element.text != &quot;\n&quot;) {
+          this.viewEditor.formatLine(index, element.att, &apos;silent&apos;)
+          this.viewEditor.formatText(index, 1, element.att, &apos;silent&apos;)
+        }
+
+        if (element.att.commentAuthor) {
+          this.UpdateComments()
+        }
+
+      }
+
+
+    }
+
+    this.cleanQuill()
+
+  }
+
+  /**
+   * remoteRemove At the reception of remove operation
+   * @param  {[type]} index [description]
+   * @return {[type]}       [description]
+   */
+  remoteRemove(index) {
+    let removedIndex = index - 1
+    if (removedIndex !== -1) {
+      this.viewEditor.deleteText(removedIndex, 1, &apos;silent&apos;)
+      this.UpdateComments()
+    }
+    this.cleanQuill()
+  }
+
+
+  /**
+   * remoteCaretMoved At the reception of CARET position
+   * @param  {[type]} range  [description]
+   * @param  {[type]} origin [description]
+   * @return {[type]}        [description]
+   */
+  remoteCaretMoved(range, origin) {
+
+    if (!origin) return
+
+    if (this.markers[origin]) {
+      this.markers[origin].update(range, true) // to keep avatar
+
+    } else { // to crevat the avatar
+      //this.markers.push(origin)
+      this.markers[origin] = new Marker(origin, 5 * 1000, range, editor.getModule(&apos;cursors&apos;), false)
+
+    }
+  }
+
+  /**
+   * cleanQuill description
+   * @return {[type]} [description]
+   */
+  cleanQuill() {
+
+    /*
+           delta = quill.editor.delta
+           console.log(&apos;before clean&apos;)
+           console.dir(delta)
+           
+           lastOperation=delta.ops.length-1
+           if (delta.ops[lastOperation].insert==&apos;\n&apos; &amp;&amp; lastOperation != 0) {
+
+            attributes= delta.ops[lastOperation].attributes
+            delete delta.ops[lastOperation]  
+
+            //delta.ops.splice(length-1,1)
+
+           if(lastOperation-1 != 0 &amp;&amp; delta.ops[lastOperation-1]) {
+              delta.ops[lastOperation-1].attributes=attributes
+            }
+
+            }
+
+           /*if (delta.ops[0].insert==&apos;\n&apos; &amp;&amp;  quill.getLength() &lt;=2) {
+            delta.ops[0].attributes={}
+            }
+
+           console.log(&apos;after clean&apos;)
+           console.dir(delta)
+             
+          //quill.setContents(delta,&apos;silent&apos;)*/
+  }
+
+
+  /**
+   * changeTitle For any change in title, broadcast the new title
+   * @return {[type]} [description]
+   */
+  changeTitle() {
+    jQuery(&apos;#title&apos;).attr(&apos;contenteditable&apos;, &apos;false&apos;)
+    if (jQuery(&apos;#title&apos;).text() == &quot;&quot;) {
+      jQuery(&apos;#title&apos;).text(&apos;Untitled document&apos;)
+    }
+    model.name = jQuery(&apos;#title&apos;).text()
+    //TODO: Optimize change only if the text is changed from last state 
+    model.core.sendChangeTitle(jQuery(&apos;#title&apos;).text())
+  }
+
+
+  /**
+   * startPing send periodically ping
+   * @param  {[type]} interval [description]
+   * @return {[type]}          [description]
+   * @todo TODO: Make interval as global parameter
+   */
+  startPing(interval) {
+    this.startTimer = setInterval(() =&gt; {
+      this.model.core.sendPing()
+    }, interval)
+  }
+
+  /**
+   * stopPing stopPing
+   * @todo  implement this function
+   * @return {[type]} [description]
+   */
+  stopPing() {
+
+  }
+
+  /**
+   * atPing at the reception of ping
+   * @param  {[type]} origin [description]
+   * @param  {[type]} pseudo [description]
+   * @return {[type]}        [description]
+   */
+  atPing(origin, pseudo) {
+    if (this.markers[origin]) {
+      this.markers[origin].update(null, false) // to keep avatar
+      this.markers[origin].setPseudo(pseudo)
+
+    } else { // to create the avatar
+      //this.markers.push(origin)
+      this.markers[origin] = new Marker(origin, 5 * 1000, {
+        index: 0,
+        length: 0
+      }, this.viewEditor.getModule(&apos;cursors&apos;), false, false)
+      this.markers[origin].setPseudo(pseudo)
+    }
+  }
+
+  /**
+   * UpdateComments This function to extract the comments form the editor and show them in #comments
+   */
+  UpdateComments() {
+    // clear comments 
+    jQuery(&quot;#comments&quot;).empty()
+    // for each insert check att if it contains the author then insert comment 
+    quill.editor.delta.ops.forEach(function(op) {
+      if (op.insert) {
+        if (op.attributes) {
+          if (op.attributes.commentAuthor) {
+            var id = op.attributes.commentAuthor
+            //
+
+
+            if (this.markers[id]) {
+              m = this.markers[id]
+            } else {
+              m = new Marker(id)
+            }
+            animal = m.animal
+            pseudoName = m.pseudoName
+            colorRGB = m.colorRGB
+
+            addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp)
+          }
+
+        }
+
+      }
+
+
+
+    })
+
+  }
+
+
+}
+
+module.exports = EditorController</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

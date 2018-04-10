@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../../../../">
+  <title data-ice="title">lib/crate-core/lib/LSEQTree/lib/triple.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/view.js~view.html">view</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Signaling">Signaling</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#controller">controller</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/controller/editor.js~EditorController.html">EditorController</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib">crate-core/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib">crate-core/lib/CausalBroadcastDefinition/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-interfaces">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces/ipsp.js~IPSP.html">IPSP</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-messages">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages/municast.js~MUnicast.html">MUnicast</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-lseqtree-lib">crate-core/lib/LSEQTree/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-base">base</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LSEQNode">LSEQNode</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Triple">Triple</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib">crate-core/lib/spray-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/partialview.js~PartialView.html">PartialView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/spray.js~Spray.html">Spray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MExchange">MExchange</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-EventEmitter">EventEmitter</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MConnectTo">MConnectTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MDirect">MDirect</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwardTo">MForwardTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwarded">MForwarded</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib-neighborhood-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js~Neighborhood.html">Neighborhood</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MultiSet">MultiSet</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#view">view</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Marker">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">lib/crate-core/lib/LSEQTree/lib/triple.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">
+/*!
+ * \brief triple that contains a &lt;path site counter&gt;
+ * \param path the part of the path in the tree
+ * \param site the unique site identifier that created the triple
+ * \param counter the counter of the site when it created the triple
+ */
+function Triple(path, site, counter){
+    this.p = path;
+    this.s = site;
+    this.c = counter;
+};
+
+/*!
+ * \brief compare two triples prioritizing the path, then site, then counter
+ * \param o the other triple to compare
+ * \return -1 if this is lower than o, 1 if this is greater than o, 0 otherwise
+ */
+Triple.prototype.compare = function(o){
+    if (this.s === Number.MAX_VALUE &amp;&amp; this.c === Number.MAX_VALUE){
+        return 1;
+    };
+    if (o.s === Number.MAX_VALUE &amp;&amp; o.s === Number.MAX_VALUE){
+        return -1;
+    };
+    
+    if (this.p &lt; o.p) { return -1;};
+    if (this.p &gt; o.p) { return 1 ;};
+    if (this.s &lt; o.s) { return -1;};
+    if (this.s &gt; o.s) { return 1 ;};
+    if (this.c &lt; o.c) { return -1;};
+    if (this.c &gt; o.c) { return 1 ;};
+    return 0;
+};
+
+module.exports = Triple;
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

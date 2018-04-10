@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../../../../">
+  <title data-ice="title">lib/crate-core/lib/version-vector-with-exceptions/test/testVVwE.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/view.js~view.html">view</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Signaling">Signaling</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#controller">controller</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/controller/editor.js~EditorController.html">EditorController</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib">crate-core/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib">crate-core/lib/CausalBroadcastDefinition/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-interfaces">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces/ipsp.js~IPSP.html">IPSP</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-messages">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages/municast.js~MUnicast.html">MUnicast</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-lseqtree-lib">crate-core/lib/LSEQTree/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-base">base</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LSEQNode">LSEQNode</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Triple">Triple</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib">crate-core/lib/spray-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/partialview.js~PartialView.html">PartialView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/spray.js~Spray.html">Spray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MExchange">MExchange</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-EventEmitter">EventEmitter</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MConnectTo">MConnectTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MDirect">MDirect</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwardTo">MForwardTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwarded">MForwarded</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib-neighborhood-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js~Neighborhood.html">Neighborhood</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MultiSet">MultiSet</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#view">view</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Marker">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">lib/crate-core/lib/version-vector-with-exceptions/test/testVVwE.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">var expect = require(&apos;expect.js&apos;);
+var Mocha = require(&apos;mocha&apos;);
+
+var VVwE = require(&apos;../lib/vvwe.js&apos;);
+
+describe(&apos;vvwe.js&apos;, function() {
+
+    describe(&apos;vvwe&apos;, function(){
+        it(&apos;init the entries to zero&apos;, function(){
+            var vvwe = new VVwE(42)
+            expect(vvwe.local.e).to.be.eql(42);
+            expect(vvwe.local.v).to.be.eql(0);
+            expect(vvwe.local.x).to.have.length(0);
+        });
+    });
+    
+    describe(&apos;increment&apos;, function(){
+        it(&apos;increment the entry&apos;, function(){
+            var vvwe = new VVwE(42);
+            vvwe.increment();
+            expect(vvwe.local.v).to.be.eql(1);
+        });
+        
+        it(&apos;no exception created&apos;, function(){
+            var vvwe = new VVwE(42);
+            vvwe.increment();
+            vvwe.increment();
+            expect(vvwe.local.x).to.have.length(0);
+        });
+    });
+
+    describe(&apos;incrementfrom&apos;, function(){
+        it(&apos;increment the entry from another vv&apos;, function(){
+            var vvwe = new VVwE(13);
+            var rvvwe = new VVwE(42);
+            rvvwe.increment();
+            vvwe.incrementFrom({_e: rvvwe.local.e, _c:rvvwe.local.v });
+            expect(rvvwe.vector.arr[0].v).to.be.eql(1);
+            expect(vvwe.vector.arr[1].v).to.be.eql(rvvwe.local.v);
+        });
+
+        it(&apos;increment from anywhere does not affect my entry&apos;, function(){
+            var vvwe = new VVwE(13);
+            var rvvwe = new VVwE(42);
+            rvvwe.increment();
+            vvwe.incrementFrom({_e: rvvwe.local.e, _c:rvvwe.local.v });
+            expect(vvwe.local.v).to.be.eql(0);
+        });
+
+        it(&apos;a message is lost, exception is made&apos;, function(){
+            var vvwe = new VVwE(13);
+            var rvvwe = new VVwE(42);
+            rvvwe.increment();
+            rvvwe.increment();
+            expect(rvvwe.local.v).to.be.eql(2);
+            vvwe.incrementFrom({_e: rvvwe.local.e, _c:rvvwe.local.v });
+            expect(vvwe.vector.arr[1].x).to.have.length(1);
+            expect(vvwe.vector.arr[1].x.indexOf(1)).to.be.above(-1);
+        });
+    });
+    
+    describe(&apos;isReady&apos;, function(){
+        it(&apos;check if an operation depending on another is ready&apos;, function(){
+            var vvwe = new VVwE(42);
+            vvwe.increment();
+            var target = {_e:vvwe.local.e, _c:vvwe.local.v};
+            expect(vvwe.isReady(target)).to.be.ok();
+            var target2 = {_e:vvwe.local.e, _c:(vvwe.local.v+1)};
+            expect(vvwe.isReady(target2)).to.not.be.ok();
+        });
+        
+        it(&apos;check if an operation independant of any other is rdy&apos;,function(){
+            var vvwe = new VVwE(42);
+            var c = null;
+            expect(vvwe.isReady(c)).to.be.ok();
+        });
+
+        it(&apos;check in the omen vector for target operation&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            vvwe2.increment();
+            var c = {_e: vvwe2.local.e, _c: vvwe2.local.v};
+            vvwe.incrementFrom(c);
+            // another operation arrive depending on operation identifier by c;
+            expect(vvwe.isReady(c)).to.be.ok();
+        });
+    });
+    
+    describe(&apos;isLower&apos;, function(){
+        it(&apos;check if the ev has been seen before or not&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            var c = {_e : vvwe2.local.e , _c:vvwe2.local.v};
+            expect(vvwe.isLower(c)).to.not.be.ok();
+            vvwe.incrementFrom(c);
+            expect(vvwe.isLower(c)).to.be.ok();
+        });
+
+        it(&apos;check in the omen if the ev has been seen&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            vvwe2.increment();
+            var c = {_e : vvwe2.local.e , _c:vvwe2.local.v};
+            expect(vvwe.isLower(c)).to.not.be.ok();
+            vvwe.incrementFrom(c);
+            expect(vvwe.isLower(c)).to.be.ok();
+        });
+    });
+
+    describe(&apos;clone&apos;, function(){
+        it(&apos;produce two identical independant copies of the vvwe&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe.increment();
+            vvwe.incrementFrom(vvwe2.increment());
+            var vvwe3 = vvwe.clone();
+            vvwe3.increment();
+            vvwe3.incrementFrom(vvwe2.increment());
+            expect(vvwe3.local.e).to.be.eql(vvwe.local.e);
+            expect(vvwe3.local.v).to.be.eql(vvwe.local.v+1);
+            expect(vvwe3.vector.arr.length).to.be.eql(vvwe.vector.arr.length);
+            expect(vvwe3.vector.arr[0].v).to.be.eql(vvwe.vector.arr[0].v+1);
+        });
+    });
+
+    describe(&apos;merge&apos;, function(){
+        it(&apos;merge two structures&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            vvwe2.increment();
+            vvwe.merge(vvwe2);
+            expect(vvwe.vector.arr[0].v).to.be.eql(2);
+            vvwe2.increment();
+            expect(vvwe.vector.arr[0].v).to.be.eql(2);
+        });
+
+        it(&apos;merge two structure taking care of exception of initiator&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            vvwe2.increment();
+            vvwe.incrementFrom(vvwe2.increment());
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(1);
+            vvwe.merge(vvwe2);
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(0);
+        });
+
+        it(&apos;keeps the exception of the vvwe in argument&apos;, function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            var vvwe3 = new VVwE(37);
+            vvwe2.increment();
+            vvwe.incrementFrom(vvwe2.increment()); // 42 -&gt; x 1
+            vvwe3.incrementFrom(vvwe2.increment()); // 37 -&gt; x 1 2
+            vvwe.merge(vvwe3);
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(1);
+            expect(vvwe3.vector.arr[0].x.length).to.be.eql(2);
+            vvwe3.merge(vvwe);
+            expect(vvwe3.vector.arr[0].x.length).to.be.eql(1);
+            vvwe3.merge(vvwe2);
+            expect(vvwe3.vector.arr[0].x.length).to.be.eql(0);
+        });
+
+        it(&apos;get new exceptions if the vvwe in arg is more uptodate&apos;,function(){
+            var vvwe = new VVwE(42);
+            var vvwe2 = new VVwE(13);
+            var vvwe3 = new VVwE(37);
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe.merge(vvwe2);
+            expect(vvwe.vector.arr[0].v).to.be.eql(2);
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe2.increment();
+            vvwe2.increment();
+            vvwe3.incrementFrom(vvwe2.increment());
+            vvwe.merge(vvwe3);
+            expect(vvwe.vector.arr[0].v).to.be.eql(6);
+            expect(vvwe.vector.arr[0].x.length).to.be.eql(2);
+        });
+
+        it(&apos;test a bug example from the CRATE project&apos;, function(){
+            var vvwe = new VVwE(&quot;6e3bedf4-45f9-4e05-ba55-7c4f99b28c44&quot;);
+            var vvwe2 = new VVwE(&quot;f065d3ab-b5b5-4376-9bd5-25ee5db22313&quot;);
+            for (var i = 0; i &lt; 100; ++i) {
+                vvwe.incrementFrom(vvwe2.increment());
+            };
+            vvwe.merge(vvwe2);
+            expect(vvwe.local.v).to.be.eql(0);
+        });
+        
+        it(&apos;test another bug example from the CRATE project&apos;, function(){
+            var vvwe = new VVwE(&quot;72f8de1f-ade1-4e89-b5f4-1447902db2de&quot;);
+            var vvwe2 = new VVwE(&quot;b0d3e97a-4aee-489a-987f-fb74b9fd929d&quot;);
+            for (var i = 0; i &lt; 8; ++i) {
+                vvwe.incrementFrom(vvwe2.increment());
+            };
+            vvwe.merge(vvwe2);
+            expect(vvwe.local.v).to.be.eql(0);
+        });
+
+    });
+});
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

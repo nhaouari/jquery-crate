@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">lib/signaling.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/view.js~view.html">view</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Signaling">Signaling</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#controller">controller</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/controller/editor.js~EditorController.html">EditorController</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib">crate-core/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib">crate-core/lib/CausalBroadcastDefinition/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-interfaces">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces/ipsp.js~IPSP.html">IPSP</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-messages">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages/municast.js~MUnicast.html">MUnicast</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-lseqtree-lib">crate-core/lib/LSEQTree/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-base">base</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LSEQNode">LSEQNode</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Triple">Triple</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib">crate-core/lib/spray-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/partialview.js~PartialView.html">PartialView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/spray.js~Spray.html">Spray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MExchange">MExchange</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-EventEmitter">EventEmitter</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MConnectTo">MConnectTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MDirect">MDirect</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwardTo">MForwardTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwarded">MForwarded</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib-neighborhood-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js~Neighborhood.html">Neighborhood</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MultiSet">MultiSet</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#view">view</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Marker">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">lib/signaling.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">var io = require(&apos;socket.io-client&apos;);
+
+/*!
+ * \brief handle the signaling server
+ * \param rps the random peer sampling protocol
+ * \param signalingOptions specific options for the signaling server(s). For
+ * now, it&apos;s an object { server, session, duration } where server is
+ * the address of the server to contact, session is the editing session to join
+ * or share, duration is the optional duration time during which the socket with
+ * the signaling server stays open.
+ */
+function Signaling(rps, signalingOptions){
+    this.rps = rps;
+    this.signalingOptions = signalingOptions;
+    //signalingOptions.server = &quot;http://127.0.0.1:5000&quot;;
+    this.socketIOConfig = { &apos;force new connection&apos;: true,
+                            &apos;reconnection&apos;: false };
+    this.startedSocket = false;
+    this.socket = null;
+    this.timeout = null; // event id of the termination
+    this.joiners = 0;
+
+    var self = this;
+    
+    var callbacks = function(socket, idJoiner){
+        return {
+            onInitiate: function(message){
+                socket &amp;&amp;
+                    socket.emit(&apos;launch&apos;, signalingOptions.session, message);
+            },        
+            onAccept: function(message){
+                socket &amp;&amp;
+                    socket.emit(&apos;answer&apos;, idJoiner, message);
+            },
+            onReady: function(){
+                if (idJoiner){
+                    self.joiner += 1;
+                } else {
+                    self.socket.disconnect();
+                };
+            }
+        };     
+    };
+
+    /*!
+     * \brief create a connection with a socket.io server and initialize the
+     * events
+     */
+    function createSocket() {
+        // #A establish the dialog with the socket.io server
+        if(!self.startedSocket){
+            self.socket = io(self.signalingOptions.server, self.socketIOConfig);
+            self.startedSocket = true;
+            self.socket.on(&apos;connect&apos;, function(){
+                console.log(&apos;Connection to the signaling server established&apos;);
+            });
+            self.socket.on(&apos;launchResponse&apos;, function(idJoiner, message){
+                self.rps.connection(callbacks(self.socket, idJoiner), message)
+            });
+            self.socket.on(&apos;answerResponse&apos;, function(message){
+                self.rps.connection(callbacks(self.socket), message);
+            });
+            self.socket.on(&apos;disconnect&apos;, function(){
+                console.log(&apos;Disconnection from the signaling server&apos;);
+                self.startedSocket = false;
+                self.joiners = 0;
+                clearTimeout(this.timeout);
+                self.timeout= null;
+            });
+        }
+        // #B reset timer before closing the connection
+        if (self.timeout){clearTimeout(self.timeout);self.timeout=null;};
+        // #C initialize a timer before closing the connection
+        if (self.signalingOptions.duration){
+            self.timeout = setTimeout(function(){
+                self.stopSharing();
+            }, self.signalingOptions.duration);
+        };
+    };
+
+    this.startSharing = function(){
+        createSocket();
+        self.socket.on(&apos;connect&apos;, function(){
+            self.socket.emit(&apos;share&apos;, self.signalingOptions.session);
+        });
+        return self.socket;
+    };
+    
+    this.stopSharing = function(){
+        self.socket.disconnect();
+        clearTimeout(self.timeout);
+        self.timeout = null;
+    };
+
+    this.startJoining = function(signalingOptions){
+        createSocket();
+        self.socket.on(&apos;connect&apos;, function(){
+         //   self.rps.connection(callbacks(self.socket));
+        });
+        return self.socket;
+    };
+};
+
+
+module.exports = Signaling;
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

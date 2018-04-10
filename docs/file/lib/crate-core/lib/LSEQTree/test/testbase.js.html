@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../../../../../">
+  <title data-ice="title">lib/crate-core/lib/LSEQTree/test/testbase.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/view.js~view.html">view</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Signaling">Signaling</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#controller">controller</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/controller/editor.js~EditorController.html">EditorController</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib">crate-core/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib">crate-core/lib/CausalBroadcastDefinition/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-GUID">GUID</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-interfaces">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces/ipsp.js~IPSP.html">IPSP</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-causalbroadcastdefinition-lib-unicast-definition-lib-messages">crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages/municast.js~MUnicast.html">MUnicast</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-lseqtree-lib">crate-core/lib/LSEQTree/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-base">base</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LSEQNode">LSEQNode</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Triple">Triple</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib">crate-core/lib/spray-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/partialview.js~PartialView.html">PartialView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/spray.js~Spray.html">Spray</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MExchange">MExchange</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-EventEmitter">EventEmitter</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MConnectTo">MConnectTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MDirect">MDirect</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwardTo">MForwardTo</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MForwarded">MForwarded</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#crate-core-lib-spray-wrtc-lib-n2n-overlay-wrtc-lib-neighborhood-wrtc-lib">crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib</a><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js~Neighborhood.html">Neighborhood</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-MultiSet">MultiSet</a></span></span></li>
+<li data-ice="doc"><a data-ice="dirPath" class="nav-dir-path" href="identifiers.html#view">view</a><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Marker">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">lib/crate-core/lib/LSEQTree/test/testbase.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">var expect = require(&apos;expect.js&apos;);
+var Mocha  = require(&apos;mocha&apos;);
+var BI = require(&apos;BigInt&apos;);
+
+var Base = require(&apos;../lib/base.js&apos;);
+var ID = require(&apos;../lib/identifier.js&apos;);
+var LSEQNode = require(&apos;../lib/lseqnode.js&apos;);
+var Triple = require(&apos;../lib/triple.js&apos;);
+
+describe(&apos;base.js&apos;, function() {
+    
+    describe(&apos;base&apos;, function(){
+        it(&apos;trivial test of setup&apos;, function(){
+            var base = new Base(1337);
+            expect(base._b).to.be.eql(1337);
+        });
+    });
+
+    describe(&apos;singleton&apos;, function(){
+        it(&apos;get an instance of the function that does not change&apos;, function(){
+            var base = new Base(42);
+            expect(base._b).to.be.eql(42);
+            var base2 = new Base();
+            expect(base._b).to.be.eql(42);
+        });
+    });
+    
+    describe(&apos;getBitBase&apos;, function(){
+        it(&apos;trivially return the bit size of certain level&apos;, function(){
+            var base = new Base(42);
+            expect(base.getBitBase(5)).to.be.eql(47);
+        });
+    });
+
+    describe(&apos;getSumBit&apos;, function(){
+        it(&apos;should return number of bits from lvl-0 to lvl-X&apos;, function(){
+            var base = new Base(5);
+            expect(base.getSumBit(0)).to.be.eql(base._b); // 5
+            expect(base.getSumBit(1)).to.be.eql(base._b*2+1) // 11
+            expect(base.getSumBit(2)).to.be.eql(base._b*3+3) // 18
+        });
+    });
+
+    describe(&apos;getInterval&apos;, function(){
+        it(&apos;should return an empty interval at lvl 0&apos;, function(){
+            var base = new Base(3);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(1,0,0));
+            var id1= new LSEQNode(tripleList, &quot;&quot;);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(15,0,0));
+            var id2= new LSEQNode(tripleList, &quot;&quot;);
+            expect(base.getInterval(id1,id2,0)).to.be.eql(0);
+        });
+
+        it(&apos;should return an interval at level 1 of 13&apos;, function(){
+            var base = new Base(3);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(1,0,0));
+            var id1= new LSEQNode(tripleList, &quot;&quot;);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(15,0,0));
+            var id2= new LSEQNode(tripleList, &quot;&quot;);
+            expect(base.getInterval(id1,id2,1)).to.be.eql(13);
+        });
+
+        it(&apos;should return an interval at level 1 of 14&apos;, function(){
+            var base = new Base(3);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            var id1= new LSEQNode(tripleList, &quot;&quot;);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(15,0,0));
+            var id2= new LSEQNode(tripleList, &quot;&quot;);
+            expect(base.getInterval(id1,id2,1)).to.be.eql(14);
+        });
+
+        it(&apos;should return an interval at level 1 of 11&apos;, function(){
+            var base = new Base(3);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(4,0,0));
+            var id1= new LSEQNode(tripleList, &quot;&quot;);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            tripleList.push(new Triple(3,0,0));
+            var id2= new LSEQNode(tripleList, &quot;&quot;);
+            expect(base.getInterval(id1,id2,1)).to.be.eql(11);
+        });
+
+        it(&apos;process interval between close paths with LSEQNode @0&apos;, function(){
+            var base = new Base(3);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            var id1= new LSEQNode(tripleList, &quot;&quot;);
+            var tripleList = [];
+            tripleList.push(new Triple(2,0,0));
+            var id2= new LSEQNode(tripleList, &quot;&quot;);
+            expect(base.getInterval(id1,id2,0)).to.be.eql(0);
+        });
+
+        it(&apos;process interval between close paths with LSEQNode @1&apos;, function(){
+            var base = new Base(3);
+            var tripleList = [];
+            tripleList.push(new Triple(1,0,0));
+            var id1= new LSEQNode(tripleList, &quot;&quot;);
+            var tripleList = [];
+            tripleList.push(new Triple(2,0,0));
+            var id2= new LSEQNode(tripleList, &quot;&quot;);
+            expect(base.getInterval(id1,id2,1)).to.be.eql(15);
+        });
+
+    });
+});
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>
