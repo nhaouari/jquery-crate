@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">view/statesheader.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/view/marker.js~Marker.html">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">view/statesheader.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">
+function StatesHeader(model, container){
+    this.model = model;
+    
+    this.red = &quot;#cd2626&quot;;
+    this.yellow = &quot;#eead0e&quot;;
+    this.green = &quot;#228b22&quot;;
+    this.blue = &quot;#00BFFF&quot;;
+    
+    this.signalingState = jQuery(&apos;&lt;i&gt;&apos;).appendTo(&quot;#connectionState&quot;)
+        .addClass(&apos;fa fa-circle-o-notch fa-2x&apos;)
+        .attr(&apos;data-trigger&apos;, &apos;hover&apos;).attr(&apos;data-toggle&apos;, &apos;popover&apos;)
+        .attr(&apos;title&apos;, &apos;Signaling server status&apos;)
+        .attr(&apos;data-html&apos;, &apos;true&apos;).attr(&apos;data-content&apos;, &apos;&apos;)
+        .attr(&apos;data-placement&apos;, &apos;bottom&apos;)
+        .popover()
+        .hide();
+
+    this.networkState = jQuery(&apos;#state&apos;);
+};
+
+StatesHeader.prototype.setNetworkState = function(state){
+    switch (state){
+    case &quot;connected&quot;:
+        var connectedString =
+            &quot;&lt;span class=&apos;alert-success&apos;&gt;Congratulations!&lt;/span&gt; &quot;+
+            &quot;You are connected to people, and people are &quot;+
+            &quot;connected to you. &lt;span class=&apos;alert-info&apos;&gt;You can start editing &quot;+
+            &quot;together&lt;/span&gt;.&quot;;
+        this.networkState.css(&quot;color&quot;, this.green);
+        this.networkState.attr(&quot;data-content&quot;, connectedString);
+        break;
+    case &quot;partiallyConnected&quot;:
+        var partiallyConnectedString =
+            &quot;&lt;span class=&apos;alert-warning&apos;&gt;Partially &quot;+
+            &quot;connected&lt;/span&gt;: either you are connected to people, or people &quot;+
+            &quot;are connected to you. &quot;+
+            &quot;This is not great, but you &lt;span class=&apos;alert-info&apos;&gt; still can &quot;+
+            &quot;edit.&lt;/span&gt;&quot;;
+        this.networkState.css(&quot;color&quot;, this.green);
+        this.networkState.attr(&quot;data-content&quot;, partiallyConnectedString);
+        break;
+    case &quot;disconnected&quot;:
+        var disconnectedString =
+            &quot;&lt;span class=&apos;alert-danger&apos;&gt;Disconnected&lt;/span&gt;:&quot;+
+            &quot; you are currently editing &lt;span class=&apos;alert-info&apos;&gt;on&quot;+
+            &quot; your own&lt;/span&gt;.&quot;;
+        this.networkState.css(&quot;color&quot;, this.red);
+        this.networkState.attr(&quot;data-content&quot;, disconnectedString);
+        break;
+    };
+};
+
+StatesHeader.prototype.setSignalingState = function(state){
+    var self = this;
+    function blink(){
+        self.signalingState.show();
+        setTimeout( function(){
+            if (self.model.signaling.startedSocket){
+                blink();
+            } else {
+                self.setSignalingState(&quot;done&quot;);
+            };
+        }, 1000);
+    };
+    
+    switch (state){
+    case &quot;waitSignaling&quot;:
+        this.signalingState.show();
+        this.signalingState.removeClass(&quot;fa-spin&quot;);
+        this.signalingState.css(&quot;color&quot;, this.yellow);
+        var waitSignalingString = &quot;&lt;span class=&apos;alert-warning&apos;&gt;Connecting&quot;+
+            &quot;&lt;/span&gt;: establishing a connection with the signaling server. &quot;+
+            &quot;The latter allows people to join the editing session by using &quot;+
+            &quot;the provided link. &quot;+
+            &quot;&lt;i&gt;If this state persists, consider reloading the page.&lt;/i&gt;&quot;;
+        this.signalingState.attr(&quot;data-content&quot;, waitSignalingString);
+        blink();
+        break;
+    case &quot;waitSharer&quot;:
+        this.signalingState.show();
+        this.signalingState.addClass(&quot;fa-spin&quot;);
+        this.signalingState.css(&quot;color&quot;, this.blue);
+        var waitSharerString = &quot;The connection to the signaling server has &quot;+
+            &quot;been successfully established! &lt;span class=&apos;alert-info&apos;&gt;Waiting &quot;+
+            &quot;for the sharer now&lt;/span&gt;.&quot;;
+        this.signalingState.attr(&quot;data-content&quot;, waitSharerString);
+        blink();
+        break;
+    case &quot;waitJoiners&quot;:
+        this.signalingState.css(&quot;color&quot;, this.blue);
+        this.signalingState.addClass(&quot;fa-spin&quot;);
+        var waitJoinersString = &quot;The connection to the signaling server has &quot;+
+            &quot;been &lt;span class=&apos;alert-success&apos;&gt;successfully&lt;/span&gt; &quot;+
+            &quot;established! &quot;+
+            &quot;The server allows people to join the editing session by using &quot;+
+            &quot;the provided link. &quot;+
+            &quot;&lt;span class=&apos;alert-info&apos;&gt;Waiting for the collaborators&lt;/span&gt;.&quot;
+        this.signalingState.attr(&quot;data-content&quot;, waitJoinersString);
+        blink();
+        break;
+    case &quot;done&quot;:
+        this.signalingState.show();
+        this.signalingState.removeClass(&quot;fa-spin&quot;);
+        var doneString = &quot;The connection to the signaling server has been &quot;+
+            &quot;&lt;span class=&apos;alert-info&apos;&gt;terminated&lt;/span&gt;.&quot;;
+        this.signalingState.attr(&quot;data-content&quot;, doneString);
+        this.signalingState.css(&quot;color&quot;, this.green);
+        this.signalingState.fadeOut(6000, &quot;linear&quot;);
+        break;
+    };
+};
+
+module.exports = StatesHeader;
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

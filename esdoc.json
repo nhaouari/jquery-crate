@@ -1,5 +1,5 @@
 {
-  "source":"./lib",
+  "source":"./lib/view",
   "destination":"./docs",
   "package": "./package.json",
   "plugins": [

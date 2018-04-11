@@ -1,282 +1,16 @@
 {
-  "coverage": "39.62%",
-  "expectCount": 212,
-  "actualCount": 84,
+  "coverage": "61.76%",
+  "expectCount": 34,
+  "actualCount": 21,
   "files": {
-    "lib/controller/editor.js": {
-      "expectCount": 21,
-      "actualCount": 21,
-      "undocumentLines": []
-    },
-    "lib/controller/statesheader.js": {
-      "expectCount": 2,
-      "actualCount": 0,
-      "undocumentLines": [
-        68,
-        3
-      ]
-    },
-    "lib/crate-core/lib/CausalBroadcastDefinition/example/main.js": {
-      "expectCount": 12,
-      "actualCount": 0,
-      "undocumentLines": [
-        6,
-        9,
-        10,
-        11,
-        12,
-        13,
-        14,
-        15,
-        16,
-        17,
-        20,
-        43
-      ]
-    },
-    "lib/crate-core/lib/CausalBroadcastDefinition/lib/guid.js": {
-      "expectCount": 1,
-      "actualCount": 0,
-      "undocumentLines": [
-        11
-      ]
-    },
-    "lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/examples/main.js": {
-      "expectCount": 10,
-      "actualCount": 0,
-      "undocumentLines": [
-        5,
-        6,
-        7,
-        9,
-        10,
-        11,
-        18,
-        19,
-        20,
-        28
-      ]
-    },
-    "lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/interfaces/ipsp.js": {
-      "expectCount": 3,
-      "actualCount": 3,
-      "undocumentLines": []
-    },
-    "lib/crate-core/lib/CausalBroadcastDefinition/lib/unicast-definition/lib/messages/municast.js": {
-      "expectCount": 6,
-      "actualCount": 2,
-      "undocumentLines": [
-        13,
-        14,
-        15,
-        16
-      ]
-    },
-    "lib/crate-core/lib/guid.js": {
-      "expectCount": 1,
-      "actualCount": 0,
-      "undocumentLines": [
-        13
-      ]
-    },
-    "lib/crate-core/lib/LSEQTree/lib/base.js": {
-      "expectCount": 5,
-      "actualCount": 0,
-      "undocumentLines": [
-        8,
-        17,
-        25,
-        38,
-        68
-      ]
-    },
-    "lib/crate-core/lib/LSEQTree/lib/lseqnode.js": {
-      "expectCount": 8,
-      "actualCount": 0,
-      "undocumentLines": [
-        28,
-        61,
-        89,
-        99,
-        134,
-        158,
-        228,
-        9
-      ]
-    },
-    "lib/crate-core/lib/LSEQTree/lib/triple.js": {
-      "expectCount": 2,
-      "actualCount": 0,
-      "undocumentLines": [
-        19,
-        8
-      ]
-    },
-    "lib/crate-core/lib/LSEQTree/lib/util.js": {
-      "expectCount": 1,
-      "actualCount": 0,
-      "undocumentLines": [
-        2
-      ]
-    },
-    "lib/crate-core/lib/LSEQTree/test/testidentifier.js": {
-      "expectCount": 1,
-      "actualCount": 0,
-      "undocumentLines": [
-        5
-      ]
-    },
-    "lib/crate-core/lib/LSEQTree/test/testlseqtree.js": {
-      "expectCount": 1,
-      "actualCount": 0,
-      "undocumentLines": [
-        6
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/example/main.js": {
-      "expectCount": 7,
-      "actualCount": 0,
-      "undocumentLines": [
-        3,
-        7,
-        8,
-        9,
-        11,
-        26,
-        33
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/extended-sorted-array.js": {
-      "expectCount": 2,
-      "actualCount": 0,
-      "undocumentLines": [
-        5,
-        11
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/messages.js": {
-      "expectCount": 1,
-      "actualCount": 1,
-      "undocumentLines": []
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/example/main.js": {
-      "expectCount": 9,
-      "actualCount": 0,
-      "undocumentLines": [
-        3,
-        11,
-        12,
-        13,
-        15,
-        17,
-        34,
-        36,
-        40
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/messages.js": {
-      "expectCount": 4,
-      "actualCount": 4,
-      "undocumentLines": []
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/example/main.js": {
-      "expectCount": 8,
-      "actualCount": 0,
-      "undocumentLines": [
-        3,
-        11,
-        12,
-        13,
-        14,
-        16,
-        42,
-        68
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/extended-sorted-array.js": {
-      "expectCount": 2,
-      "actualCount": 0,
-      "undocumentLines": [
-        3,
-        9
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/multiset.js": {
-      "expectCount": 7,
-      "actualCount": 0,
-      "undocumentLines": [
-        7,
-        20,
-        29,
-        38,
-        42,
-        46,
-        3
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js": {
-      "expectCount": 26,
-      "actualCount": 15,
-      "undocumentLines": [
-        21,
-        24,
-        46,
-        48,
-        49,
-        50,
-        53,
-        59,
-        67,
-        68,
-        69
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/partialview.js": {
-      "expectCount": 19,
-      "actualCount": 16,
-      "undocumentLines": [
-        21,
-        23,
-        35
-      ]
-    },
-    "lib/crate-core/lib/spray-wrtc/lib/spray.js": {
-      "expectCount": 28,
-      "actualCount": 12,
-      "undocumentLines": [
-        3,
-        4,
-        5,
-        6,
-        7,
-        27,
-        44,
-        46,
-        47,
-        48,
-        51,
-        52,
-        55,
-        59,
-        65,
-        117
-      ]
-    },
-    "lib/signaling.js": {
-      "expectCount": 1,
-      "actualCount": 0,
-      "undocumentLines": [
-        12
-      ]
-    },
-    "lib/view/editor.js": {
+    "view/editor.js": {
       "expectCount": 1,
       "actualCount": 0,
       "undocumentLines": [
         1
       ]
     },
-    "lib/view/link.js": {
+    "view/link.js": {
       "expectCount": 8,
       "actualCount": 0,
       "undocumentLines": [
@@ -290,26 +24,20 @@
         2
       ]
     },
-    "lib/view/marker.js": {
-      "expectCount": 10,
-      "actualCount": 10,
-      "undocumentLines": []
+    "view/marker.js": {
+      "expectCount": 22,
+      "actualCount": 21,
+      "undocumentLines": [
+        171
+      ]
     },
-    "lib/view/statesheader.js": {
+    "view/statesheader.js": {
       "expectCount": 3,
       "actualCount": 0,
       "undocumentLines": [
         22,
         54,
         2
-      ]
-    },
-    "lib/view.js": {
-      "expectCount": 2,
-      "actualCount": 0,
-      "undocumentLines": [
-        7,
-        8
       ]
     }
   }

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">view/link.js | jquery-crate</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  <script src="script/manual.js"></script>
+<meta name="description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"><meta property="twitter:card" content="summary"><meta property="twitter:title" content="jquery-crate"><meta property="twitter:description" content="Cratify tool that turns a division into a distributed and decentralized collaborative editor"></head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+<a style="position:relative; top:3px;" href="https://github.com/haouarin/jquery-crate.git"><img width="20px" src="./image/github.png"></a></header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/view/marker.js~Marker.html">Marker</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-Editor">Editor</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-LinkView">LinkView</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-function">F</span><span data-ice="name"><span><a href="function/index.html#static-function-StatesHeader">StatesHeader</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">view/link.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">
+function LinkView(container, id){
+
+    this.linkContainer = jQuery(&apos;&lt;div&gt;&apos;).appendTo(container)
+        .css(&apos;position&apos;, &apos;relative&apos;)
+        .css(&apos;top&apos;, &apos;0px&apos;)
+        .css(&apos;width&apos;, &apos;60%&apos;)
+        .css(&apos;z-index&apos;, &apos;0&apos;)
+        .css(&apos;opacity&apos;, &apos;0.9&apos;)
+        .attr(&apos;id&apos;,&apos;linkContainer&apos;)
+        .hide();
+    
+    // #0 qr code modal
+    var qrCodeModal = jQuery(&apos;&lt;div&gt;&apos;).appendTo(container)
+        .attr(&apos;id&apos;, &apos;modalQRCode&apos;+id)
+        .attr(&apos;tabindex&apos;,&apos;-1&apos;)
+        .attr(&apos;role&apos;,&apos;dialog&apos;)
+        .attr(&apos;aria-labelledby&apos;,&apos;modalQRCodeLabel&apos;)
+        .attr(&apos;aria-hidden&apos;, &apos;true&apos;)
+        .addClass(&apos;modal&apos;);
+    
+    var qrCodeModalDialog = jQuery(&apos;&lt;div&gt;&apos;).appendTo(qrCodeModal)
+        .addClass(&apos;modal-dialog&apos;);
+    var qrCodeModalContent = jQuery(&apos;&lt;div&gt;&apos;).appendTo(qrCodeModalDialog)
+        .addClass(&apos;modal-content text-center&apos;);
+    this.qrcodeCanvas = jQuery(&apos;&lt;div&gt;&apos;);
+    qrCodeModalContent.append(jQuery(&apos;&lt;br&gt;&apos;))
+        .append(this.qrcodeCanvas)
+        .append(jQuery(&apos;&lt;br&gt;&apos;));
+    
+    // #1 overall division
+    this.alert = jQuery(&apos;&lt;div&gt;&apos;).appendTo(this.linkContainer);
+    // #2 cross to close the division
+    this.dismiss = jQuery(&apos;&lt;button&gt;&apos;).appendTo(this.alert)
+        .attr(&apos;type&apos;, &apos;button&apos;)
+        .addClass(&apos;close&apos;)
+        .html(&apos;&lt;span  aria-hidden=&quot;true&quot;&gt;&amp;times;&lt;/span&gt;&lt;span class=&quot;sr-only&quot;&gt; &apos;+
+              &apos;Close &lt;/span&gt;&apos;);
+    var rowContainer = jQuery(&apos;&lt;div&gt;&apos;).appendTo(this.alert)
+        .addClass(&apos;container&apos;);
+    var inputGroup = jQuery(&apos;&lt;div&gt;&apos;).appendTo(rowContainer)
+        .addClass(&apos;input-group&apos;)
+        .attr(&apos;style&apos;,&apos;margin-left: -16px;&apos;);
+    this.input = jQuery(&apos;&lt;input&gt;&apos;).appendTo(inputGroup)
+        .attr(&apos;type&apos;, &apos;text&apos;)
+        .attr(&apos;id&apos;, &apos;sessionUrl&apos;)
+        .attr(&apos;placeholder&apos;, &apos;Nothing to see here, move along.&apos;)
+        .addClass(&apos;form-control&apos;);
+    
+    var inputGroup2 = jQuery(&apos;&lt;span&gt;&apos;).appendTo(inputGroup)
+        .addClass(&apos;input-group-btn&apos;);
+
+    this.qrcode = jQuery(&apos;&lt;button&gt;&apos;).appendTo(inputGroup2)
+        .attr(&apos;aria-label&apos;, &apos;QR-code&apos;)
+        .attr(&apos;type&apos;, &apos;button&apos;)
+        .attr(&apos;data-target&apos;, &apos;#modalQRCode&apos;+id)
+        .attr(&apos;data-toggle&apos;, &apos;modal&apos;)
+        .addClass(&apos;btn btn-default&apos;)
+        .html(&apos;&lt;i class=&quot;fa fa-qrcode&quot;&gt;&lt;/i&gt; QR-Code&apos;);
+
+    this.action = jQuery(&apos;&lt;button  id=&quot;copyButton&quot;&gt;&apos;).appendTo(inputGroup2)
+        .attr(&apos;aria-label&apos;, &apos;Go!&apos;)
+        .attr(&apos;type&apos;, &apos;button&apos;)
+        .addClass(&apos;btn btn-default&apos;)
+        .html(&apos;Go!&apos;)
+        .css(&apos;z-index&apos;, &apos;15&apos;);
+
+    var self = this;
+    this.dismiss.unbind(&quot;click&quot;).click(function(){self.linkContainer.hide();});
+};
+
+LinkView.prototype.printLink = function(link){
+    this.linkContainer.show();
+    this.action.html(&apos;&lt;i class=&quot;fa fa-clipboard&quot;&gt;&lt;/i&gt; Copy&apos;);
+    this.action.attr(&quot;aria-label&quot;, &quot;Copy to clipboard&quot;);
+    this.input.attr(&quot;readonly&quot;,&quot;readonly&quot;);
+    this.input.val(link);
+    this.qrcode.show();
+};
+
+
+LinkView.prototype.printLaunchLink = function(link){
+    this.printLink(link);
+    this.input.attr(&quot;placeholder&quot;,
+                    &quot;A link will appear in this field, give it to your &quot;+
+                    &quot;friend!&quot;);
+    this.action.unbind(&quot;click&quot;);
+    this.qrcode.hide();
+    return this.action;
+};
+
+LinkView.prototype.printAnswerLink = function(link){
+    this.printLink(link);
+    this.input.attr(&quot;placeholder&quot;,
+                    &quot;A link will appear in this field. Please give it &quot;+
+                    &quot;back to your friend.&quot;);
+    this.action.unbind(&quot;click&quot;);
+    this.qrcode.hide();
+    return this.action;
+};
+
+LinkView.prototype.askLink = function(){
+    this.linkContainer.show();
+    this.alert.removeClass(&quot;alert-warning&quot;).addClass(&quot;alert-info&quot;);
+    this.action.html(&apos;Go!&apos;);
+    this.action.attr(&quot;aria-label&quot;, &quot;Stamp the ticket&quot;);
+    this.input.removeAttr(&quot;readonly&quot;);
+    this.input.val(&quot;&quot;);
+    this.action.unbind(&quot;click&quot;);
+    this.qrcode.hide();
+};
+
+LinkView.prototype.askLaunchLink = function(){
+    this.askLink();
+    this.input.attr(&quot;placeholder&quot;,
+                    &quot;Please, copy the ticket of your friend here to stamp &quot;+
+                    &quot;it!&quot;);
+    this.qrcode.hide();
+    return this.action;
+};
+
+LinkView.prototype.askAnswerLink = function(){
+    this.askLink();
+    this.input.attr(&quot;placeholder&quot;, &quot;Copy the stamped ticket to confirm &quot;+
+                    &quot;your arrival in the network&quot;);
+    this.qrcode.hide();
+    return this.action;
+};
+
+LinkView.prototype.hide = function(){
+    this.linkContainer.hide();
+};
+
+
+
+module.exports = LinkView;
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(1.0.4)</span><img src="./image/esdoc-logo-mini-black.png"></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>
