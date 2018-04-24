@@ -108,7 +108,6 @@ app.get('/:action/:session', function(req, res) {
     silent: true }
 */
             const options = {
-                silent: true
             }
 
             const child = fork(program, parameters, options);
