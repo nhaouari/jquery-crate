@@ -1,22 +1,21 @@
-
-
 var session = require('./lib/session.js');
+var fs = require('fs');
+const jsonfile = require('jsonfile')
 var wrtc = require('wrtc')
 var Marker = require('./lib/view/marker.js');
 var request = require("request");
 var sesssionID = process.argv[2]
-const store= require('store')
+const store = require('store')
 
 if (!store.get("config")) {
-  var config = {
-    signalingServer: "https://carteserver.herokuapp.com/",
-    storageServer: "http://127.0.0.1:8082",
-    stun: '23.21.150.121' // default google ones if xirsys not
-  };
+    var config = {
+        signalingServer: "https://carteserver.herokuapp.com/",
+        storageServer: "http://127.0.0.1:8082",
+        stun: '23.21.150.121' // default google ones if xirsys not
+    };
 } else {
-  var config = store.get("config");
+    var config = store.get("config");
 }
-
 
 console.log("CRATE started123: SessionID = " + sesssionID);
 
@@ -41,7 +40,7 @@ request({
 
 
 
-function initialize(connOptions,session) {
+function initialize(connOptions, session) {
     console.log("initialize")
     connectionOptions = connOptions;
     justDoIt({
@@ -59,15 +58,22 @@ function justDoIt(signalingOptions, name, importFromJSON) {
     };
 
     options.webRTCOptions.trickle = true;
-    options.webRTCOptions.wrtc=wrtc;
+    options.webRTCOptions.wrtc = wrtc;
     if (signalingOptions) {
         options.signalingOptions = signalingOptions;
+        // check if exist 
+        // read the file
+        var file = `./tmp/crate-${signalingOptions.session}.json`
 
-        if (store.get("CRATE2-" + signalingOptions.session)) {
-            options.signalingOptions = {};
-            options.importFromJSON = store.get("CRATE2-" + signalingOptions.session);
-            options.signalingOptions.connect = true; // (TODO) may change this val
-        };
+        if (fs.existsSync(file)) {
+            console.log(`Document ${signalingOptions.session} wakes up`)
+
+            jsonfile.readFile(file, (err, obj) => {
+                options.signalingOptions = signalingOptions;
+                options.importFromJSON = obj;
+            })
+        }
+
 
     };
 
@@ -85,21 +91,21 @@ function justDoIt(signalingOptions, name, importFromJSON) {
 
     options.user = store.get('myId')
 
-    let newSession = new session(options);
+    options.changesTimeOut = 10 * 1000
 
+        let newSession = new session(options);
+   
 
 
 };
 
 
-
-
 function generateID() {
-  id = session.GUID();
-  m = new Marker(id);
-  pseudo=m.animal
-  store.set('myId', {
-    id: id,
-    pseudo: pseudo
-  });
+    id = session.GUID();
+    m = new Marker(id);
+    pseudo = m.animal
+    store.set('myId', {
+        id: id,
+        pseudo: pseudo
+    });
 }
