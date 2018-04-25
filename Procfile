@@ -1,1 +1,1 @@
-web: HOST=storagecrate.herokuapp.com npm start
+web: npm start
