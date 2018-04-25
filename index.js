@@ -1,4 +1,4 @@
-process.on('unhandledRejection', error => {
+/*process.on('unhandledRejection', error => {
     // Prints "unhandledRejection woops!"
     console.log('unhandledRejection', error.test);
 
@@ -6,14 +6,14 @@ process.on('unhandledRejection', error => {
      * this is to remove the document from the server index
      * @type {[type]}
      */
-    process.send({
+ /*   process.send({
         type: "kill",
         id: process.argv[2]
     })
 
 
 });
-
+*/
 
 
 var session = require('./lib/session.js');

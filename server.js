@@ -98,7 +98,7 @@ function newDocument(sessionID, res) {
     child.on('message', (message) => {
         if (message.type == "kill") {
             if (message.id) {
-                child.kill()
+              //  child.kill()
                 console.log("Delete the document with SessionID " + message.id + " PID: " + documents[message.id]);
                 delete documents[message.id];
             }
