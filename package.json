@@ -3,7 +3,7 @@
     "version": "0.0.10",
     "author": "Chat-Wane <grumpy.chat.wane@gmail.com>",
     "description": "Cratify tool that turns a division into a distributed and decentralized collaborative editor",
-    "main": "./lib/cratify.js",
+    "main": "server.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/haouarin/jquery-crate.git"
@@ -67,5 +67,8 @@
         "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
         "docs": "esdoc -c esdoc.json"
     },
+    "engines": {
+    "node": "8.10.0"
+  },
     "license": "MIT"
 }
