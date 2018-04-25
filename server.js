@@ -5,10 +5,6 @@ var path = require('path')
 var psTree = require('ps-tree');
 var fs = require('fs');
 
-
-
-
-
 var documents = {};
 
 app.use(function(req, res, next) {
@@ -39,6 +35,7 @@ app.get('/:action/:session', function(req, res) {
             if (documents[req.params.session]) {
                 let pid = documents[req.params.session]
                 procs[pid].kill()
+                delete procs[pid]
                 console.log("Delete the document with SessionID " + req.params.session + " PID: " + documents[req.params.session]);
                 delete documents[req.params.session];
 
@@ -77,7 +74,7 @@ var server = app.listen(8082, function() {
     console.log("Example app 2 listening at http://%s:%s", host, port)
 })
 
-var procs= {}
+var procs = {}
 
 function newDocument(sessionID, res) {
     var exec = require('child_process').exec;
@@ -98,9 +95,26 @@ function newDocument(sessionID, res) {
     child.on('message', (message) => {
         if (message.type == "kill") {
             if (message.id) {
-              //  child.kill()
+                  console.log("Delete the document with SessionID " + message.id + " PID: " + documents[message.id]);
+                  delete documents[message.id];
+                setTimeout(() => {
+                    child.kill()
+                    delete procs[message.id]
+                }, 2000);
+
+            }
+
+        }
+
+        if (message.type == "error") {
+            if (message.id) {
+                child.kill()
                 console.log("Delete the document with SessionID " + message.id + " PID: " + documents[message.id]);
-                delete documents[message.id];
+                delete documents[message.id]
+                delete procs[message.id]
+                //restart the document
+               // var pid = newDocument(message.id, res);
+               // documents[message.id] = pid;
             }
 
         }
@@ -112,6 +126,6 @@ function newDocument(sessionID, res) {
         console.log("this is error")
     });
 
-    procs[child.pid]=child
+    procs[child.pid] = child
     return child.pid;
 }

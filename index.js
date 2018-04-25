@@ -1,19 +1,35 @@
-/*process.on('unhandledRejection', error => {
+process.on('unhandledRejection', error => {
     // Prints "unhandledRejection woops!"
-    console.log('unhandledRejection', error.test);
+    console.log('unhandledRejection', error);
 
     /**
      * this is to remove the document from the server index
      * @type {[type]}
      */
- /*   process.send({
-        type: "kill",
+    process.send({
+        type: "error",
         id: process.argv[2]
     })
 
 
 });
-*/
+
+
+process.on('uncaughtException', (error) => {
+    // Prints "unhandledRejection woops!"
+    console.log('uncaughtException', error);
+
+    /**
+     * this is to remove the document from the server index
+     * @type {[type]}
+     */
+    process.send({
+        type: "error",
+        id: process.argv[2]
+    })
+
+});
+
 
 
 var session = require('./lib/session.js');
@@ -71,7 +87,7 @@ function initialize(connOptions, session) {
 
 function justDoIt(signalingOptions, name, importFromJSON) {
 
-    options = {
+    let options = {
         webRTCOptions: connectionOptions
     };
 
@@ -87,31 +103,41 @@ function justDoIt(signalingOptions, name, importFromJSON) {
             console.log(`Document ${signalingOptions.session} wakes up`)
 
             jsonfile.readFile(file, (err, obj) => {
-                options.signalingOptions = signalingOptions;
+
+
+                options.signalingOptions = {
+                    signalingOptions
+                };
+
                 options.importFromJSON = obj;
+                //var editorContainer = $("#editor");
+                if (!store.get('myId')) {
+                    generateID()
+                }
+
+                options.user = store.get('myId')
+
+                options.changesTimeOut = 10 * 1000
+
+                let newSession = new session(options);
+
             })
+        } else {
+
+                if (!store.get('myId')) {
+                    generateID()
+                }
+
+                options.user = store.get('myId')
+
+                options.changesTimeOut = 10 * 1000
+                
+                let newSession = new session(options);
+
         }
 
 
     };
-
-
-    if (name) {
-        options.name = name;
-    };
-
-    // #1 add a cell into the list of editors
-
-    //var editorContainer = $("#editor");
-    if (!store.get('myId')) {
-        generateID()
-    }
-
-    options.user = store.get('myId')
-
-    options.changesTimeOut = 10 * 1000
-
-    let newSession = new session(options);
 
 };
 
