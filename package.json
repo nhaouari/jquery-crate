@@ -61,6 +61,7 @@
         ]
     },
     "scripts": {
+        "start":"node server.js",
         "debug": "browserify lib/session.js --standalone session --debug > build/jquery-crate.bundle.debug.js",
         "build": "browserify lib/session.js --standalone session > build/jquery-crate.bundle.js",
         "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
