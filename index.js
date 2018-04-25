@@ -1,3 +1,21 @@
+process.on('unhandledRejection', error => {
+    // Prints "unhandledRejection woops!"
+    console.log('unhandledRejection', error.test);
+
+    /**
+     * this is to remove the document from the server index
+     * @type {[type]}
+     */
+    process.send({
+        type: "kill",
+        id: process.argv[2]
+    })
+
+
+});
+
+
+
 var session = require('./lib/session.js');
 var fs = require('fs');
 const jsonfile = require('jsonfile')
@@ -93,9 +111,7 @@ function justDoIt(signalingOptions, name, importFromJSON) {
 
     options.changesTimeOut = 10 * 1000
 
-        let newSession = new session(options);
-   
-
+    let newSession = new session(options);
 
 };
 
