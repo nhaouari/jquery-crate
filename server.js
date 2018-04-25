@@ -100,7 +100,7 @@ function newDocument(sessionID, res) {
                 setTimeout(() => {
                     child.kill()
                     delete procs[message.id]
-                }, 2000);
+                }, 1000);
 
             }
 
@@ -112,9 +112,10 @@ function newDocument(sessionID, res) {
                 console.log("Delete the document with SessionID " + message.id + " PID: " + documents[message.id]);
                 delete documents[message.id]
                 delete procs[message.id]
-                //restart the document
-               // var pid = newDocument(message.id, res);
-               // documents[message.id] = pid;
+                /*console.log('restart the document')
+                var pid = newDocument(message.id, res);
+                documents[message.id] = pid;
+                */
             }
 
         }

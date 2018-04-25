@@ -1,16 +1,17 @@
 process.on('unhandledRejection', error => {
     // Prints "unhandledRejection woops!"
-    console.log('unhandledRejection', error);
-
+   console.log('unhandledRejection ');
+  // console.log('----------------------------------------------------------')
+  //  console.log(session.headSession._foglet.getNeighbours(Infinity))
     /**
      * this is to remove the document from the server index
      * @type {[type]}
      */
-    process.send({
+   /* process.send({
         type: "error",
         id: process.argv[2]
     })
-
+*/
 
 });
 
@@ -51,7 +52,7 @@ if (!store.get("config")) {
     var config = store.get("config");
 }
 
-console.log("CRATE started123: SessionID = " + sesssionID);
+console.log("Document opened: SessionID = " + sesssionID);
 
 
 var connectionOptions = "";
@@ -68,7 +69,7 @@ request({
             url: 'stun:23.21.150.121', // default google ones if xirsys not
             urls: 'stun:23.21.150.121'
         }]
-    }; // responding
+    };
     initialize(connectionOptions, sesssionID);
 });
 
@@ -81,7 +82,6 @@ function initialize(connOptions, session) {
         server: config.signalingServe,
         session: session
     });
-
 };
 
 
