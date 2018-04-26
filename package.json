@@ -62,7 +62,8 @@
         ]
     },
     "scripts": {
-        "start": "DEBUG=foglet-core:*,spray-wrtc node server.js",
+        "start": "DEBUG=*,-express*,spray-wrtc node server.js",
+        "start2": "set DEBUG=*,-not_this,-express* & node server.js",
         "debug": "browserify lib/session.js --standalone session --debug > build/jquery-crate.bundle.debug.js",
         "build": "browserify lib/session.js --standalone session > build/jquery-crate.bundle.js",
         "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
