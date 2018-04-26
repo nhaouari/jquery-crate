@@ -1,6 +1,6 @@
 process.on('unhandledRejection', error => {
     // Prints "unhandledRejection woops!"
-   console.log('unhandledRejection ');
+   console.log('unhandledRejection ',error);
   // console.log('----------------------------------------------------------')
   //  console.log(session.headSession._foglet.getNeighbours(Infinity))
     /**
