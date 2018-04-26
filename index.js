@@ -45,7 +45,7 @@ const store = require('store')
 if (!store.get("config")) {
     var config = {
         signalingServer: "https://carteserver.herokuapp.com/",
-        storageServer: "http://127.0.0.1:8082",
+        storageServer: "https://storagecrate.herokuapp.com",
         stun: '23.21.150.121' // default google ones if xirsys not
     };
 } else {
