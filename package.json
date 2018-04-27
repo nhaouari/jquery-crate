@@ -1,8 +1,8 @@
 {
-    "name": "jquery-crate",
-    "version": "0.0.10",
-    "author": "Chat-Wane <grumpy.chat.wane@gmail.com>",
-    "description": "Cratify tool that turns a division into a distributed and decentralized collaborative editor",
+    "name": "crate-storage",
+    "version": "1.0.0",
+    "author": "Noureddine HAOUARi <haouarin@gmail.com>",
+    "description": "this is a storage server used for CRATE application",
     "main": "server.js",
     "repository": {
         "type": "git",
@@ -53,16 +53,8 @@
         "browserify": "6.2.x",
         "brfs": "1.4.x"
     },
-    "browser": {
-        "jquery-qrcode": "./node_modules/jquery-qrcode/dist/jquery-qrcode.js"
-    },
-    "browserify": {
-        "transform": [
-            "brfs"
-        ]
-    },
     "scripts": {
-        "start": "DEBUG=*,-express*,spray-wrtc node server.js",
+        "start": "DEBUG=*,-not_this,-express*,spray-wrtc node server.js",
         "start2": "set DEBUG=*,-not_this,-express* & node server.js",
         "debug": "browserify lib/session.js --standalone session --debug > build/jquery-crate.bundle.debug.js",
         "build": "browserify lib/session.js --standalone session > build/jquery-crate.bundle.js",

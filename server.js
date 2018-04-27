@@ -1,66 +1,79 @@
+/**
+ * THis is the crate storage Server. this server stores the document as json doc ones it it connected and it is updated every time.
+ * @author Noureddine Haouari
+ * 
+ */
+
+
 var express = require('express');
 var app = express();
 const fork = require('child_process').fork;
 var path = require('path')
 var psTree = require('ps-tree');
 var fs = require('fs');
-
-var documents = {};
+var debug = require('debug')('crate:storage-server')
+var running = {};
+var waiting = {};
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+
 app.get('/', function(req, res) {
-    res.send('Hello World');
+    res.send('<h1>Storage CRATE server</h1>');
 })
 
 
 app.get('/:action/:session', function(req, res) {
-
+    debug('receive a request ', 'session', [req.params.session], ' action', [req.params.action])
     switch (req.params.action) {
         case "join":
-            if (!documents[req.params.session]) {
+            debug('join session ', [req.params.session])
 
+            if (!running[req.params.session] && !waiting[req.params.session]) {
                 var pid = newDocument(req.params.session, res);
-                documents[req.params.session] = pid;
+                waiting[req.params.session] = pid;
+                debug('Waiting for the document creation ', [req.params.session])
+
+            } else if (running[req.params.session]) {
+                debug('the document is already running ', [req.params.session])
                 res.send('{"results":1}');
-                console.log("Create new document with SessionID " + req.params.session + " PID: " + documents[req.params.session]);
-
-
             }
             break;
         case "kill":
-            if (documents[req.params.session]) {
-                let pid = documents[req.params.session]
+            debug('kill session ', [req.params.session])
+
+            if (running[req.params.session]) {
+                let pid = running[req.params.session]
                 procs[pid].kill()
                 delete procs[pid]
-                console.log("Delete the document with SessionID " + req.params.session + " PID: " + documents[req.params.session]);
-                delete documents[req.params.session];
-
+                delete running[req.params.session];
+                debug('Delete the document with SessionID ', [req.params.session], " PID: " + running[req.params.session])
             }
-        case "exist":
-            // console.log("Exist ? " + req.params.session);
-            if (documents[req.params.session]) {
-                res.send('{"results":1}');
-                // console.log('			{"results":1}');
 
+        case "exist":
+          debug('session exist', [req.params.session])
+            // console.log("Exist ? " + req.params.session);
+            if (running[req.params.session]) {
+                res.send('{"results":1}');
+                debug('Yes it is running')
             } else {
                 var file = `./tmp/crate-${req.params.session}.json`
 
                 if (fs.existsSync(file)) { // sleeping mode
                     res.send('{"results":2}');
+                     debug('Yes but it is in sleeping mode')
                     //  console.log('			{"results":2}');
                 } else {
                     res.send('{"results":0}');
+                     debug('No')
                     // console.log('           {"results":0}');
                 }
             }
             break;
         default:
-
-
     }
 
 
@@ -74,32 +87,41 @@ var server = app.listen(port, function() {
     var host = server.address().address
     var port = server.address().port
 
-    console.log("Example app 2 listening at http://%s:%s", host, port)
+    console.log("crate Storage Server listening at http://%s:%s", host, port)
 })
 
 var procs = {}
 
+/**
+ * [newDocument create a  new document 
+ * @param  {[type]} sessionID  the id of the session
+ * @param  {[type]} res        used to send a response to the user 
+ * @return {[type]}           [description]
+ */
 function newDocument(sessionID, res) {
-    var exec = require('child_process').exec;
+
+   
+   debug('New document');
+
+
+   var exec = require('child_process').exec;
     const program = path.resolve('index.js')
     const parameters = [sessionID];
-    /* const options = { stdio: [ 'pipe', 'pipe', 'pipe', 'ipc' ],
-    silent: true }
-*/
     const options = {}
 
     const child = fork(program, parameters, options);
-    console.log('New document: ');
-
-    process.on('message', (message) => {
-        console.log('message from parent:', message);
-    });
 
     child.on('message', (message) => {
         if (message.type == "kill") {
+
+               debug('kill event from  '+ message.id);
             if (message.id) {
-                  console.log("Delete the document with SessionID " + message.id + " PID: " + documents[message.id]);
-                  delete documents[message.id];
+                debug("Delete the document with SessionID " + message.id + " PID: " + running[message.id]);
+                if (running[message.id])
+                    delete running[message.id];
+
+                if (waiting[message.id])
+                    delete waiting[message.id]
                 setTimeout(() => {
                     child.kill()
                     delete procs[message.id]
@@ -110,24 +132,34 @@ function newDocument(sessionID, res) {
         }
 
         if (message.type == "error") {
+              debug('Error event from '+ message.id);
             if (message.id) {
                 child.kill()
-                console.log("Delete the document with SessionID " + message.id + " PID: " + documents[message.id]);
-                delete documents[message.id]
+                debug("ERROR: Delete the document with SessionID " + message.id + " PID: " + running[message.id]);
+                if (running[message.id])
+                    delete running[message.id];
+
+                if (waiting[message.id])
+                    delete waiting[message.id]
                 delete procs[message.id]
                 /*console.log('restart the document')
                 var pid = newDocument(message.id, res);
-                documents[message.id] = pid;
+                running[message.id] = pid;
                 */
             }
-
+        }
+        //when the document establish connection
+        if (message.type == "established") {
+                debug("Create new document with SessionID " + message.id + " PID: " + running[message.id]);
+            if (message.id) {
+                running[message.id] = waiting[message.id]
+                delete waiting[message.id]
+                res.send('{"results":1}');
+                console.log
+            }
         }
 
-    });
 
-
-    child.on('uncaughtException', (error) => {
-        console.log("this is error")
     });
 
     procs[child.pid] = child

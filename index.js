@@ -1,17 +1,7 @@
-process.on('unhandledRejection', error => {
+process.on('unhandledRejection', (error) => {
     // Prints "unhandledRejection woops!"
    console.log('unhandledRejection ',error);
-  // console.log('----------------------------------------------------------')
-  //  console.log(session.headSession._foglet.getNeighbours(Infinity))
-    /**
-     * this is to remove the document from the server index
-     * @type {[type]}
-     */
-   /* process.send({
-        type: "error",
-        id: process.argv[2]
-    })
-*/
+  
 
 });
 
@@ -101,7 +91,6 @@ function justDoIt(signalingOptions, name, importFromJSON) {
 
         if (fs.existsSync(file)) {
             console.log(`Document ${signalingOptions.session} wakes up`)
-
             jsonfile.readFile(file, (err, obj) => {
 
 
