@@ -17,9 +17,9 @@
     "dependencies": {
         "BigInt": "^5.4.5",
         "animals": "git+https://github.com/nhaouari/animals.git#master",
-        "crate-core": "git+https://github.com/nhaouari/crate-core.git#master",
         "brace": "0.5.x",
         "clone": "^1.0.3",
+        "crate-core": "git+https://github.com/nhaouari/crate-core.git#master",
         "dateformat": "^3.0.3",
         "debug": "^2.6.1",
         "esdoc": "^1.0.4",
