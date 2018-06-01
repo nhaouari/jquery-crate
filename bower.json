@@ -1,8 +1,0 @@
-{
-    "name": "jquery-crate",
-    "version": "0.0.10",
-    "main": "build/jquery-crate.bundle.js",
-    "ignore": [
-        "lib/*"
-    ]
-}
