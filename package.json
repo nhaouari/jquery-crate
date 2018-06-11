@@ -1,6 +1,6 @@
 {
     "name": "crate-backend",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "Noureddine HAOUARi <haouarin@gmail.com>",
     "description": "this is the back-end of CRATEv2 application",
     "main": "./lib/session.js",
