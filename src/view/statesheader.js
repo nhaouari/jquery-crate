@@ -1,4 +1,4 @@
-require('jquery-qrcode')
+ //require('jquery-qrcode')
 /**
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
  */

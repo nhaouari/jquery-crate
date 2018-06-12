@@ -1,9 +1,9 @@
 {
-    "name": "crate-backend",
+    "name": "crate-core",
     "version": "1.0.1",
     "author": "Noureddine HAOUARi <haouarin@gmail.com>",
-    "description": "this is the back-end of CRATEv2 application",
-    "main": "./lib/session.js",
+    "description": "this is the core of CRATEv2 application",
+    "main": "./src/index.js",
     "repository": {
         "type": "git",
         "url": "https://github.com/haouarin/jquery-crate.git"
@@ -40,15 +40,24 @@
         "version-vector-with-exceptions": "^0.1.0"
     },
     "devDependencies": {
-        "uglify-js": "^1.3.5",
-        "debug": "^2.6.1",
+        "@babel/core": "^7.0.0-beta.49",
+        "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.49",
+        "@babel/preset-env": "^7.0.0-beta.49",
+        "babel-core": "^6.26.3",
+        "babel-loader": "^7.1.4",
+        "babel-preset-es2015": "^6.24.1",
         "brfs": "1.4.x",
         "browserify": "6.2.x",
-        "wrtc": "^0.1.4",
+        "debug": "^2.6.1",
         "esdoc": "^1.0.4",
         "esdoc-ecmascript-proposal-plugin": "^1.0.0",
         "esdoc-node": "^1.0.3",
-        "esdoc-standard-plugin": "^1.0.0"
+        "esdoc-standard-plugin": "^1.0.0",
+        "json-loader": "^0.5.7",
+        "uglify-js": "^1.3.5",
+        "webpack": "^4.12.0",
+        "webpack-cli": "^3.0.3",
+        "wrtc": "^0.1.4"
     },
     "browser": {
         "jquery-qrcode": "./node_modules/jquery-qrcode/dist/jquery-qrcode.js"
@@ -62,7 +71,10 @@
         "debug": "browserify lib/session.js --standalone session --debug > build/jquery-crate.bundle.debug.js",
         "build": "browserify lib/session.js --standalone session > build/jquery-crate.bundle.json",
         "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
-        "docs": "esdoc -c esdoc.json"
+        "docs": "esdoc -c esdoc.json",
+        "babel": "babel --presets es2015 js/main.js -o build/main.bundle.js",
+        "start": "http-server",
+        "webpack": "webpack"
     },
     "license": "MIT"
 }
