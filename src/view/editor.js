@@ -128,7 +128,7 @@ export default class EditorController extends EventEmitter {
       var doc = store.get("CRATE2-" + sessionID)
       this.viewEditor.setContents(doc.delta, "user")
       jQuery(`#${this._editorContainerID} #title`).text(doc.title)
-      session.openIn(); // this is to convert the links to inside links
+      session.default.openIn(); // this is to convert the links to inside links
     }
 
     // make title editable
@@ -250,7 +250,7 @@ export default class EditorController extends EventEmitter {
             subdocument: function(value) {
               let range = this.quill.getSelection();
               // let preview = this.quill.getText(range);
-              let preview = window.location.href.split('?')[0] + '?' + session.GUID();
+              let preview = window.location.href.split('?')[0] + '?' + session.default.GUID();
               let tooltip = this.quill.theme.tooltip;
               tooltip.edit('link', preview);
             },
@@ -309,7 +309,7 @@ export default class EditorController extends EventEmitter {
 
     quill.theme.tooltip.save = function() {
       quill.theme.tooltip.save2()
-      session.openIn()
+      session.default.openIn()
     }
 
 
@@ -559,7 +559,7 @@ export default class EditorController extends EventEmitter {
         }
 
         if (element.att.link) {
-          session.openIn()
+          session.default.openIn()
         }
 
 
@@ -568,7 +568,7 @@ export default class EditorController extends EventEmitter {
 
 
     }
-    session.openIn()
+    session.default.openIn()
     this.cleanQuill()
   }
 

@@ -3,7 +3,7 @@
 var path = require('path');
 
 var webpack = require('webpack');
-
+var HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
 
 module.exports = {
     entry: path.resolve(__dirname, 'src/index.js'),
@@ -21,7 +21,6 @@ module.exports = {
             options: { 
                 presets: ["stage-3"],
                 plugins: [
-                  ["transform-es2015-modules-commonjs"],
                   ["babel-plugin-transform-builtin-extend", {
                       "globals": ["Map"]
                   }],
@@ -36,6 +35,10 @@ module.exports = {
         // Nice colored output
         colors: true
     },
+    plugins: [
+      new HardSourceWebpackPlugin()
+    ],
+    watch:true,
     // Create Sourcemaps for the bundle
     devtool: 'source-map'
 };

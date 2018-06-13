@@ -191,12 +191,12 @@ export default class view {
 
     $(document).on('next', () => {
        console.log('next')
-      session.actualSession.moveToNext()
+      session.default.actualSession.moveToNext()
     })
 
     $(document).on('prev', () => {
       console.log('prev')
-      session.actualSession.moveToPrevious()
+      session.default.actualSession.moveToPrevious()
     })  
 
   }

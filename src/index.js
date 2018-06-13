@@ -36,7 +36,8 @@ export default class session extends EventEmitter {
             you have to generate ID at this point
      */
     super();
-    this._options = merge(options);
+    this._defaultOptions= {...options}
+    this._options = {...options}
     if (!options.foglet) {
       this.init();
     } else {
@@ -49,7 +50,7 @@ export default class session extends EventEmitter {
    * @return {[type]} [description]
    */
   init() {
-
+    console.log(this._options)
     const url = this._options.signalingServer + "/ice"
     fetch(url)
     .then((resp) => resp.json()) // Transform the data into json
@@ -297,7 +298,7 @@ export default class session extends EventEmitter {
     if (editor) {
       editor.viewEditor.focus();
     } else {
-      s = this.getCrateSession(FocusedSession);
+      s = session.getCrateSession(FocusedSession);
 
       if (s._documents[0]._view) {
         s._documents[0]._view._editor.viewEditor.focus();
@@ -330,7 +331,9 @@ export default class session extends EventEmitter {
           if (jQuery(`#container-${editingSession}`).length) {
             session.focusOnSession(editingSession, this.href.split("?")[1]);
           } else {
-            var sess = new session({editingSession});
+
+            const opts= Object.assign({...session.actualSession._defaultOptions},{editingSession})
+            var sess = new session(opts);
           }
         };
       }
