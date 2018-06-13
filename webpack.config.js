@@ -9,6 +9,7 @@ module.exports = {
     entry: path.resolve(__dirname, 'src/index.js'),
     output: {
         path: __dirname,
+        library: 'session',   
         filename: 'build/jquery-crate.bundle.js'
     },
     module: {
@@ -17,7 +18,16 @@ module.exports = {
           test: /\.js$/,
           use: {
             loader: "babel-loader",
-            options: { presets: ["es2015"] }
+            options: { 
+                presets: ["stage-3"],
+                plugins: [
+                  ["transform-es2015-modules-commonjs"],
+                  ["babel-plugin-transform-builtin-extend", {
+                      "globals": ["Map"]
+                  }],
+                  ["transform-class-properties"]
+              ]
+                }
           }
         }
       ]
@@ -27,6 +37,5 @@ module.exports = {
         colors: true
     },
     // Create Sourcemaps for the bundle
-    devtool: 'source-map',
-    target:'node'
+    devtool: 'source-map'
 };

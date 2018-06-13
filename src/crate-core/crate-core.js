@@ -1,21 +1,11 @@
-const EventEmitter = require('events').EventEmitter;
+import {EventEmitter} from "events"
+import VVwE from "version-vector-with-exceptions"
+import LSEQTree from "LSEQTree"
+import {Foglet,communication} from "foglet-core"
+import {MInsertOperation,MAEInsertOperation,MRemoveOperation, MCaretMovedOperation } from "./messages";
+import {MAntiEntropyRequest,MAntiEntropyResponse,MBroadcast} from "./messages";
 
-const VVwE = require('version-vector-with-exceptions');
-const LSEQTree = require('lseqtree');
-
-const Foglet = require('foglet-core').Foglet
-const Communication = require('foglet-core').communication
-
-const MInsertOperation = require('./messages.js').MInsertOperation;
-const MAEInsertOperation = require('./messages.js').MAEInsertOperation;
-const MRemoveOperation = require('./messages.js').MRemoveOperation;
-const MCaretMovedOperation = require('./messages.js').MCaretMovedOperation;
-
-const MAntiEntropyRequest = require('./messages.js').MAntiEntropyRequest;
-const MAntiEntropyResponse = require('./messages.js').MAntiEntropyResponse;
-const MBroadcast = require('./messages').MBroadcast;
 var debug = require('debug')('crate:crate-core')
-
 /*!
  * \brief link together all components of the model of the CRATE editor
  * \param id the unique site identifier
@@ -23,7 +13,7 @@ var debug = require('debug')('crate:crate-core')
  */
 
 
-class CrateCore extends EventEmitter {
+export default class CrateCore extends EventEmitter {
 
     constructor(id, options, data_comm, behaviours_comm) {
         super()
@@ -63,7 +53,6 @@ class CrateCore extends EventEmitter {
 
         this._lastSentId=null
         this._communication.onBroadcast((id, message) => {
-            try {
                 switch (message.type) {
                     case 'MRemoveOperation':
                         this.remoteRemove(message.remove, message.origin);
@@ -76,9 +65,7 @@ class CrateCore extends EventEmitter {
                         break;
 
                 };
-            } catch (e) {
-                throw new Error('An error occurred when receiving a message: ', e)
-            }
+          
         })
 
        this._communication.broadcast.startAntiEntropy(2000);
@@ -391,4 +378,3 @@ class CrateCore extends EventEmitter {
         return result.reverse();
     };
 }
-module.exports = CrateCore;

@@ -1,11 +1,10 @@
-var View = {};
-const shortid = require("shortid");
-const Foglet = require("foglet-core").Foglet;
-const Communication = require("foglet-core").communication;
-const Core = require("./crate-core/crate-core.js");
-const EventEmitter = require("events").EventEmitter;
+import shortid from "shortid"
+import {Foglet,communication} from "foglet-core"
+import Core from "./crate-core/crate-core.js"
+import {EventEmitter} from "events"
+import View from "./view.js"
 
-class doc extends EventEmitter {
+export default class doc extends EventEmitter {
   constructor(options, foglet) {
     super();
     this._foglet = foglet
@@ -39,11 +38,11 @@ class doc extends EventEmitter {
 
     promise.then(() => {
       console.log("application connected!");
-      this._data_comm = new Communication(
+      this._data_comm = new communication(
         this._foglet.overlay().network,
         "anti-entropy"
       );
-      this._behaviours_comm = new Communication(
+      this._behaviours_comm = new communication(
         this._foglet.overlay().network,
         "No-anti-entropy"
       );
@@ -85,7 +84,6 @@ class doc extends EventEmitter {
       this.signalingOptions = options.signalingOptions;
 
       if (options.display) {
-        View = require("./view.js");
         this._view = new View(options, this, options.containerID);
       }
       this._foglet.emit("connected");
@@ -96,4 +94,3 @@ class doc extends EventEmitter {
 }
 }
 
-module.exports = doc;

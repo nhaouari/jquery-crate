@@ -1,10 +1,9 @@
-const VLink = require('./view/link.js')
-const CStatesHeader = require('./view/statesheader.js')
-const CEditor = require('./view/editor.js')
+import VLink from "./view/link.js"
+import CStatesHeader from "./view/statesheader.js"
+import CEditor from "./view/editor"
 
 
-
-class view {
+export default class view {
   constructor(options, model, editorsContainerID) {
 
 
@@ -37,12 +36,12 @@ class view {
     }
 
     let sessionID = this._options.signalingOptions.session
-    let s = session.getCrateSession(sessionID)
+    let s = session.default.getCrateSession(sessionID)
     if (s._previous) {
       sessionID = s._previous._options.signalingOptions.session
     }
 
-    session.focusOnSession(sessionID, this._options.signalingOptions.session, this._editor)
+    session.default.focusOnSession(sessionID, this._options.signalingOptions.session, this._editor)
 
 
     const sharingLinkContainer = new VLink(jQuery(`#${this._editorContainerID} #sharinglink`))
@@ -53,7 +52,7 @@ class view {
 
     jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
       // Get object of the list for this session
-      let crateSession = session.getCrateSession(this._options.signalingOptions.room)
+      let crateSession = session.default.getCrateSession(this._options.signalingOptions.room)
 
       if (session.headSession !== crateSession) {
 
@@ -292,7 +291,5 @@ class view {
   }
 
 }
-
-module.exports = view
 
 view.addMoveShortcuts() 

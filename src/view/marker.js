@@ -1,13 +1,13 @@
-const animals = require('animals');
-const hash = require('string-hash');
 
+import animals from "animals";
+import hash from "string-hash";
 
 
 /**
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
  */
 
-class Marker {
+export default class Marker {
   /**
    * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
    * @param {[string]}  origin the id of the the user
@@ -275,4 +275,3 @@ class Marker {
 
 }
 
-module.exports = Marker;

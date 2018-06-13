@@ -3,7 +3,7 @@
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
  */
 
-class StatesHeader {
+export default class StatesHeader {
     /**
      * StatesHeader is class that is for showing the state of the network, share option of the document.
      * @param  {[type]} model     [description]
@@ -109,5 +109,3 @@ class StatesHeader {
         }
     }
 }
-
-module.exports = StatesHeader

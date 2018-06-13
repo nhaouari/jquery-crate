@@ -1,11 +1,12 @@
-const Document = require("./document.js");
-const Foglet = require("foglet-core").Foglet;
-const shortid = require("shortid");
-const request = require("request");
-const merge = require("lodash.merge");
-const store = require("store");
-const EventEmitter = require("events").EventEmitter;
-const Marker = require('./view/marker.js')
+import Document from "./document.js"
+import {Foglet} from "foglet-core"
+import shortid from "shortid"
+import merge from "lodash.merge"
+import store from "store"
+import {EventEmitter} from "events"
+import Marker from "./view/marker"
+ 
+
 /*!
  * \brief transform the selected division into a distributed and decentralized 
  * collaborative editor.
@@ -24,7 +25,7 @@ const Marker = require('./view/marker.js')
  * }
  */
 
-class session extends EventEmitter {
+export default class session extends EventEmitter {
   constructor(options) {
     /**
      *  signalingServer: "https://carteserver.herokuapp.com/",
@@ -35,7 +36,7 @@ class session extends EventEmitter {
             you have to generate ID at this point
      */
     super();
-    this._options = merge(this.constructor.getDefault(), options);
+    this._options = merge(options);
     if (!options.foglet) {
       this.init();
     } else {
@@ -48,36 +49,34 @@ class session extends EventEmitter {
    * @return {[type]} [description]
    */
   init() {
-    request(
-      {
-        method: "get",
-        url: this._options.signalingServer + "/ice"
-      },
-      (error, response, body) => {
-        let addresses = JSON.parse(body);
-        this._options.webRTCOptions = merge({
-          config:{
-            iceServers: [
-              {
-                url: this._options.stun,
-                urls: this._options.stun
-              }
-            ]
-          },
-          
-        }, {
-          config: {
-            iceServers: addresses.ice
-          },
-          trickle: true
-        })
-        this._options.webRTCOptions.config.iceServers.forEach(ice => {
-          ice.urls = ice.url
-        })
-        console.log(this._options.webRTCOptions);
-        this.justDoIt();
-      }
-    );
+
+    const url = this._options.signalingServer + "/ice"
+    fetch(url)
+    .then((resp) => resp.json()) // Transform the data into json
+    .then((addresses)=> {
+      this._options.webRTCOptions = merge({
+        config:{
+          iceServers: [
+            {
+              url: this._options.stun,
+              urls: this._options.stun
+            }
+          ]
+        },
+        
+      }, {
+        config: {
+          iceServers: addresses.ice
+        },
+        trickle: true
+      })
+      this._options.webRTCOptions.config.iceServers.forEach(ice => {
+        ice.urls = ice.url
+      })
+      console.log(this._options.webRTCOptions);
+      this.justDoIt();
+
+    })
   }
 
   justDoIt() {
@@ -337,12 +336,7 @@ class session extends EventEmitter {
       }
     }
   }
-
-  static getDefault() {
-    return JSON.parse(JSON.stringify(this.config));
-  }
 }
 
 session.Marker = Marker
-module.exports = session;
 

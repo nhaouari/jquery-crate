@@ -1,9 +1,8 @@
-const dateformat = require('dateformat')
-
+import dateformat from "dateformat"
 /**
  * This class is for managing the comments for quill
  */
-class Comments {
+export default class Comments {
 	/**
 	 * [constructor description]
 	 * @param  {[type]} editorContainerID [description]
@@ -133,4 +132,3 @@ class Comments {
 
 }
 
-module.exports = Comments

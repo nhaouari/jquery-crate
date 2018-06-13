@@ -1,7 +1,7 @@
 /**
  * This class is for the interface of the sharing link with QRcode
  */
-class LinkView {
+export default class LinkView {
     /**
      * [constructor description]
      * @param  {[type]} container [description]
@@ -166,6 +166,3 @@ class LinkView {
         this.linkContainer.hide();
     };
 }
-
-
-module.exports = LinkView;
