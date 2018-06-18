@@ -5,12 +5,14 @@ var path = require('path');
 var webpack = require('webpack');
 var HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
 
+
 module.exports = {
-    entry: path.resolve(__dirname, 'src/index.js'),
+    entry: [ "babel-polyfill",path.resolve(__dirname, 'src/index.js')],
     output: {
         path: __dirname,
         library: 'session',   
-        filename: 'build/jquery-crate.bundle.js'
+        filename: 'build/jquery-crate.bundle.js',
+        publicPath: '/'
     },
     module: {
       rules: [
@@ -24,6 +26,7 @@ module.exports = {
                   ["babel-plugin-transform-builtin-extend", {
                       "globals": ["Map"]
                   }],
+                  ["syntax-dynamic-import"],
                   ["transform-class-properties"]
               ]
                 }

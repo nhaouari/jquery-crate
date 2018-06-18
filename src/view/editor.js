@@ -1,5 +1,5 @@
-import Marker from "../view/marker";
-import Comments from "../view/comments";
+import {Marker} from "../view/marker";
+import {Comments} from "../view/comments";
 import {EventEmitter} from "events"
 
 var debug = require('debug')('crate:view:editor')
@@ -14,7 +14,7 @@ Quill.register('modules/comment', QuillComment);
  * EditorController this the link between the core functions and the interface.
  */
 
-export default class EditorController extends EventEmitter {
+export class EditorController extends EventEmitter {
 
 
   /**

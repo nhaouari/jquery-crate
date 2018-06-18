@@ -2,7 +2,7 @@ import dateformat from "dateformat"
 /**
  * This class is for managing the comments for quill
  */
-export default class Comments {
+export class Comments {
 	/**
 	 * [constructor description]
 	 * @param  {[type]} editorContainerID [description]

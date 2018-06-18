@@ -1,9 +1,9 @@
-import VLink from "./view/link.js"
-import CStatesHeader from "./view/statesheader.js"
-import CEditor from "./view/editor"
+import {LinkView} from "./view/link.js"
+import {StatesHeader} from "./view/statesheader.js"
+import {EditorController} from "./view/editor"
 
 
-export default class view {
+export class View {
   constructor(options, model, editorsContainerID) {
 
 
@@ -13,7 +13,7 @@ export default class view {
     this.createCRATE()
 
     this._model = model;
-    this._editor = new CEditor(model, options.signalingOptions.room, this._editorContainerID)
+    this._editor = new EditorController(model, options.signalingOptions.room, this._editorContainerID)
 
     if (session.config.storageServer) {
       this._storageServerState = {}
@@ -44,11 +44,11 @@ export default class view {
     session.default.focusOnSession(sessionID, this._options.signalingOptions.session, this._editor)
 
 
-    const sharingLinkContainer = new VLink(jQuery(`#${this._editorContainerID} #sharinglink`))
+    const sharingLinkContainer = new LinkView(jQuery(`#${this._editorContainerID} #sharinglink`))
 
     const shareButton = jQuery(`#${this._editorContainerID} #shareicon`)
 
-    this._statesHeader = new CStatesHeader(model, sharingLinkContainer, shareButton, this._editorContainerID)
+    this._statesHeader = new StatesHeader(model, sharingLinkContainer, shareButton, this._editorContainerID)
 
     jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
       // Get object of the list for this session
@@ -292,4 +292,4 @@ export default class view {
 
 }
 
-view.addMoveShortcuts() 
+View.addMoveShortcuts() 

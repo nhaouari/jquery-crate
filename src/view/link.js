@@ -1,7 +1,7 @@
 /**
  * This class is for the interface of the sharing link with QRcode
  */
-export default class LinkView {
+export class LinkView {
     /**
      * [constructor description]
      * @param  {[type]} container [description]

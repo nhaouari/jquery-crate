@@ -2,7 +2,7 @@ import shortid from "shortid"
 import {Foglet,communication} from "foglet-core"
 import Core from "./crate-core/crate-core.js"
 import {EventEmitter} from "events"
-import View from "./view.js"
+
 
 export default class doc extends EventEmitter {
   constructor(options, foglet) {
@@ -22,21 +22,17 @@ export default class doc extends EventEmitter {
      */
 
   }
-  init() {
+  async init() {
     let options = this._options
 
-    return new Promise((resolve, reject) => {
-    
+
     let promise = undefined
     if (options.foglet) {
-      promise = this._foglet.connection(options.foglet);
+      promise = await this._foglet.connection(options.foglet);
     } else {
       this._foglet.share();
-      promise = this._foglet.connection();
+      promise = await this._foglet.connection();
     }
-
-
-    promise.then(() => {
       console.log("application connected!");
       this._data_comm = new communication(
         this._foglet.overlay().network,
@@ -82,15 +78,15 @@ export default class doc extends EventEmitter {
       this.sequence = this.core.sequence;
       this.causality = this.broadcast._causality;
       this.signalingOptions = options.signalingOptions;
-
+      
       if (options.display) {
+        const {View} = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ "./View.js")
         this._view = new View(options, this, options.containerID);
       }
+      
       this._foglet.emit("connected");
       this.emit("connected");
-      resolve()
-    });
-  })
+
 }
 }
 
