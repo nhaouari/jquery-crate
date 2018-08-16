@@ -50238,7 +50238,78 @@ var session = function (_EventEmitter) {
   }, {
     key: "justDoIt",
     value: function justDoIt() {
+
+      this.setSignalingOptions();
+
+      this.setWebRTCOptions();
+
+      this.setUser();
+
+      this.setDocumentTitle();
+
+      // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
+      this.setTemporarySessionID();
+
+      this.setFogletOptions();
+
+      this.putSessionInTheList();
+
+      this.newDocument();
+    }
+  }, {
+    key: "newDocument",
+    value: function newDocument() {
       var _this3 = this;
+
+      this._documents = [];
+      var doc = new _document2.default(this._options, this._foglet);
+      this._documents.push(doc);
+
+      doc.init().then(function () {
+        _this3.emit("new_document", doc);
+      });
+    }
+  }, {
+    key: "setTemporarySessionID",
+    value: function setTemporarySessionID() {
+      this._editingSessionID = this._options.user.id + "-" + this.constructor.GUID();
+      this._options.editingSessionID = this._editingSessionID;
+    }
+  }, {
+    key: "setDocumentTitle",
+    value: function setDocumentTitle() {
+      this._options.name = this._options && this._options.name || this._options && this._options.importFromJSON && this._options.importFromJSON.title || "Untitled document";
+    }
+  }, {
+    key: "setUser",
+    value: function setUser() {
+
+      var uid = this.GUID();
+      this._options.user = {
+        id: uid,
+        pseudo: "Anonymous"
+      };
+
+      if (this._options.display && _store2.default.get("myId")) {
+        this._options.user = _store2.default.get("myId");
+      }
+    }
+  }, {
+    key: "setWebRTCOptions",
+    value: function setWebRTCOptions(opts) {
+      var webRTCOptions = this._options.webRTCOptions;
+
+      if (this._options.wrtc) {
+        webRTCOptions.wrtc = this._options.wrtc;
+      }
+
+      this._options = (0, _lodash2.default)(this._options, {
+        webRTCOptions: webRTCOptions
+      });
+    }
+  }, {
+    key: "setSignalingOptions",
+    value: function setSignalingOptions(opts) {
 
       if (this._options.editingSession) {
         this._options.signalingOptions = {
@@ -50253,50 +50324,6 @@ var session = function (_EventEmitter) {
         }
       }
 
-      // #1 add a cell into the list of editors
-
-      var uid = this.GUID();
-      this._options.user = {
-        id: uid,
-        pseudo: "Anonymous"
-      };
-      if (this._options.display && _store2.default.get("myId")) {
-        this._options.user = _store2.default.get("myId");
-      }
-
-      // Crate a session ID
-      // Crate with foglet object and Documents array
-      // Create a default index document and add it to documents array
-      // Options configuration
-
-      this._previous = null;
-      this._next = null;
-
-      var session = this.constructor;
-      if (!session.actualSession || session.actualSession == null) {
-        session.actualSession = this;
-        session.lastSession = this;
-        session.headSession = this;
-      } else {
-        session.lastSession._next = this;
-        this._previous = session.lastSession;
-        session.lastSession = this;
-        session.actualSession = this;
-      }
-
-      // WEBRTC
-      var webRTCOptions = this._options.webRTCOptions;
-      /* (this._options && ) ||
-        (this._options &&
-          this._options.importFromJSON &&
-          this._options.importFromJSON.webRTCOptions) ||
-        {};
-      */
-
-      if (this._options.wrtc) {
-        webRTCOptions.wrtc = this._options.wrtc;
-      }
-
       // Storage Server
       var storageServer = this._options && this._options.storageServer || "";
 
@@ -50309,53 +50336,73 @@ var session = function (_EventEmitter) {
         session: sessionId
       }, this._options && this._options.importFromJSON && this._options.importFromJSON.signalingOptions, this._options && this._options.signalingOptions || {});
 
-      signalingOptions.room = signalingOptions.session; // todo:toremove
+      signalingOptions.room = signalingOptions.session; // todo:toremov
 
-      //Foglet
-      //
+      this._options = (0, _lodash2.default)(this._options, {
+        storageServer: storageServer,
+        signalingOptions: signalingOptions
+      });
+    }
 
-      this._editingSessionID = this._options.user.id + "-" + this.constructor.GUID();
+    /**
+     * 
+     * @param {*} opts setFogletOptions {this._editingSessionID, signalingOptions.sessionId,webRTCOptions,signalingOptions} 
+     */
+
+  }, {
+    key: "setFogletOptions",
+    value: function setFogletOptions() {
 
       var fogletOptions = {
-        id: this._editingSessionID,
+        id: this._options.editingSessionID,
         verbose: true, // want some logs ? switch to false otherwise
         rps: {
           type: "spray-wrtc",
           options: {
-            protocol: signalingOptions.sessionId, // foglet running on the protocol foglet-example, defined for spray-wrtc
-            webrtc: webRTCOptions,
+            protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
+            webrtc: this._options.webRTCOptionss,
             timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
             pendingTimeout: 30 * 1000,
             delta: 30 * 1000, // spray-wrtc shuffle interval
-            signaling: signalingOptions // signaling options
+            signaling: this._options.signalingOptions // signaling options
           }
         }
       };
 
-      this._options.name = this._options && this._options.name || this._options && this._options.importFromJSON && this._options.importFromJSON.title || "Untitled document";
-
       this._options = (0, _lodash2.default)(this._options, {
-        webRTCOptions: webRTCOptions,
-        storageServer: storageServer,
-        signalingOptions: signalingOptions,
         fogletOptions: fogletOptions
       });
-
-      this._options.editingSessionID = this._editingSessionID;
 
       if (!this._options.foglet) {
         this._options.webRTCOptions.trickle = true;
       }
 
-      this._foglet = new _fogletCore.Foglet(fogletOptions);
+      this._foglet = new _fogletCore.Foglet(this._options.fogletOptions);
+    }
 
-      this._documents = [];
-      var doc = new _document2.default(this._options, this._foglet);
-      this._documents.push(doc);
+    /**
+     * Put the session the list of the different sessions, which is a static variable in the class.
+     * @param {*} session 
+     */
 
-      doc.init().then(function () {
-        _this3.emit("new_document", doc);
-      });
+  }, {
+    key: "putSessionInTheList",
+    value: function putSessionInTheList() {
+      var session = this;
+      session._previous = null;
+      session._next = null;
+
+      var sessionClass = this.constructor;
+      if (!sessionClass.actualSession || sessionClass.actualSession == null) {
+        sessionClass.actualSession = session;
+        sessionClass.lastSession = session;
+        sessionClass.headSession = session;
+      } else {
+        sessionClass.lastSession._next = session;
+        session._previous = sessionClass.lastSession;
+        sessionClass.lastSession = session;
+        sessionClass.actualSession = session;
+      }
     }
   }, {
     key: "GUID",
