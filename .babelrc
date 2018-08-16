@@ -1,10 +1,12 @@
 {
-    "presets": ["es2015"],
+    "presets": ["es2015","stage-3"],
     "plugins": [
-        ["transform-es2015-modules-commonjs"],
         ["babel-plugin-transform-builtin-extend", {
             "globals": ["Map"]
-        }]
+        }],
+        ["dynamic-import-node"],
+        ["syntax-dynamic-import"],
+        ["transform-class-properties"]
     ]
     
   }

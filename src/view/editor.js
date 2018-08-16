@@ -1,4 +1,4 @@
-import {Marker} from "../view/marker";
+import Marker from "../view/marker";
 import {Comments} from "../view/comments";
 import {EventEmitter} from "events"
 

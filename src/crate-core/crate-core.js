@@ -68,7 +68,8 @@ export default class CrateCore extends EventEmitter {
           
         })
 
-       this._communication.broadcast.startAntiEntropy(2000);
+        this._communication.broadcast.startAntiEntropy(2000);
+        
         this._communication.broadcast.on('antiEntropy', (id, remoteVVwE, localVVwE) => {
             var remoteVVwE = (new VVwE(null)).constructor.fromJSON(remoteVVwE); // cast
             var toSearch = [];

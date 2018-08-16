@@ -47,11 +47,12 @@ export class Tarjan {
       }
   }
   importGraph(Neighbors,undirected) {
+
+    let neighbors = [...Neighbors]
     this.numberOfVertices = Neighbors.length;
     let vertices = [];
-    let neighbors=Neighbors
     if (undirected) {
-        neighbors= this.convertGraphToUndirected(Neighbors) 
+        neighbors= this.convertGraphToUndirected(neighbors) 
     }
     
     neighbors.forEach((itsNeighbors, id) => {
@@ -68,7 +69,8 @@ export class Tarjan {
     this.vertices = vertices;
   }
   convertGraphToUndirected(Neighbors) {
-    let neighbors = Neighbors
+    let neighbors = [...Neighbors]
+    console.log(neighbors)
     neighbors.forEach((itsNeighbors, id) => {
         itsNeighbors.forEach(neighbor => {
             // neighbors of my neighbor

@@ -1,11 +1,16 @@
 import Document from "./document.js"
-import {Foglet} from "foglet-core"
+import {
+  Foglet
+} from "foglet-core"
 import shortid from "shortid"
 import merge from "lodash.merge"
 import store from "store"
-import {EventEmitter} from "events"
+import {
+  EventEmitter
+} from "events"
 import Marker from "./view/marker"
- 
+import fetch from 'node-fetch'
+
 
 /*!
  * \brief transform the selected division into a distributed and decentralized 
@@ -36,8 +41,8 @@ export default class session extends EventEmitter {
             you have to generate ID at this point
      */
     super();
-    this._defaultOptions= {...options}
-    this._options = {...options}
+    this._defaultOptions = { ...options}
+    this._options = { ...options}
     if (!options.foglet) {
       this.init();
     } else {
@@ -50,37 +55,35 @@ export default class session extends EventEmitter {
    * @return {[type]} [description]
    */
   init() {
-    console.log(this._options)
+    
     const url = this._options.signalingServer + "/ice"
     fetch(url)
-    .then((resp) => resp.json()) // Transform the data into json
-    .then((addresses)=> {
-      this._options.webRTCOptions = merge({
-        config:{
-          iceServers: [
-            {
+      .then((resp) => resp.json()) // Transform the data into json
+      .then((addresses) => {
+        this._options.webRTCOptions = merge(this._options.webRTCOptions ,{
+          config: {
+            iceServers: [{
               url: this._options.stun,
               urls: this._options.stun
-            }
-          ]
-        },
-        
-      }, {
-        config: {
-          iceServers: addresses.ice
-        },
-        trickle: true
-      })
-      this._options.webRTCOptions.config.iceServers.forEach(ice => {
-        ice.urls = ice.url
-      })
-      console.log(this._options.webRTCOptions);
-      this.justDoIt();
+            }]
+          },
 
-    })
+        }, {
+          config: {
+            iceServers: addresses.ice
+          },
+          trickle: true,
+        })
+        this._options.webRTCOptions.config.iceServers.forEach(ice => {
+          ice.urls = ice.url
+        })
+        this.justDoIt();
+
+      })
   }
 
   justDoIt() {
+    
     if (this._options.editingSession) {
       this._options.signalingOptions = {
         server: this._options.signalingServer,
@@ -99,7 +102,10 @@ export default class session extends EventEmitter {
     // #1 add a cell into the list of editors
 
     let uid = this.GUID();
-    this._options.user = { id: uid, pseudo: "Anonymous" };
+    this._options.user = {
+      id: uid,
+      pseudo: "Anonymous"
+    };
     if (this._options.display && store.get("myId")) {
       this._options.user = store.get("myId");
     }
@@ -126,12 +132,13 @@ export default class session extends EventEmitter {
 
     // WEBRTC
     var webRTCOptions = this._options.webRTCOptions
-     /* (this._options && ) ||
+    /* (this._options && ) ||
       (this._options &&
         this._options.importFromJSON &&
         this._options.importFromJSON.webRTCOptions) ||
       {};
 */
+
     if (this._options.wrtc) {
       webRTCOptions.wrtc = this._options.wrtc;
     }
@@ -143,14 +150,13 @@ export default class session extends EventEmitter {
     const sessionId = this.constructor.GUID();
 
     // Signling Server
-    const signalingOptions = merge(
-      {
+    const signalingOptions = merge({
         address: this._options.signalingServer,
         session: sessionId
       },
       this._options &&
-        this._options.importFromJSON && 
-        this._options.importFromJSON.signalingOptions,
+      this._options.importFromJSON &&
+      this._options.importFromJSON.signalingOptions,
       (this._options && this._options.signalingOptions) || {}
     );
 
@@ -177,7 +183,7 @@ export default class session extends EventEmitter {
         }
       }
     };
-
+ 
     this._options.name =
       (this._options && this._options.name) ||
       (this._options &&
@@ -204,9 +210,9 @@ export default class session extends EventEmitter {
     let doc = new Document(this._options, this._foglet);
     this._documents.push(doc);
 
-    doc.init().then(()=>{
+    doc.init().then(() => {
       this.emit("new_document", doc);
-      
+
     })
   }
 
@@ -251,11 +257,12 @@ export default class session extends EventEmitter {
   close() {
     this._foglet.unshare();
     this._foglet._networkManager._rps.network._rps.disconnect();
-
-    this._documents[0]._view._editor.stopPing();
-    clearInterval(this._documents[0]._view._timerStorageServer);
-    for (var marker in this._documents[0]._view._editor.markers) {
-      clearInterval(marker.timer);
+    if (this._documents[0]._view) {
+      this._documents[0]._view._editor.stopPing();
+      clearInterval(this._documents[0]._view._timerStorageServer);
+      for (var marker in this._documents[0]._view._editor.markers) {
+        clearInterval(marker.timer);
+      }
     }
 
     //this._foglet = null
@@ -307,8 +314,7 @@ export default class session extends EventEmitter {
       }
     }
 
-    jQuery("html, body").animate(
-      {
+    jQuery("html, body").animate({
         scrollLeft: jQuery(`#container-${moveToSession}`).offset().left - 40
       },
       "slow"
@@ -322,7 +328,7 @@ export default class session extends EventEmitter {
 
     for (var link of links) {
       if (link.href.includes(window.location.href.split("?")[0])) {
-        link.onclick = function() {
+        link.onclick = function () {
           let editingSession = this.href.split("?")[1];
           const s = session.getCrateSession(editingSession);
           if (s._previous) {
@@ -332,7 +338,10 @@ export default class session extends EventEmitter {
             session.focusOnSession(editingSession, this.href.split("?")[1]);
           } else {
 
-            const opts= Object.assign({...session.actualSession._defaultOptions},{editingSession})
+            const opts = Object.assign({ ...session.actualSession._defaultOptions
+            }, {
+              editingSession
+            })
             var sess = new session(opts);
           }
         };
@@ -341,5 +350,5 @@ export default class session extends EventEmitter {
   }
 }
 
+console.log(Marker)
 session.Marker = Marker
-

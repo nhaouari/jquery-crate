@@ -1,50 +1,67 @@
-import {session} from "../src/index";
+import {
+    session
+} from "../src/index";
 
-export class simulation {
+import {
+    Tarjan
+} from "./tarjan"
+
+import wrtc from "wrtc";
+export class Simulation {
     constructor() {
 
     }
 
     async init(options, startSessionId = 0) {
         this.setSimulationOptions(options)
-        // create all sessions 
-
-
+        this._unuglifySessionIDs = {};
+        // const s = new session(this._crateOptions)
         this._sessions = []
+
+        let waitingSessions = []
         for (let i = 0; i < this._nbSessions; i++) {
-            this._sessions.push(this.startSession)
+            waitingSessions.push(this.startSession().then(async (session) => {
+                if(!session) {
+                    await this.wait(10000)
+                }
+
+                console.log(`session ${i}`);
+                session.id=i
+                this._sessions.push(session);
+                this._unuglifySessionIDs[
+                        session._options.editingSessionID
+                    ] =i;
+            }))
+
         }
-        const LoadSessions = await Promise.all[this._sessions].catch((error) => {
-            console.log(`ERROR ${error}`)
-        });
-
-
+      
+        const LoadSessions = await Promise.all(waitingSessions)
     }
 
     async startSession() {
+        console.log("pushed options",this._crateOptions);
         const s = new session(this._crateOptions)
-        const session = await new Promise((resolve, reject) => {
 
-                const promiseResolved = false;
+        const sessionT = await new Promise((resolve, reject) => {
 
-                s.on("new_document", () => {
-                    resolve(s)
-                    promiseResolved = true
-                })
+            let promiseResolved = false;
 
-                setTimeout(() => {
-                    if (promiseResolved === false)
-                        throw 'ERROR could not creat a new document'
-                }, 10000)
-
-
-            })
-            .catch((e) => {
-                resolve(null)
-                console.log(e);
+            s.on("new_document", () => {
+                resolve(s)
+                promiseResolved = true
             })
 
-        return session
+            setTimeout(() => {
+                if (promiseResolved === false) {
+                    resolve(null)
+                }
+            }, 10000)
+
+
+        })
+
+
+        return sessionT
     }
 
     setSimulationOptions(options) {
@@ -56,7 +73,8 @@ export class simulation {
         this._preSimulationTime = this._options.preSimulationTime;
         this._seed = this._options.seed;
         this._useSignalingServer = this._options.useSignalingServer;
-        this._crateOptions = options.crateOptions;
+        this._crateOptions = this._options.crateOptions;
+
     }
 
 
@@ -92,7 +110,7 @@ export class simulation {
             return this.unuglifyID(uglyID);
         });
 
-        console.log("CRATE " + session.id + " : " + Neighbors.length, Neighbors);
+      //  console.log("CRATE " + session.id + " : " + Neighbors.length, Neighbors,session._foglet.getNeighbours(), this._unuglifySessionIDs);
         return Neighbors;
     }
 
@@ -132,4 +150,66 @@ export class simulation {
     }
 
 
+    unuglifyID(id) {
+        // remove the last two chars (.i.e -I or IO)
+        let dirtyId = id.substring(0, id.length - 2);
+
+        return this._unuglifySessionIDs[dirtyId];
+    }
+
+    clear() {
+        this._sessions.forEach(session => {
+          session.close()
+        });
+    
+        this._seed = this._options.seed;
+      }
+
+      isGraphConnected() {
+        const tarjan = new Tarjan();
+    
+        const allNeighbors = this.getAllNeighbors()
+    
+        if (allNeighbors.length > 0) {
+            return tarjan.test(allNeighbors, true);
+        } else {
+            console.warn("The number of neighbours equals to 0, the sessions are not connected")
+            return false
+        }
+    }
+    
+  wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    } 
 }
+
+
+
+export function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+// default options
+let simulationOptions = {
+    seed: 3,
+    nbSessions: 5,
+    maxRandomTime: 3 * 1000,
+    nbRounds: 5,
+    URL: 'http://127.0.0.1:8000/document.html?test',
+    nbOfEdits: 5,
+    preSimulationTime: 2 * 1000,
+    useSignalingServer: true,
+    crateOptions: {
+        signalingServer: "https://carteserver.herokuapp.com",
+        storageServer: "https://storagecrate.herokuapp.com",
+        stun: "23.21.150.121",
+        containerID: "content-default",
+        editingSession: "test",
+        display: false,
+        webRTCOptions:{wrtc:wrtc}
+    }
+}
+
+Simulation.defaultOptions = simulationOptions
+

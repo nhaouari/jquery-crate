@@ -56,7 +56,8 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['ChromeHeadless'],
+   // browsers: ['ChromeHeadless'],
+    browsers:['Chrome', 'Chrome_without_security'],
     reporters: ["spec"],
     specReporter: {
       maxLogLines: 5,         // limit number of lines logged per test
@@ -74,6 +75,10 @@ module.exports = function(config) {
 
     // Concurrency level
     // how many browser should be started simultaneous
-    concurrency: Infinity
+    concurrency: Infinity,
+    captureTimeout: 60000, // it was already there
+browserDisconnectTimeout : 10000,
+browserDisconnectTolerance : 1,
+browserNoActivityTimeout : 400000,//by default 10000
   })
 }
