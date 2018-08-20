@@ -33,7 +33,7 @@ import fetch from 'node-fetch'
 export default class session extends EventEmitter {
   constructor(options) {
     /**
-     *  signalingServer: "https://carteserver.herokuapp.com/",
+     *      signalingServer: "https://carteserver.herokuapp.com/",
             storageServer: "https://storagecrate.herokuapp.com",
             stun: '23.21.150.121' // default google ones if xirsys not
             editingSession: from URL
@@ -41,6 +41,8 @@ export default class session extends EventEmitter {
             you have to generate ID at this point
      */
     super();
+
+    console.log("options 01",options);
     this._defaultOptions = { ...options}
     this._options = { ...options}
     if (!options.foglet) {
@@ -56,7 +58,7 @@ export default class session extends EventEmitter {
    */
   init() {
     
-    const url = this._options.signalingServer + "/ice"
+    const url = this._options.signalingOptions.address + "/ice"
     fetch(url)
       .then((resp) => resp.json()) // Transform the data into json
       .then((addresses) => {
@@ -92,7 +94,6 @@ export default class session extends EventEmitter {
     
     this.setDocumentTitle()
    
-    
     // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
     this.setTemporarySessionID()
 
@@ -144,59 +145,27 @@ export default class session extends EventEmitter {
   }
 
   setWebRTCOptions(opts) {
-    var webRTCOptions = this._options.webRTCOptions
 
     if (this._options.wrtc) {
-      webRTCOptions.wrtc = this._options.wrtc;
+      this._options.webRTCOptions.wrtc = this._options.wrtc;
     }
-
-    this._options = merge(this._options, {
-      webRTCOptions
-    });
-
   }
 
   setSignalingOptions(opts) {
-
-    if (this._options.editingSession) {
-      this._options.signalingOptions = {
-        server: this._options.signalingServer,
-        session: this._options.editingSession
-      };
-
-      if (store.get("CRATE2-" + this._options.editingSession)) {
-        this._options.signalingOptions = {};
-        this._options.importFromJSON = store.get(
+    
+    
+    if (store.get("CRATE2-" + this._options.editingSession)) {
+        
+      this._options.importFromJSON = store.get(
           "CRATE2-" + this._options.editingSession
         );
-        this._options.signalingOptions.connect = true; // (TODO) may change this val
+
+        this._options.signalingOptions =  this._options.importFromJSON.signalingOptions;
       }
-    }
-
-
        // Storage Server
-       const storageServer = (this._options && this._options.storageServer) || "";
+      
+      this._options.storageServer  = (this._options && this._options.storageServer) || "";
 
-       // Session ID
-       const sessionId = this.constructor.GUID();
-   
-       // Signling Server
-       var signalingOptions = merge({
-           address: this._options.signalingServer,
-           session: sessionId
-         },
-         this._options &&
-         this._options.importFromJSON &&
-         this._options.importFromJSON.signalingOptions,
-         (this._options && this._options.signalingOptions) || {}
-       );
-   
-       signalingOptions.room = signalingOptions.session; // todo:toremov
-
-       this._options = merge(this._options, {
-        storageServer,
-        signalingOptions
-      });
   }
 
   /**
@@ -225,7 +194,7 @@ export default class session extends EventEmitter {
       fogletOptions
     });
 
-    
+    console.log('Foglet',fogletOptions)
     if (!this._options.foglet) {
       this._options.webRTCOptions.trickle = true;
     }
@@ -353,7 +322,7 @@ export default class session extends EventEmitter {
         console.warn("There is no view for the following session" + s);
       }
     }
-
+    console.log('moveToSession',moveToSession);
     jQuery("html, body").animate({
         scrollLeft: jQuery(`#container-${moveToSession}`).offset().left - 40
       },
@@ -390,5 +359,4 @@ export default class session extends EventEmitter {
   }
 }
 
-console.log(Marker)
 session.Marker = Marker

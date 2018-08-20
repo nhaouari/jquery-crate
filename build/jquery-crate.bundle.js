@@ -49136,11 +49136,11 @@ var View = exports.View = function () {
 
     this._options = options;
     this._editorsHolderID = editorsContainerID;
-    this._editorContainerID = "container-" + this._options.signalingOptions.room;
+    this._editorContainerID = "container-" + this._options.signalingOptions.session;
     this.createCRATE();
 
     this._model = model;
-    this._editor = new _editor.EditorController(model, options.signalingOptions.room, this._editorContainerID);
+    this._editor = new _editor.EditorController(model, options.signalingOptions.session, this._editorContainerID);
 
     if (session.config.storageServer) {
       this._storageServerState = {};
@@ -49178,7 +49178,7 @@ var View = exports.View = function () {
 
     jQuery("#" + this._editorContainerID + " #closeDocument").click(function () {
       // Get object of the list for this session
-      var crateSession = session.default.getCrateSession(_this._options.signalingOptions.room);
+      var crateSession = session.default.getCrateSession(_this._options.signalingOptions.session);
 
       if (session.headSession !== crateSession) {
 
@@ -49240,7 +49240,7 @@ var View = exports.View = function () {
     value: function findremote(firsttime) {
       var _this3 = this;
 
-      var sessionID = this._options.signalingOptions.room;
+      var sessionID = this._options.signalingOptions.session;
       var remotesave = jQuery("#" + this._editorContainerID + " #remotesave");
       // There is a configured server
       if (session.config.storageServer) {
@@ -49293,7 +49293,7 @@ var View = exports.View = function () {
     value: function join() {
       var _this4 = this;
 
-      var sessionID = this._options.signalingOptions.room;
+      var sessionID = this._options.signalingOptions.session;
       $.ajax({
         type: "GET",
         url: session.config.storageServer + "/join/" + sessionID,
@@ -49311,7 +49311,7 @@ var View = exports.View = function () {
     value: function kill() {
       var _this5 = this;
 
-      var sessionID = this._options.signalingOptions.room;
+      var sessionID = this._options.signalingOptions.session;
       var r = confirm("Do you want remove document from remote server!");
       if (r == true) {
         $.ajax({
@@ -50180,7 +50180,7 @@ var session = function (_EventEmitter) {
 
     var _this = _possibleConstructorReturn(this, (session.__proto__ || Object.getPrototypeOf(session)).call(this));
     /**
-     *  signalingServer: "https://carteserver.herokuapp.com/",
+     *      signalingServer: "https://carteserver.herokuapp.com/",
             storageServer: "https://storagecrate.herokuapp.com",
             stun: '23.21.150.121' // default google ones if xirsys not
             editingSession: from URL
@@ -50189,6 +50189,7 @@ var session = function (_EventEmitter) {
      */
 
 
+    console.log("options 01", options);
     _this._defaultOptions = _extends({}, options);
     _this._options = _extends({}, options);
     if (!options.foglet) {
@@ -50210,7 +50211,7 @@ var session = function (_EventEmitter) {
     value: function init() {
       var _this2 = this;
 
-      var url = this._options.signalingServer + "/ice";
+      var url = this._options.signalingOptions.address + "/ice";
       (0, _nodeFetch2.default)(url).then(function (resp) {
         return resp.json();
       }) // Transform the data into json
@@ -50297,51 +50298,24 @@ var session = function (_EventEmitter) {
   }, {
     key: "setWebRTCOptions",
     value: function setWebRTCOptions(opts) {
-      var webRTCOptions = this._options.webRTCOptions;
 
       if (this._options.wrtc) {
-        webRTCOptions.wrtc = this._options.wrtc;
+        this._options.webRTCOptions.wrtc = this._options.wrtc;
       }
-
-      this._options = (0, _lodash2.default)(this._options, {
-        webRTCOptions: webRTCOptions
-      });
     }
   }, {
     key: "setSignalingOptions",
     value: function setSignalingOptions(opts) {
 
-      if (this._options.editingSession) {
-        this._options.signalingOptions = {
-          server: this._options.signalingServer,
-          session: this._options.editingSession
-        };
+      if (_store2.default.get("CRATE2-" + this._options.editingSession)) {
 
-        if (_store2.default.get("CRATE2-" + this._options.editingSession)) {
-          this._options.signalingOptions = {};
-          this._options.importFromJSON = _store2.default.get("CRATE2-" + this._options.editingSession);
-          this._options.signalingOptions.connect = true; // (TODO) may change this val
-        }
+        this._options.importFromJSON = _store2.default.get("CRATE2-" + this._options.editingSession);
+
+        this._options.signalingOptions = this._options.importFromJSON.signalingOptions;
       }
-
       // Storage Server
-      var storageServer = this._options && this._options.storageServer || "";
 
-      // Session ID
-      var sessionId = this.constructor.GUID();
-
-      // Signling Server
-      var signalingOptions = (0, _lodash2.default)({
-        address: this._options.signalingServer,
-        session: sessionId
-      }, this._options && this._options.importFromJSON && this._options.importFromJSON.signalingOptions, this._options && this._options.signalingOptions || {});
-
-      signalingOptions.room = signalingOptions.session; // todo:toremov
-
-      this._options = (0, _lodash2.default)(this._options, {
-        storageServer: storageServer,
-        signalingOptions: signalingOptions
-      });
+      this._options.storageServer = this._options && this._options.storageServer || "";
     }
 
     /**
@@ -50373,6 +50347,7 @@ var session = function (_EventEmitter) {
         fogletOptions: fogletOptions
       });
 
+      console.log('Foglet', fogletOptions);
       if (!this._options.foglet) {
         this._options.webRTCOptions.trickle = true;
       }
@@ -50520,7 +50495,7 @@ var session = function (_EventEmitter) {
           console.warn("There is no view for the following session" + s);
         }
       }
-
+      console.log('moveToSession', moveToSession);
       jQuery("html, body").animate({
         scrollLeft: jQuery("#container-" + moveToSession).offset().left - 40
       }, "slow");
@@ -50582,7 +50557,6 @@ var session = function (_EventEmitter) {
 exports.default = session;
 
 
-console.log(_marker2.default);
 session.Marker = _marker2.default;
 
 /***/ }),

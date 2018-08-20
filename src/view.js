@@ -9,11 +9,11 @@ export class View {
 
     this._options = options
     this._editorsHolderID = editorsContainerID
-    this._editorContainerID = `container-${this._options.signalingOptions.room}`
+    this._editorContainerID = `container-${this._options.signalingOptions.session}`
     this.createCRATE()
 
     this._model = model;
-    this._editor = new EditorController(model, options.signalingOptions.room, this._editorContainerID)
+    this._editor = new EditorController(model, options.signalingOptions.session, this._editorContainerID)
 
     if (session.config.storageServer) {
       this._storageServerState = {}
@@ -52,7 +52,7 @@ export class View {
 
     jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
       // Get object of the list for this session
-      let crateSession = session.default.getCrateSession(this._options.signalingOptions.room)
+      let crateSession = session.default.getCrateSession(this._options.signalingOptions.session)
 
       if (session.headSession !== crateSession) {
 
@@ -208,7 +208,7 @@ export class View {
 
   // Remote session 
   findremote(firsttime) {
-    let sessionID = this._options.signalingOptions.room
+    let sessionID = this._options.signalingOptions.session
     let remotesave = jQuery(`#${this._editorContainerID} #remotesave`)
     // There is a configured server
     if (session.config.storageServer) {
@@ -260,7 +260,7 @@ export class View {
 
 
   join() {
-    let sessionID = this._options.signalingOptions.room
+    let sessionID = this._options.signalingOptions.session
     $.ajax({
       type: "GET",
       url: session.config.storageServer + "/join/" + sessionID,
@@ -275,7 +275,7 @@ export class View {
   }
 
   kill() {
-    let sessionID = this._options.signalingOptions.room
+    let sessionID = this._options.signalingOptions.session
     var r = confirm("Do you want remove document from remote server!");
     if (r == true) {
       $.ajax({
