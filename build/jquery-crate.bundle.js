@@ -50338,8 +50338,8 @@ var session = function (_EventEmitter) {
             timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
             pendingTimeout: 30 * 1000,
             delta: 30 * 1000, // spray-wrtc shuffle interval
-            signaling: this._options.signalingOptions // signaling options
-          }
+            signaling: _extends({}, this._options.signalingOptions, { room: this._options.signalingOptions.session // signaling options
+            }) }
         }
       };
 
