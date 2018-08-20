@@ -50334,7 +50334,7 @@ var session = function (_EventEmitter) {
           type: "spray-wrtc",
           options: {
             protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
-            webrtc: this._options.webRTCOptionss,
+            webrtc: this._options.webRTCOptions,
             timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
             pendingTimeout: 30 * 1000,
             delta: 30 * 1000, // spray-wrtc shuffle interval
