@@ -50148,6 +50148,8 @@ var _nodeFetch2 = _interopRequireDefault(_nodeFetch);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -50175,9 +50177,26 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var session = function (_EventEmitter) {
   _inherits(session, _EventEmitter);
 
+  /**
+   * 
+   * @param {*} options the different options of the document.
+   * @example 
+   const options = {
+   signalingOptions:{
+     session:editingSession,
+     address:configuration.signalingServer
+   },
+   storageServer: configuration.storageServer,
+   stun: configuration.stun, // default google ones if xirsys not
+   containerID: "content-default",
+   display: true
+  }
+   */
   function session(options) {
     _classCallCheck(this, session);
 
+    // use defaultOptions to use them when we open other sessions
+    //@todo: make these options global
     var _this = _possibleConstructorReturn(this, (session.__proto__ || Object.getPrototypeOf(session)).call(this));
     /**
      *      signalingServer: "https://carteserver.herokuapp.com/",
@@ -50189,98 +50208,141 @@ var session = function (_EventEmitter) {
      */
 
 
-    console.log("options 01", options);
     _this._defaultOptions = _extends({}, options);
     _this._options = _extends({}, options);
-    if (!options.foglet) {
-      _this.init();
-    } else {
-      _this.justDoIt();
-    }
+
+    _this.openDocument();
     return _this;
   }
-
   /**
-   * initialize connection to signaling server to get ICEs
-   * @return {[type]} [description]
+   * open the document based on the given parameters
    */
 
 
   _createClass(session, [{
-    key: "init",
-    value: function init() {
-      var _this2 = this;
+    key: "openDocument",
+    value: function () {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _context.next = 2;
+                return this.setOptions();
 
-      var url = this._options.signalingOptions.address + "/ice";
-      (0, _nodeFetch2.default)(url).then(function (resp) {
-        return resp.json();
-      }) // Transform the data into json
-      .then(function (addresses) {
-        _this2._options.webRTCOptions = (0, _lodash2.default)(_this2._options.webRTCOptions, {
-          config: {
-            iceServers: [{
-              url: _this2._options.stun,
-              urls: _this2._options.stun
-            }]
+              case 2:
+
+                this.putSessionInTheList();
+
+                this.buildDocument();
+
+              case 4:
+              case "end":
+                return _context.stop();
+            }
           }
+        }, _callee, this);
+      }));
 
-        }, {
-          config: {
-            iceServers: addresses.ice
-          },
-          trickle: true
-        });
-        _this2._options.webRTCOptions.config.iceServers.forEach(function (ice) {
-          ice.urls = ice.url;
-        });
-        _this2.justDoIt();
-      });
-    }
+      function openDocument() {
+        return _ref.apply(this, arguments);
+      }
+
+      return openDocument;
+    }()
+
+    /**
+     * set the different options for the created document
+     */
+
   }, {
-    key: "justDoIt",
-    value: function justDoIt() {
+    key: "setOptions",
+    value: function () {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                this.setSignalingOptions();
 
-      this.setSignalingOptions();
+                _context2.next = 3;
+                return this.setWebRTCOptions();
 
-      this.setWebRTCOptions();
+              case 3:
 
-      this.setUser();
+                this.setUser();
 
-      this.setDocumentTitle();
+                this.setDocumentTitle();
+                // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
+                this.setTemporarySessionID();
 
-      // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
-      this.setTemporarySessionID();
+                this.setFogletOptions();
 
-      this.setFogletOptions();
+              case 7:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
 
-      this.putSessionInTheList();
+      function setOptions() {
+        return _ref2.apply(this, arguments);
+      }
 
-      this.newDocument();
-    }
+      return setOptions;
+    }()
+
+    /**
+    * build the document and add it to the list of the documents
+    @description here we considered that one session contains one document.  when we created another document in the same page is in another session, if it is not action's opened it will received the changes. 
+    @todo add the possibility of adding other document in the same session, so all the changes will taken into consideration even if the open document is different. 
+     this is will be an optional choice for the users because it could create a high overhead in the network, 
+     for example in the case of a large number of linked document any change in any document will be broadcasted to all the users. 
+    */
+
   }, {
-    key: "newDocument",
-    value: function newDocument() {
-      var _this3 = this;
+    key: "buildDocument",
+    value: function buildDocument() {
+      var _this2 = this;
 
       this._documents = [];
       var doc = new _document2.default(this._options, this._foglet);
       this._documents.push(doc);
 
       doc.init().then(function () {
-        _this3.emit("new_document", doc);
+        _this2.emit("new_document", doc);
       });
     }
+
+    /** 
+     * set Temporary Session ID to be able to open the document in different tabs for the same user.
+     * @description foglet is based on the id of the user, it will not work in the case of having two users with same id, this why we have add to the user id 
+     * a random part to consider each tab as separate user in foglet but it will be considerd the same user in CRATE. 
+     */
+
   }, {
     key: "setTemporarySessionID",
     value: function setTemporarySessionID() {
       this._editingSessionID = this._options.user.id + "-" + this.constructor.GUID();
       this._options.editingSessionID = this._editingSessionID;
     }
+
+    /**
+     * set Document Title
+     */
+
   }, {
     key: "setDocumentTitle",
     value: function setDocumentTitle() {
       this._options.name = this._options && this._options.name || this._options && this._options.importFromJSON && this._options.importFromJSON.title || "Untitled document";
     }
+
+    /**
+     * set the user information
+     * @description the default user is random if it is not stored in local storage of the browser.
+     */
+
   }, {
     key: "setUser",
     value: function setUser() {
@@ -50295,17 +50357,146 @@ var session = function (_EventEmitter) {
         this._options.user = _store2.default.get("myId");
       }
     }
+
+    /**
+     * set WebRTCOptions
+     * @description  set the default options of ice Servers and replace them by the ice server if it is possible. if it run in node js use wrtc.
+    */
+
   }, {
     key: "setWebRTCOptions",
-    value: function setWebRTCOptions(opts) {
+    value: function () {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
+        var addresses;
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                if (this._options.foglet) {
+                  _context3.next = 6;
+                  break;
+                }
 
-      if (this._options.wrtc) {
-        this._options.webRTCOptions.wrtc = this._options.wrtc;
+                _context3.next = 3;
+                return this.getICEs();
+
+              case 3:
+                addresses = _context3.sent;
+
+
+                this._options.webRTCOptions = (0, _lodash2.default)(this._options.webRTCOptions, {
+                  config: {
+                    iceServers: [{
+                      url: this._options.stun,
+                      urls: this._options.stun
+                    }]
+                  }
+
+                }, {
+                  config: {
+                    iceServers: addresses.ice
+                  },
+                  trickle: true
+                });
+
+                this._options.webRTCOptions.config.iceServers.forEach(function (ice) {
+                  ice.urls = ice.url;
+                });
+
+              case 6:
+
+                if (this._options.wrtc) {
+                  this._options.webRTCOptions.wrtc = this._options.wrtc;
+                }
+
+              case 7:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, this);
+      }));
+
+      function setWebRTCOptions() {
+        return _ref3.apply(this, arguments);
+      }
+
+      return setWebRTCOptions;
+    }()
+
+    /**
+     * Get ICES from signaling server
+     * @description here twillo is used to get list of ICEs servers, the script that generates the list of the servers is in the configuration "https://carteserver.herokuapp.com/ice" 
+     */
+
+  }, {
+    key: "getICEs",
+    value: function () {
+      var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4() {
+        var _this3 = this;
+
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                return _context4.abrupt("return", new Promise(function (resolve, reject) {
+                  var url = _this3._options.ICEsURL;
+                  (0, _nodeFetch2.default)(url).then(function (resp) {
+                    return resp.json();
+                  }) // Transform the data into json
+                  .then(function (addresses) {
+                    resolve(addresses);
+                  });
+                }));
+
+              case 1:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4, this);
+      }));
+
+      function getICEs() {
+        return _ref4.apply(this, arguments);
+      }
+
+      return getICEs;
+    }()
+
+    /**
+     * Put the session the list of the different sessions, which is a static variable in the class.
+     * @param {*} session 
+     */
+
+  }, {
+    key: "putSessionInTheList",
+    value: function putSessionInTheList() {
+      var session = this;
+      session._previous = null;
+      session._next = null;
+
+      var sessionClass = this.constructor;
+      if (!sessionClass.actualSession || sessionClass.actualSession == null) {
+        sessionClass.actualSession = session;
+        sessionClass.lastSession = session;
+        sessionClass.headSession = session;
+      } else {
+        sessionClass.lastSession._next = session;
+        session._previous = sessionClass.lastSession;
+        sessionClass.lastSession = session;
+        sessionClass.actualSession = session;
       }
     }
+
+    /**
+     * set Signaling Options this includes the session ID and the signaling server
+     * 
+     */
+
   }, {
     key: "setSignalingOptions",
-    value: function setSignalingOptions(opts) {
+    value: function setSignalingOptions() {
 
       if (_store2.default.get("CRATE2-" + this._options.editingSession)) {
 
@@ -50319,8 +50510,7 @@ var session = function (_EventEmitter) {
     }
 
     /**
-     * 
-     * @param {*} opts setFogletOptions {this._editingSessionID, signalingOptions.sessionId,webRTCOptions,signalingOptions} 
+     *  set Foglet options
      */
 
   }, {
@@ -50347,58 +50537,53 @@ var session = function (_EventEmitter) {
         fogletOptions: fogletOptions
       });
 
-      console.log('Foglet', fogletOptions);
-      if (!this._options.foglet) {
-        this._options.webRTCOptions.trickle = true;
-      }
-
       this._foglet = new _fogletCore.Foglet(this._options.fogletOptions);
     }
 
     /**
-     * Put the session the list of the different sessions, which is a static variable in the class.
-     * @param {*} session 
+     * Function that generates random ID.
      */
 
-  }, {
-    key: "putSessionInTheList",
-    value: function putSessionInTheList() {
-      var session = this;
-      session._previous = null;
-      session._next = null;
-
-      var sessionClass = this.constructor;
-      if (!sessionClass.actualSession || sessionClass.actualSession == null) {
-        sessionClass.actualSession = session;
-        sessionClass.lastSession = session;
-        sessionClass.headSession = session;
-      } else {
-        sessionClass.lastSession._next = session;
-        session._previous = sessionClass.lastSession;
-        sessionClass.lastSession = session;
-        sessionClass.actualSession = session;
-      }
-    }
   }, {
     key: "GUID",
     value: function GUID() {
       return _shortid2.default.generate();
     }
-  }, {
-    key: "getNext",
-    value: function getNext() {
-      return _next;
-    }
+
+    /**
+     *  get the id of the session
+     */
+
   }, {
     key: "getId",
     value: function getId() {
       return this._options.signalingOptions.session;
     }
+
+    /*
+     *  get the next session (in the same webpage)
+     */
+
+  }, {
+    key: "getNext",
+    value: function getNext() {
+      return _next;
+    }
+
+    /*
+     *  get the previous session (in the same webpage)
+     */
+
   }, {
     key: "getPrevious",
     value: function getPrevious() {
       return _previous;
     }
+
+    /**
+     * focus on the next session
+     */
+
   }, {
     key: "moveToNext",
     value: function moveToNext() {
@@ -50407,6 +50592,11 @@ var session = function (_EventEmitter) {
         this.goTo(this.constructor.actualSession.getId());
       }
     }
+
+    /**
+     * focus on the previous session
+     */
+
   }, {
     key: "moveToPrevious",
     value: function moveToPrevious() {
@@ -50415,6 +50605,11 @@ var session = function (_EventEmitter) {
         this.goTo(this.constructor.actualSession.getId());
       }
     }
+    /**
+     * focus to a session based on sessionID
+     * @param {*} sessionId 
+     */
+
   }, {
     key: "goTo",
     value: function goTo(sessionId) {
@@ -50425,6 +50620,11 @@ var session = function (_EventEmitter) {
 
       this.constructor.focusOnSession(sessionId, s.getId());
     }
+
+    /**
+     * close the session and stop the different timers
+     */
+
   }, {
     key: "close",
     value: function close() {
@@ -50440,9 +50640,6 @@ var session = function (_EventEmitter) {
         }
       }
 
-      //this._foglet = null
-      //this._documents[0] = null
-
       setTimeout(function () {
         _this4._foglet._networkManager._rps.network._rps.disconnect();
         _this4._document = null;
@@ -50457,11 +50654,12 @@ var session = function (_EventEmitter) {
       while (!found && search !== null) {
         var sessionId = search.getId();
         if (id === sessionId) {
+          found = true;
           return search;
         }
         search = search._next;
       }
-      return false;
+      return -1;
     }
   }, {
     key: "GUID",
@@ -50495,7 +50693,6 @@ var session = function (_EventEmitter) {
           console.warn("There is no view for the following session" + s);
         }
       }
-      console.log('moveToSession', moveToSession);
       jQuery("html, body").animate({
         scrollLeft: jQuery("#container-" + moveToSession).offset().left - 40
       }, "slow");

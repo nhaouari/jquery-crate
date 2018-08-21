@@ -31,6 +31,23 @@ import fetch from 'node-fetch'
  */
 
 export default class session extends EventEmitter {
+ 
+ 
+ /**
+  * 
+  * @param {*} options the different options of the document.
+  * @example 
+  const options = {
+  signalingOptions:{
+    session:editingSession,
+    address:configuration.signalingServer
+  },
+  storageServer: configuration.storageServer,
+  stun: configuration.stun, // default google ones if xirsys not
+  containerID: "content-default",
+  display: true
+}
+  */
   constructor(options) {
     /**
      *      signalingServer: "https://carteserver.herokuapp.com/",
@@ -41,72 +58,53 @@ export default class session extends EventEmitter {
             you have to generate ID at this point
      */
     super();
-
-    console.log("options 01",options);
+    // use defaultOptions to use them when we open other sessions
+    //@todo: make these options global
     this._defaultOptions = { ...options}
     this._options = { ...options}
-    if (!options.foglet) {
-      this.init();
-    } else {
-      this.justDoIt();
-    }
+    
+    this.openDocument();
   }
-
-  /**
-   * initialize connection to signaling server to get ICEs
-   * @return {[type]} [description]
-   */
-  init() {
-    const url = this._options.signalingOptions.address + "/ice"
-    fetch(url)
-      .then((resp) => resp.json()) // Transform the data into json
-      .then((addresses) => {
-        this._options.webRTCOptions = merge(this._options.webRTCOptions ,{
-          config: {
-            iceServers: [{
-              url: this._options.stun,
-              urls: this._options.stun
-            }]
-          },
-
-        }, {
-          config: {
-            iceServers: addresses.ice
-          },
-          trickle: true,
-        })
-        this._options.webRTCOptions.config.iceServers.forEach(ice => {
-          ice.urls = ice.url
-        })
-        this.justDoIt();
-
-      })
-  }
-
-  justDoIt() {
-    
-    this.setSignalingOptions()
-    
-    this.setWebRTCOptions()
-    
-    this.setUser()
-    
-    this.setDocumentTitle()
+/**
+ * open the document based on the given parameters
+ */
+async openDocument() {
    
-    // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
-    this.setTemporarySessionID()
-
-    this.setFogletOptions ()
+    await this.setOptions() 
 
     this.putSessionInTheList() 
 
-    this.newDocument()
+    this.buildDocument()
   }
 
+/**
+ * set the different options for the created document
+ */
+async setOptions() {
+  this.setSignalingOptions()
+    
+  await this.setWebRTCOptions()
+  
+  this.setUser()
+  
+  this.setDocumentTitle()
+  // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
+  this.setTemporarySessionID()
 
-  newDocument(){
+  this.setFogletOptions ()
+}
+
+/**
+* build the document and add it to the list of the documents
+@description here we considered that one session contains one document.  when we created another document in the same page is in another session, if it is not action's opened it will received the changes. 
+@todo add the possibility of adding other document in the same session, so all the changes will taken into consideration even if the open document is different. 
+ this is will be an optional choice for the users because it could create a high overhead in the network, 
+ for example in the case of a large number of linked document any change in any document will be broadcasted to all the users. 
+*/
+
+  buildDocument(){
     this._documents = [];
-    let doc = new Document(this._options, this._foglet);
+    const doc = new Document(this._options, this._foglet);
     this._documents.push(doc);
 
     doc.init().then(() => {
@@ -114,13 +112,21 @@ export default class session extends EventEmitter {
     })
   }
 
+  /** 
+   * set Temporary Session ID to be able to open the document in different tabs for the same user.
+   * @description foglet is based on the id of the user, it will not work in the case of having two users with same id, this why we have add to the user id 
+   * a random part to consider each tab as separate user in foglet but it will be considerd the same user in CRATE. 
+   */
+
   setTemporarySessionID() {
     this._editingSessionID =
     this._options.user.id + "-" + this.constructor.GUID();
     this._options.editingSessionID = this._editingSessionID;
   }
 
-
+/**
+ * set Document Title
+ */
   setDocumentTitle()
   {
     this._options.name =
@@ -130,6 +136,11 @@ export default class session extends EventEmitter {
       this._options.importFromJSON.title) ||
     "Untitled document";
   }
+
+  /**
+   * set the user information
+   * @description the default user is random if it is not stored in local storage of the browser.
+   */
   setUser(){
 
     let uid = this.GUID();
@@ -143,64 +154,56 @@ export default class session extends EventEmitter {
     }
   }
 
-  setWebRTCOptions(opts) {
+  /**
+   * set WebRTCOptions
+   * @description  set the default options of ice Servers and replace them by the ice server if it is possible. if it run in node js use wrtc.
+  */
+  async setWebRTCOptions() {
+    if (!this._options.foglet) {
+    const addresses = await this.getICEs()
 
-    if (this._options.wrtc) {
-      this._options.webRTCOptions.wrtc = this._options.wrtc;
+    this._options.webRTCOptions = merge(this._options.webRTCOptions ,{
+      config: {
+        iceServers: [{
+          url: this._options.stun,
+          urls: this._options.stun
+        }]
+      },
+
+    }, {
+      config: {
+        iceServers: addresses.ice
+      },
+      trickle: true,
+    })
+
+    this._options.webRTCOptions.config.iceServers.forEach(ice => {
+      ice.urls = ice.url
+    })
+  }
+ 
+  
+ if (this._options.wrtc) {
+   this._options.webRTCOptions.wrtc = this._options.wrtc
     }
+  
   }
 
-  setSignalingOptions(opts) {
-    
-    
-    if (store.get("CRATE2-" + this._options.editingSession)) {
-        
-      this._options.importFromJSON = store.get(
-          "CRATE2-" + this._options.editingSession
-        );
-
-        this._options.signalingOptions =  this._options.importFromJSON.signalingOptions;
-      }
-       // Storage Server
-      
-      this._options.storageServer  = (this._options && this._options.storageServer) || "";
-
-  }
 
   /**
-   * 
-   * @param {*} opts setFogletOptions {this._editingSessionID, signalingOptions.sessionId,webRTCOptions,signalingOptions} 
+   * Get ICES from signaling server
+   * @description here twillo is used to get list of ICEs servers, the script that generates the list of the servers is in the configuration "https://carteserver.herokuapp.com/ice" 
    */
-  setFogletOptions() {
-
-    let fogletOptions = {
-      id: this._options.editingSessionID,
-      verbose: true, // want some logs ? switch to false otherwise
-      rps: {
-        type: "spray-wrtc",
-        options: {
-          protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
-          webrtc:  this._options.webRTCOptions,
-          timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-          pendingTimeout: 30 * 1000,
-          delta: 30 * 1000, // spray-wrtc shuffle interval
-          signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
-        }
-      }
-    };
-
-    this._options = merge(this._options, {
-      fogletOptions
-    });
-
-    console.log('Foglet',fogletOptions)
-    if (!this._options.foglet) {
-      this._options.webRTCOptions.trickle = true;
+  async getICEs() {
+    return new Promise((resolve, reject) =>{
+    const url = this._options.ICEsURL
+    fetch(url)
+      .then((resp) => resp.json()) // Transform the data into json
+      .then((addresses) => {
+        resolve(addresses)
+      })
+    })
     }
-
-    this._foglet = new Foglet(this._options.fogletOptions);
-  }
-
 
   /**
    * Put the session the list of the different sessions, which is a static variable in the class.
@@ -224,21 +227,88 @@ export default class session extends EventEmitter {
     }
   }
 
+
+/**
+ * set Signaling Options this includes the session ID and the signaling server
+ * 
+ */
+  setSignalingOptions() {
+    
+    
+    if (store.get("CRATE2-" + this._options.editingSession)) {
+        
+      this._options.importFromJSON = store.get(
+          "CRATE2-" + this._options.editingSession
+        );
+
+        this._options.signalingOptions =  this._options.importFromJSON.signalingOptions;
+      }
+       // Storage Server
+      
+      this._options.storageServer  = (this._options && this._options.storageServer) || "";
+
+  }
+
+  /**
+   *  set Foglet options
+   */
+  setFogletOptions() {
+
+    const fogletOptions = {
+      id: this._options.editingSessionID,
+      verbose: true, // want some logs ? switch to false otherwise
+      rps: {
+        type: "spray-wrtc",
+        options: {
+          protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
+          webrtc:  this._options.webRTCOptions,
+          timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          pendingTimeout: 30 * 1000,
+          delta: 30 * 1000, // spray-wrtc shuffle interval
+          signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
+        }
+      }
+    };
+
+    this._options = merge(this._options, {
+      fogletOptions
+    });
+
+
+    this._foglet = new Foglet(this._options.fogletOptions);
+  }
+
+ /**
+  * Function that generates random ID.
+  */
   GUID() {
     return shortid.generate();
   }
 
+/**
+ *  get the id of the session
+ */
+getId() {
+  return this._options.signalingOptions.session;
+}
+
+  /*
+   *  get the next session (in the same webpage)
+   */
   getNext() {
     return _next;
   }
 
-  getId() {
-    return this._options.signalingOptions.session;
-  }
+  /*
+   *  get the previous session (in the same webpage)
+   */
   getPrevious() {
     return _previous;
   }
 
+  /**
+   * focus on the next session
+   */
   moveToNext() {
     if (this._next != null) {
       this.constructor.actualSession = this._next;
@@ -246,15 +316,21 @@ export default class session extends EventEmitter {
     }
   }
 
+  /**
+   * focus on the previous session
+   */
   moveToPrevious() {
     if (this._previous != null) {
       this.constructor.actualSession = this._previous;
       this.goTo(this.constructor.actualSession.getId());
     }
   }
-
+/**
+ * focus to a session based on sessionID
+ * @param {*} sessionId 
+ */
   goTo(sessionId) {
-    let s = this.constructor.getCrateSession(sessionId);
+    const s = this.constructor.getCrateSession(sessionId);
     if (s._previous) {
       sessionId = s._previous.getId();
     }
@@ -262,6 +338,9 @@ export default class session extends EventEmitter {
     this.constructor.focusOnSession(sessionId, s.getId());
   }
 
+  /**
+   * close the session and stop the different timers
+   */
   close() {
     this._foglet.unshare();
     this._foglet._networkManager._rps.network._rps.disconnect();
@@ -273,9 +352,6 @@ export default class session extends EventEmitter {
       }
     }
 
-    //this._foglet = null
-    //this._documents[0] = null
-
     setTimeout(() => {
       this._foglet._networkManager._rps.network._rps.disconnect();
       this._document = null;
@@ -285,19 +361,20 @@ export default class session extends EventEmitter {
 
   static getCrateSession(id) {
     let found = false;
-    var search = this.headSession;
+    var search = this.headSession
     while (!found && search !== null) {
       let sessionId = search.getId();
       if (id === sessionId) {
-        return search;
+        found = true
+        return search
       }
-      search = search._next;
+      search = search._next
     }
-    return false;
+    return -1;
   }
 
   static GUID() {
-    return shortid.generate();
+    return shortid.generate()
   }
 
   /**
@@ -307,26 +384,25 @@ export default class session extends EventEmitter {
    * @return {[type]}                [description]
    */
   static focusOnSession(moveToSession, FocusedSession, editor = null) {
-    jQuery('*[id^="container"]').removeClass("activeEditor");
-    jQuery(`#container-${FocusedSession}`).addClass("activeEditor");
-    let s;
+    jQuery('*[id^="container"]').removeClass("activeEditor")
+    jQuery(`#container-${FocusedSession}`).addClass("activeEditor")
+    let s
     if (editor) {
-      editor.viewEditor.focus();
+      editor.viewEditor.focus()
     } else {
-      s = session.getCrateSession(FocusedSession);
+      s = session.getCrateSession(FocusedSession)
 
       if (s._documents[0]._view) {
-        s._documents[0]._view._editor.viewEditor.focus();
+        s._documents[0]._view._editor.viewEditor.focus()
       } else {
-        console.warn("There is no view for the following session" + s);
+        console.warn("There is no view for the following session" + s)
       }
     }
-    console.log('moveToSession',moveToSession);
     jQuery("html, body").animate({
         scrollLeft: jQuery(`#container-${moveToSession}`).offset().left - 40
       },
       "slow"
-    );
+    )
   }
 
   static openIn() {
