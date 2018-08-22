@@ -246,8 +246,8 @@ async setOptions() {
        // Storage Server
       
       this._options.storageServer  = (this._options && this._options.storageServer) || "";
-
-  }
+  
+    }
 
   /**
    *  set Foglet options
@@ -285,12 +285,12 @@ async setOptions() {
     return shortid.generate();
   }
 
-/**
- *  get the id of the session
- */
-getId() {
+  /**
+   *  get the id of the session
+   */
+  getId() {
   return this._options.signalingOptions.session;
-}
+  }
 
   /*
    *  get the next session (in the same webpage)
@@ -408,7 +408,7 @@ getId() {
   static openIn() {
     // get all links
     // change the links function calls
-    let links = $("#content-default a");
+    const links = $("#content-default a");
 
     for (var link of links) {
       if (link.href.includes(window.location.href.split("?")[0])) {
@@ -421,11 +421,14 @@ getId() {
           if (jQuery(`#container-${editingSession}`).length) {
             session.focusOnSession(editingSession, this.href.split("?")[1]);
           } else {
-
             const opts = Object.assign({ ...session.actualSession._defaultOptions
             }, {
-              editingSession
-            })
+              signalingOptions: {
+                session:editingSession
+            }
+          })
+
+            console.log("options =",opts);
             var sess = new session(opts);
           }
         };

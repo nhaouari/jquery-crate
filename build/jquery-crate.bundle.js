@@ -50722,10 +50722,13 @@ var session = function (_EventEmitter) {
               if (jQuery("#container-" + editingSession).length) {
                 session.focusOnSession(editingSession, this.href.split("?")[1]);
               } else {
-
                 var opts = Object.assign(_extends({}, session.actualSession._defaultOptions), {
-                  editingSession: editingSession
+                  signalingOptions: {
+                    session: editingSession
+                  }
                 });
+
+                console.log("options =", opts);
                 var sess = new session(opts);
               }
             };
