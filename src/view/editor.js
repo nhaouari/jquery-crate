@@ -1,8 +1,11 @@
-import Marker from "../view/marker";
-import {Comments} from "../view/comments";
+import Marker from "../view/marker"
+import {Comments} from "../view/comments"
 import {EventEmitter} from "events"
+import {MarkerManager} from "./maker-manager"
+import {QuillManager} from "./QuillManger"
 
 var debug = require('debug')('crate:view:editor')
+
 
 Quill.register('modules/cursors', QuillCursors);
 Quill.register('modules/comment', QuillComment);
@@ -12,8 +15,6 @@ Quill.register('modules/comment', QuillComment);
  */
 
 export class EditorController extends EventEmitter {
-
-
   /**
    * [constructor description]
    * @param  {[doc]} model  this is the object that contains all proprieties of a document.    
@@ -27,16 +28,10 @@ export class EditorController extends EventEmitter {
      */
     this.model = model
 
-    /**
-     * markers contains all marks of the users: carets, avatars...
-     * @type {Marker[]}
-     */
-    this.markers = {}
-    /**
-     * startimer A timer used for sending pings
-     * @type {Timer}
-     */
-    this.startTimer = {}
+    this.markerManager=new MarkerManager(this.model.core, this)
+   
+   
+    
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
@@ -50,7 +45,6 @@ export class EditorController extends EventEmitter {
     this._sessionID = sessionID
 
     this.loadDocument(sessionID)
-    this.startPing(5000)
     this.startEventListeners()
       }
 
@@ -64,9 +58,8 @@ export class EditorController extends EventEmitter {
    */
   loadDocument(sessionID) {
     this.createViewDocument()
-    //jQuery(`#${this._editorContainerID} #editor`).attr('id', 'crate-' + id)
-    // Initilise the the editor content 
-    //this.editor.setText('')
+    const itIsMe=true
+    this.markerManager.addMarker(this.model.uid,itIsMe)
 
     if (store.get("CRATE2-" + sessionID)) {
       var doc = store.get("CRATE2-" + sessionID)
@@ -80,58 +73,14 @@ export class EditorController extends EventEmitter {
       jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
     })
 
-
-    /* if (store.get("CRATE2-" + this.model.signalingOptions.session)) {
-       this.markers = store.get("CRATE2-" + this.model.signalingOptions.session).markers
-
-       // convert the json objects to Marker object with functions 
-       for (var property in this.markers) {
-         if (this.markers.hasOwnProperty(property)) {
-           this.markers[property] = Object.assign(new Marker(property), this.markers[property])
-           this.markers[property].cursor = false
-         }
-       }
-
-     } else {*/
-    this.markers = {}
-    // }
-
-
-    this.model.markers = this.markers
-
-    //if (!this.markers[id]) { 
-    //     console.log("Add mythis")
-    //this.markers.push(id)
-    let id = this.model.uid
-
-    let options = {
-      lifeTime: 5 * 1000,
-      range: {
-        index: 0,
-        length: 0
-      },
-      cursor: false,
-      isItME: true
-    }
-
-
-
-    this.markers[id] = new Marker(id, options, this)
-
-    if (store.get('myId')) {
-      this.markers[id].setPseudo(store.get('myId').pseudo)
-    } else {
-      store.set('myId', {
-        id: id,
-        pseudo: this.markers[id].pseudoName
-      })
-    }
+   
     this.UpdateComments()
     //comment module initialization
+   
     let commentOpt = this.viewEditor.options.modules.comment
-    commentOpt.commentAddOn = this.markers[id].animal
-    commentOpt.commentAuthorId = this.model.uid
-    commentOpt.color = this.markers[id].colorRGB
+    commentOpt.commentAddOn = this.markerManager.markers[this.model.uid].animal
+    commentOpt.commentAuthorId =this.model.uid
+    commentOpt.color = this.markerManager.markers[this.model.uid].colorRGB
   }
 
 
@@ -154,7 +103,7 @@ export class EditorController extends EventEmitter {
     // Local events 
     this.viewEditor.on('selection-change', (range, oldRange, source) => {
       if (range) {
-        this.model.core.caretMoved(range)
+        this.markerManager.caretMoved(range)
       }
     })
 
@@ -163,7 +112,6 @@ export class EditorController extends EventEmitter {
       this.emit('thereAreChanges')
 
     })
-
 
     // Remote events
     this.model.core.on('remoteInsert', (element, indexp) => {
@@ -176,25 +124,15 @@ export class EditorController extends EventEmitter {
       this.emit('thereAreChanges')
     })
 
-    this.model.core.on('remoteCaretMoved', (range, origin) => {
-      this.remoteCaretMoved(range, origin)
-    })
-
-    this.model.core.on('remoteCaretMoved', (range, origin) => {
-      this.remoteCaretMoved(range, origin)
-    })
-
     //At the reception of Title changed operation 
     this.model.on('changeTitle', (title) => {
       jQuery(`#${this._editorContainerID} #title`).text(title)
       this.emit('thereAreChanges')
     })
 
-    this.model.core.on('ping', (origin, pseudo) => {
-      this.atPing(origin, pseudo)
-    })
-
+    
   } 
+  
   /**
    * createViewDocument  Create quill editor options for the editor that we wan to create
    * @param  {[type]} containerID [description]
@@ -202,121 +140,9 @@ export class EditorController extends EventEmitter {
    */
   createViewDocument() {
 
-    const toolbarOptions = [
-      [{
-        'header': [1, 2, 3, 4, 5, 6, false]
-      }],
-      [{
-        'font': []
-      }],
-      ['bold', 'italic', 'underline', 'strike'], // toggled buttons
-      // custom button values
-      [{
-        'align': []
-      }],
-      [{
-        'list': 'ordered'
-      }, {
-        'list': 'bullet'
-      }],
-      //  [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-      // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-      /* [{
-         'direction': 'rtl'
-       }], // text direction
-
-       [{
-         'size': ['small', false, 'large', 'huge']
-       }], // custom dropdown*/
-
-      [{
-        'color': []
-      }, {
-        'background': []
-      }], // dropdown with defaults from theme
-      ['clean'], // remove formatting button
-      /*['blockquote', 'code-block'],*/
-      ['formula', 'image', 'link'],
-      ['subdocument'],
-      ['comments-toggle'], // comment color on/off
-      ['comments-add'] // comment add
-
-    ];
-
-    //todo include the container ID
-    //
-    let quill = new Quill(`#${this._editorContainerID} #editor`, {
-      modules: {
-        formula: true,
-        toolbar: {
-          container: toolbarOptions,
-          handlers: {
-            subdocument: function(value) {
-              let range = this.quill.getSelection();
-              // let preview = this.quill.getText(range);
-              let preview = window.location.href.split('?')[0] + '?' + session.default.GUID();
-              let tooltip = this.quill.theme.tooltip;
-              tooltip.edit('link', preview);
-            },
-            undo: function(value) {
-              this.quill.history.undo();
-            },
-            redo: function(value) {
-              this.quill.history.redo();
-            }
-          }
-        },
-        cursors: {
-          autoRegisterListener: true, // default: true
-          hideDelay: 500, // default: 3000
-          hideSpeed: 0
-          // default: 400
-        },
-        history: {
-          delay: 500,
-          maxStack: 1000
-        },
-        comment: {
-          enabled: true,
-          commentAuthorId: 123,
-          commentAddOn: 'Author Name', // any additional info needed
-          color: 'yellow', // comment background color in the text
-          commentAddClick: this._comments.commentAddClick, // get called when `ADD COMMENT` btn on options bar is clicked
-          commentsClick: this._comments.commentsClick, // get called when you click `COMMENTS` btn on options bar for you to do additional things beside color on/off. Color on/off is already done before the callback is called.
-          commentTimestamp: this._comments.commentServerTimestamp,
-          containerID: this._editorContainerID
-        }
-      },
-
-      theme: 'snow'
-    });
-
-    $(".ql-subdocument .ql-comments-toggle .ql-comments-add").attr('data-toggle', 'tooltip');
-    $(".ql-comments-toggle,.ql-comments-add").css({
-      "position": "relative",
-      "top": "-5px"
-    });
-
-    $(".ql-subdocument").html('<strong>SUB</strong>');
-    $(".ql-subdocument").attr('title', 'Add subdocument');
-
-    $('.ql-comments-toggle').html('<i class="fa fa-comments"></i>');
-    $(".ql-comments-toggle").attr('title', 'Show/hide comments');
-
-
-    $('.ql-comments-add').html('<i class="fa fa-comment"></i>');
-    $(".ql-comments-add").attr('title', 'Add comment');
-
-
-    // hook changing the editor when click on save link ==> open in the document
-    quill.theme.tooltip.save2 = quill.theme.tooltip.save
-
-    quill.theme.tooltip.save = function() {
-      quill.theme.tooltip.save2()
-      session.default.openIn()
-    }
-
-
+    const quillManager = new QuillManager(this._editorContainerID,this._comments)
+    const quill= quillManager.getQuill()
+    
     this._comments.viewEditor = quill
     this.viewEditor = quill
   }
@@ -343,7 +169,6 @@ export class EditorController extends EventEmitter {
     store.set("CRATE2-" + this.model.signalingOptions.session, document)
     alert("Document is saved successfully")
   }
-
 
 
   /**
@@ -593,31 +418,7 @@ export class EditorController extends EventEmitter {
   }
 
 
-  /**
-   * remoteCaretMoved At the reception of CARET position
-   * @param  {[type]} range  [description]
-   * @param  {[type]} origin [description]
-   * @return {[type]}        [description]
-   */
-  remoteCaretMoved(range, origin) {
-    if (!origin) return
-
-    if (this.markers[origin]) {
-      this.markers[origin].update(range, true) // to keep avatar
-
-    } else {   
-      console.log('oringin',origin, 'id',this.model.uid);
-      
-      let options = {
-        lifeTime: 5 * 1000,
-        range,
-        cursor: false,
-        isItME: false
-      }
-      this.markers[origin] = new Marker(origin, options, this)
-    }
-  }
-
+ 
   /**
    * cleanQuill description
    * @return {[type]} [description]
@@ -669,59 +470,6 @@ export class EditorController extends EventEmitter {
   }
 
 
-  /**
-   * startPing send periodically ping
-   * @param  {[type]} interval [description]
-   * @return {[type]}          [description]
-   * @todo TODO: Make interval as global parameter
-   */
-  startPing(interval) {
-    this.startTimer = setInterval(() => {
-      let pseudo = "Anonymous"
-      if (store.get('myId').pseudo) {
-        pseudo = store.get('myId').pseudo;
-      }
-      this.model.core.sendPing(pseudo)
-    }, interval)
-  }
-
-  /**
-   * stopPing stopPing
-   * @todo  implement this function
-   * @return {[type]} [description]
-   */
-  stopPing() {
-    clearInterval(this.startTimer);
-  }
-
-  /**
-   * atPing at the reception of ping
-   * @param  {[type]} origin [description]
-   * @param  {[type]} pseudo [description]
-   * @return {[type]}        [description]
-   */
-  atPing(origin, pseudo) {
-    if (this.markers[origin]) {
-      this.markers[origin].update(null, false) // to keep avatar
-      this.markers[origin].setPseudo(pseudo)
-
-    } else { // to create the avatar
-      //this.markers.push(origin)
-      //
-
-      let options = {
-        lifeTime: 5 * 1000,
-        range: {
-          index: 0,
-          length: 0
-        },
-        cursor: false,
-        isItME: false
-      }
-      this.markers[origin] = new Marker(origin, options, this)
-      this.markers[origin].setPseudo(pseudo)
-    }
-  }
 
   /**
    * UpdateComments This function to extract the comments form the editor and show them in #comments
@@ -737,8 +485,8 @@ export class EditorController extends EventEmitter {
             var id = op.attributes.commentAuthor
             //
             let m = {}
-            if (this.markers[id]) {
-              m = this.markers[id]
+            if (this.markerManager.markers[id]) {
+              m = this.markerManager.markers[id]
             } else {
               m = {
                 animal: Marker.getPseudoname(id, null),
@@ -747,10 +495,12 @@ export class EditorController extends EventEmitter {
               }
             }
 
-            let animal = m.animal
-            let pseudoName = m.pseudoName
-            let colorRGB = m.colorRGB
+            const animal = m.animal
+            const pseudoName = m.pseudoName
+            const colorRGB = m.colorRGB
 
+
+            
             this._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp)
           }
 

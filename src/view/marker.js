@@ -92,7 +92,10 @@ export default class Marker {
      */
     this.cursor = options.cursor;
 
+
     this._editor = editor
+
+    
     if (editor) {
       this._editorContainerID = editor._editorContainerID
     }
@@ -271,6 +274,7 @@ export default class Marker {
   addCursor(range) { 
     this.cursor = true;
     this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB); 
+  
   };
 
 }

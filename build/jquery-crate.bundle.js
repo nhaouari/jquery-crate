@@ -50761,6 +50761,176 @@ session.Marker = _marker2.default;
 
 /***/ }),
 
+/***/ "./src/view/QuillManger.js":
+/*!*********************************!*\
+  !*** ./src/view/QuillManger.js ***!
+  \*********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var QuillManager = exports.QuillManager = function () {
+  function QuillManager(editorContainerID, comments) {
+    _classCallCheck(this, QuillManager);
+
+    this._editorContainerID = editorContainerID;
+    this._comments = comments;
+  }
+
+  _createClass(QuillManager, [{
+    key: 'getQuill',
+    value: function getQuill() {
+      var quill = new Quill('#' + this._editorContainerID + ' #editor', {
+        modules: {
+          formula: true,
+          toolbar: {
+            container: this.getToolbarOptions(),
+            handlers: {
+              subdocument: function subdocument(value) {
+                var range = this.quill.getSelection();
+                // let preview = this.quill.getText(range);
+                var preview = window.location.href.split('?')[0] + '?' + session.default.GUID();
+                var tooltip = this.quill.theme.tooltip;
+                tooltip.edit('link', preview);
+              },
+              undo: function undo(value) {
+                this.quill.history.undo();
+              },
+              redo: function redo(value) {
+                this.quill.history.redo();
+              }
+            }
+          },
+          cursors: this.getCursorModuleOptions(),
+          history: this.getHistoryModuleOptions(),
+          comment: this.getCommentsModuleOptions()
+        },
+
+        theme: 'snow'
+      });
+
+      this.addExtraToolbarOptions();
+
+      // hook changing the editor when click on save link ==> open in the document
+      quill.theme.tooltip.save2 = quill.theme.tooltip.save;
+
+      quill.theme.tooltip.save = function () {
+        quill.theme.tooltip.save2();
+        session.default.openIn();
+      };
+
+      return quill;
+    }
+  }, {
+    key: 'getToolbarOptions',
+    value: function getToolbarOptions() {
+      var toolbarOptions = [[{
+        'header': [1, 2, 3, 4, 5, 6, false]
+      }], [{
+        'font': []
+      }], ['bold', 'italic', 'underline', 'strike'], // toggled buttons
+      // custom button values
+      [{
+        'align': []
+      }], [{
+        'list': 'ordered'
+      }, {
+        'list': 'bullet'
+      }],
+      //  [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+      // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+      /* [{
+         'direction': 'rtl'
+       }], // text direction
+               [{
+         'size': ['small', false, 'large', 'huge']
+       }], // custom dropdown*/
+
+      [{
+        'color': []
+      }, {
+        'background': []
+      }], // dropdown with defaults from theme
+      ['clean'], // remove formatting button
+      /*['blockquote', 'code-block'],*/
+      ['formula', 'image', 'link'], ['subdocument'], ['comments-toggle'], // comment color on/off
+      ['comments-add'] // comment add
+
+      ];
+
+      return toolbarOptions;
+    }
+  }, {
+    key: 'getCursorModuleOptions',
+    value: function getCursorModuleOptions() {
+      var opts = {
+        autoRegisterListener: true, // default: true
+        hideDelay: 500, // default: 3000
+        hideSpeed: 0
+        // default: 400
+      };
+      return opts;
+    }
+  }, {
+    key: 'getHistoryModuleOptions',
+    value: function getHistoryModuleOptions() {
+      var opt = {
+        delay: 500,
+        maxStack: 1000
+      };
+
+      return opt;
+    }
+  }, {
+    key: 'getCommentsModuleOptions',
+    value: function getCommentsModuleOptions(comments, editorContainerID) {
+      var opts = {
+        enabled: true,
+        commentAuthorId: 123,
+        commentAddOn: 'Author Name', // any additional info needed
+        color: 'yellow', // comment background color in the text
+        commentAddClick: this._comments.commentAddClick, // get called when `ADD COMMENT` btn on options bar is clicked
+        commentsClick: this._comments.commentsClick, // get called when you click `COMMENTS` btn on options bar for you to do additional things beside color on/off. Color on/off is already done before the callback is called.
+        commentTimestamp: this._comments.commentServerTimestamp,
+        containerID: this._editorContainerID
+      };
+      return opts;
+    }
+  }, {
+    key: 'addExtraToolbarOptions',
+    value: function addExtraToolbarOptions() {
+      $(".ql-subdocument .ql-comments-toggle .ql-comments-add").attr('data-toggle', 'tooltip');
+      $(".ql-comments-toggle,.ql-comments-add").css({
+        "position": "relative",
+        "top": "-5px"
+      });
+
+      $(".ql-subdocument").html('<strong>SUB</strong>');
+      $(".ql-subdocument").attr('title', 'Add subdocument');
+
+      $('.ql-comments-toggle').html('<i class="fa fa-comments"></i>');
+      $(".ql-comments-toggle").attr('title', 'Show/hide comments');
+
+      $('.ql-comments-add').html('<i class="fa fa-comment"></i>');
+      $(".ql-comments-add").attr('title', 'Add comment');
+    }
+  }]);
+
+  return QuillManager;
+}();
+
+/***/ }),
+
 /***/ "./src/view/comments.js":
 /*!******************************!*\
   !*** ./src/view/comments.js ***!
@@ -50940,6 +51110,10 @@ var _comments = __webpack_require__(/*! ../view/comments */ "./src/view/comments
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
+var _makerManager = __webpack_require__(/*! ./maker-manager */ "./src/view/maker-manager.js");
+
+var _QuillManger = __webpack_require__(/*! ./QuillManger */ "./src/view/QuillManger.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -50976,16 +51150,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
     _this.model = model;
 
-    /**
-     * markers contains all marks of the users: carets, avatars...
-     * @type {Marker[]}
-     */
-    _this.markers = {};
-    /**
-     * startimer A timer used for sending pings
-     * @type {Timer}
-     */
-    _this.startTimer = {};
+    _this.markerManager = new _makerManager.MarkerManager(_this.model.core, _this);
+
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
@@ -50999,7 +51165,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     _this._sessionID = sessionID;
 
     _this.loadDocument(sessionID);
-    _this.startPing(5000);
     _this.startEventListeners();
     return _this;
   }
@@ -51017,9 +51182,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var _this2 = this;
 
       this.createViewDocument();
-      //jQuery(`#${this._editorContainerID} #editor`).attr('id', 'crate-' + id)
-      // Initilise the the editor content 
-      //this.editor.setText('')
+      var itIsMe = true;
+      this.markerManager.addMarker(this.model.uid, itIsMe);
 
       if (store.get("CRATE2-" + sessionID)) {
         var doc = store.get("CRATE2-" + sessionID);
@@ -51033,53 +51197,13 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
       });
 
-      /* if (store.get("CRATE2-" + this.model.signalingOptions.session)) {
-         this.markers = store.get("CRATE2-" + this.model.signalingOptions.session).markers
-           // convert the json objects to Marker object with functions 
-         for (var property in this.markers) {
-           if (this.markers.hasOwnProperty(property)) {
-             this.markers[property] = Object.assign(new Marker(property), this.markers[property])
-             this.markers[property].cursor = false
-           }
-         }
-         } else {*/
-      this.markers = {};
-      // }
-
-
-      this.model.markers = this.markers;
-
-      //if (!this.markers[id]) { 
-      //     console.log("Add mythis")
-      //this.markers.push(id)
-      var id = this.model.uid;
-
-      var options = {
-        lifeTime: 5 * 1000,
-        range: {
-          index: 0,
-          length: 0
-        },
-        cursor: false,
-        isItME: true
-      };
-
-      this.markers[id] = new _marker2.default(id, options, this);
-
-      if (store.get('myId')) {
-        this.markers[id].setPseudo(store.get('myId').pseudo);
-      } else {
-        store.set('myId', {
-          id: id,
-          pseudo: this.markers[id].pseudoName
-        });
-      }
       this.UpdateComments();
       //comment module initialization
+
       var commentOpt = this.viewEditor.options.modules.comment;
-      commentOpt.commentAddOn = this.markers[id].animal;
+      commentOpt.commentAddOn = this.markerManager.markers[this.model.uid].animal;
       commentOpt.commentAuthorId = this.model.uid;
-      commentOpt.color = this.markers[id].colorRGB;
+      commentOpt.color = this.markerManager.markers[this.model.uid].colorRGB;
     }
 
     /**
@@ -51104,7 +51228,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       // Local events 
       this.viewEditor.on('selection-change', function (range, oldRange, source) {
         if (range) {
-          _this3.model.core.caretMoved(range);
+          _this3.markerManager.caretMoved(range);
         }
       });
 
@@ -51124,24 +51248,13 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         _this3.emit('thereAreChanges');
       });
 
-      this.model.core.on('remoteCaretMoved', function (range, origin) {
-        _this3.remoteCaretMoved(range, origin);
-      });
-
-      this.model.core.on('remoteCaretMoved', function (range, origin) {
-        _this3.remoteCaretMoved(range, origin);
-      });
-
       //At the reception of Title changed operation 
       this.model.on('changeTitle', function (title) {
         jQuery("#" + _this3._editorContainerID + " #title").text(title);
         _this3.emit('thereAreChanges');
       });
-
-      this.model.core.on('ping', function (origin, pseudo) {
-        _this3.atPing(origin, pseudo);
-      });
     }
+
     /**
      * createViewDocument  Create quill editor options for the editor that we wan to create
      * @param  {[type]} containerID [description]
@@ -51152,110 +51265,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     key: "createViewDocument",
     value: function createViewDocument() {
 
-      var toolbarOptions = [[{
-        'header': [1, 2, 3, 4, 5, 6, false]
-      }], [{
-        'font': []
-      }], ['bold', 'italic', 'underline', 'strike'], // toggled buttons
-      // custom button values
-      [{
-        'align': []
-      }], [{
-        'list': 'ordered'
-      }, {
-        'list': 'bullet'
-      }],
-      //  [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-      // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-      /* [{
-         'direction': 'rtl'
-       }], // text direction
-         [{
-         'size': ['small', false, 'large', 'huge']
-       }], // custom dropdown*/
-
-      [{
-        'color': []
-      }, {
-        'background': []
-      }], // dropdown with defaults from theme
-      ['clean'], // remove formatting button
-      /*['blockquote', 'code-block'],*/
-      ['formula', 'image', 'link'], ['subdocument'], ['comments-toggle'], // comment color on/off
-      ['comments-add'] // comment add
-
-      ];
-
-      //todo include the container ID
-      //
-      var quill = new Quill("#" + this._editorContainerID + " #editor", {
-        modules: {
-          formula: true,
-          toolbar: {
-            container: toolbarOptions,
-            handlers: {
-              subdocument: function subdocument(value) {
-                var range = this.quill.getSelection();
-                // let preview = this.quill.getText(range);
-                var preview = window.location.href.split('?')[0] + '?' + session.default.GUID();
-                var tooltip = this.quill.theme.tooltip;
-                tooltip.edit('link', preview);
-              },
-              undo: function undo(value) {
-                this.quill.history.undo();
-              },
-              redo: function redo(value) {
-                this.quill.history.redo();
-              }
-            }
-          },
-          cursors: {
-            autoRegisterListener: true, // default: true
-            hideDelay: 500, // default: 3000
-            hideSpeed: 0
-            // default: 400
-          },
-          history: {
-            delay: 500,
-            maxStack: 1000
-          },
-          comment: {
-            enabled: true,
-            commentAuthorId: 123,
-            commentAddOn: 'Author Name', // any additional info needed
-            color: 'yellow', // comment background color in the text
-            commentAddClick: this._comments.commentAddClick, // get called when `ADD COMMENT` btn on options bar is clicked
-            commentsClick: this._comments.commentsClick, // get called when you click `COMMENTS` btn on options bar for you to do additional things beside color on/off. Color on/off is already done before the callback is called.
-            commentTimestamp: this._comments.commentServerTimestamp,
-            containerID: this._editorContainerID
-          }
-        },
-
-        theme: 'snow'
-      });
-
-      $(".ql-subdocument .ql-comments-toggle .ql-comments-add").attr('data-toggle', 'tooltip');
-      $(".ql-comments-toggle,.ql-comments-add").css({
-        "position": "relative",
-        "top": "-5px"
-      });
-
-      $(".ql-subdocument").html('<strong>SUB</strong>');
-      $(".ql-subdocument").attr('title', 'Add subdocument');
-
-      $('.ql-comments-toggle').html('<i class="fa fa-comments"></i>');
-      $(".ql-comments-toggle").attr('title', 'Show/hide comments');
-
-      $('.ql-comments-add').html('<i class="fa fa-comment"></i>');
-      $(".ql-comments-add").attr('title', 'Add comment');
-
-      // hook changing the editor when click on save link ==> open in the document
-      quill.theme.tooltip.save2 = quill.theme.tooltip.save;
-
-      quill.theme.tooltip.save = function () {
-        quill.theme.tooltip.save2();
-        session.default.openIn();
-      };
+      var quillManager = new _QuillManger.QuillManager(this._editorContainerID, this._comments);
+      var quill = quillManager.getQuill();
 
       this._comments.viewEditor = quill;
       this.viewEditor = quill;
@@ -51535,33 +51546,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     }
 
     /**
-     * remoteCaretMoved At the reception of CARET position
-     * @param  {[type]} range  [description]
-     * @param  {[type]} origin [description]
-     * @return {[type]}        [description]
-     */
-
-  }, {
-    key: "remoteCaretMoved",
-    value: function remoteCaretMoved(range, origin) {
-      if (!origin) return;
-
-      if (this.markers[origin]) {
-        this.markers[origin].update(range, true); // to keep avatar
-      } else {
-        console.log('oringin', origin, 'id', this.model.uid);
-
-        var options = {
-          lifeTime: 5 * 1000,
-          range: range,
-          cursor: false,
-          isItME: false
-        };
-        this.markers[origin] = new _marker2.default(origin, options, this);
-      }
-    }
-
-    /**
      * cleanQuill description
      * @return {[type]} [description]
      */
@@ -51611,78 +51595,13 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     }
 
     /**
-     * startPing send periodically ping
-     * @param  {[type]} interval [description]
-     * @return {[type]}          [description]
-     * @todo TODO: Make interval as global parameter
-     */
-
-  }, {
-    key: "startPing",
-    value: function startPing(interval) {
-      var _this5 = this;
-
-      this.startTimer = setInterval(function () {
-        var pseudo = "Anonymous";
-        if (store.get('myId').pseudo) {
-          pseudo = store.get('myId').pseudo;
-        }
-        _this5.model.core.sendPing(pseudo);
-      }, interval);
-    }
-
-    /**
-     * stopPing stopPing
-     * @todo  implement this function
-     * @return {[type]} [description]
-     */
-
-  }, {
-    key: "stopPing",
-    value: function stopPing() {
-      clearInterval(this.startTimer);
-    }
-
-    /**
-     * atPing at the reception of ping
-     * @param  {[type]} origin [description]
-     * @param  {[type]} pseudo [description]
-     * @return {[type]}        [description]
-     */
-
-  }, {
-    key: "atPing",
-    value: function atPing(origin, pseudo) {
-      if (this.markers[origin]) {
-        this.markers[origin].update(null, false); // to keep avatar
-        this.markers[origin].setPseudo(pseudo);
-      } else {
-        // to create the avatar
-        //this.markers.push(origin)
-        //
-
-        var options = {
-          lifeTime: 5 * 1000,
-          range: {
-            index: 0,
-            length: 0
-          },
-          cursor: false,
-          isItME: false
-        };
-        this.markers[origin] = new _marker2.default(origin, options, this);
-        this.markers[origin].setPseudo(pseudo);
-      }
-    }
-
-    /**
      * UpdateComments This function to extract the comments form the editor and show them in #comments
      */
 
   }, {
     key: "UpdateComments",
     value: function UpdateComments() {
-      var _this6 = this;
+      var _this5 = this;
 
       // clear comments 
       jQuery("#" + this._editorContainerID + " #comments").empty();
@@ -51694,8 +51613,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
               var id = op.attributes.commentAuthor;
               //
               var m = {};
-              if (_this6.markers[id]) {
-                m = _this6.markers[id];
+              if (_this5.markerManager.markers[id]) {
+                m = _this5.markerManager.markers[id];
               } else {
                 m = {
                   animal: _marker2.default.getPseudoname(id, null),
@@ -51708,7 +51627,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
               var pseudoName = m.pseudoName;
               var colorRGB = m.colorRGB;
 
-              _this6._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp);
+              _this5._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp);
             }
           }
         }
@@ -51894,6 +51813,199 @@ var LinkView = exports.LinkView = function () {
 
 /***/ }),
 
+/***/ "./src/view/maker-manager.js":
+/*!***********************************!*\
+  !*** ./src/view/maker-manager.js ***!
+  \***********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MarkerManager = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
+
+var _marker = __webpack_require__(/*! ../view/marker */ "./src/view/marker.js");
+
+var _marker2 = _interopRequireDefault(_marker);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+/**
+ * This class manages markers,pings,cursors of the different users
+ */
+var MarkerManager = exports.MarkerManager = function (_EventEmitter) {
+  _inherits(MarkerManager, _EventEmitter);
+
+  function MarkerManager(core, editor) {
+    _classCallCheck(this, MarkerManager);
+
+    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this));
+
+    _this._core = core;
+    _this._editor = editor;
+
+    /**
+     * markers contains all marks of the users: carets, avatars...
+     * @type {Marker[]}
+     */
+    _this.markers = {};
+
+    /**
+     * startimer A timer used for sending pings
+     * @type {Timer}
+     */
+    _this.startTimer = {};
+
+    /**
+    * @todo: make ping interval as option
+    */
+    _this.startPing(5000);
+
+    _this.startEventListeners();
+
+    return _this;
+  }
+
+  _createClass(MarkerManager, [{
+    key: "startEventListeners",
+    value: function startEventListeners() {
+      var _this2 = this;
+
+      this._core.on('remoteCaretMoved', function (range, origin) {
+        _this2.remoteCaretMoved(range, origin);
+      });
+
+      this._core.on('ping', function (origin, pseudo) {
+        _this2.atPing(origin, pseudo);
+      });
+    }
+  }, {
+    key: "addMarker",
+    value: function addMarker(id) {
+      var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      var defaultOptions = {
+        lifeTime: 5 * 1000,
+        range: {
+          index: 0,
+          length: 0 },
+        cursor: false,
+        isItME: isItMe
+      };
+
+      var options = Object.assign(defaultOptions, opts);
+      this.markers[id] = new _marker2.default(id, options, this._editor);
+
+      if (isItMe) {
+        if (store.get('myId')) {
+          this.markers[id].setPseudo(store.get('myId').pseudo);
+        } else {
+          store.set('myId', {
+            id: id,
+            pseudo: this.markers[id].pseudoName
+          });
+        }
+      }
+    }
+  }, {
+    key: "caretMoved",
+    value: function caretMoved(range) {
+      this._core.caretMoved(range);
+    }
+
+    /**
+    * remoteCaretMoved At the reception of CARET position
+    * @param  {[type]} range  [description]
+    * @param  {[type]} origin [description]
+    * @return {[type]}        [description]
+    */
+
+  }, {
+    key: "remoteCaretMoved",
+    value: function remoteCaretMoved(range, origin) {
+      if (!origin) return;
+
+      if (this.markers[origin]) {
+        this.markers[origin].update(range, true); // to keep avatar
+      } else {
+        this.addMarker(origin, false, { range: range, cursor: true });
+      }
+    }
+
+    /**
+     * startPing send periodically ping
+     * @param  {[type]} interval [description]
+     * @return {[type]}          [description]
+     * @todo TODO: Make interval as global parameter
+     */
+
+  }, {
+    key: "startPing",
+    value: function startPing(interval) {
+      var _this3 = this;
+
+      this._startTimer = setInterval(function () {
+        var pseudo = "Anonymous";
+        if (store.get('myId').pseudo) {
+          pseudo = store.get('myId').pseudo;
+        }
+        _this3._core.sendPing(pseudo);
+      }, interval);
+    }
+
+    /**
+     * stopPing stopPing
+     * @todo  implement this function
+     * @return {[type]} [description]
+     */
+
+  }, {
+    key: "stopPing",
+    value: function stopPing() {
+      clearInterval(this._startTimer);
+    }
+
+    /**
+     * atPing at the reception of ping
+     * @param  {[type]} origin [description]
+     * @param  {[type]} pseudo [description]
+     * @return {[type]}        [description]
+     */
+
+  }, {
+    key: "atPing",
+    value: function atPing(origin, pseudo) {
+      if (this.markers[origin]) {
+        this.markers[origin].update(null, false); // to keep avatar
+        this.markers[origin].setPseudo(pseudo);
+      } else {
+        // to create the avatar
+        this.addMarker(origin, false);
+        this.markers[origin].setPseudo(pseudo);
+      }
+    }
+  }]);
+
+  return MarkerManager;
+}(_events.EventEmitter);
+
+/***/ }),
+
 /***/ "./src/view/marker.js":
 /*!****************************!*\
   !*** ./src/view/marker.js ***!
@@ -52010,6 +52122,7 @@ var Marker = function () {
     this.cursor = options.cursor;
 
     this._editor = editor;
+
     if (editor) {
       this._editorContainerID = editor._editorContainerID;
     }
