@@ -4,9 +4,6 @@ import {EventEmitter} from "events"
 
 var debug = require('debug')('crate:view:editor')
 
-
-
-
 Quill.register('modules/cursors', QuillCursors);
 Quill.register('modules/comment', QuillComment);
 
@@ -53,63 +50,10 @@ export class EditorController extends EventEmitter {
     this._sessionID = sessionID
 
     this.loadDocument(sessionID)
-
-
     this.startPing(5000)
-
-    jQuery(`#${this._editorContainerID} #saveicon`).click(() => {
-      this.saveDocument()
-    })
-
-    jQuery(`#${this._editorContainerID} #title`).focusout(() => {
-      this.changeTitle()
-      this.emit('thereAreChanges')
-    })
-
-
-    // EDITOR listeners 
-    this.viewEditor.on('selection-change', (range, oldRange, source) => {
-      if (range) {
-        this.model.core.caretMoved(range)
+    this.startEventListeners()
       }
-    })
 
-    this.viewEditor.on('text-change', (delta, oldDelta, source) => {
-      this.textChange(delta, oldDelta, source)
-      this.emit('thereAreChanges')
-
-    })
-
-
-    // Core listeners 
-    this.model.core.on('remoteInsert', (element, indexp) => {
-      this.remoteInsert(element, indexp)
-      this.emit('thereAreChanges')
-    })
-
-    this.model.core.on('remoteRemove', (index) => {
-      this.remoteRemove(index)
-      this.emit('thereAreChanges')
-    })
-
-    this.model.core.on('remoteCaretMoved', (range, origin) => {
-      this.remoteCaretMoved(range, origin)
-    })
-
-    this.model.core.on('remoteCaretMoved', (range, origin) => {
-      this.remoteCaretMoved(range, origin)
-    })
-
-    //At the reception of Title changed operation 
-    this.model.on('changeTitle', (title) => {
-      jQuery(`#${this._editorContainerID} #title`).text(title)
-      this.emit('thereAreChanges')
-    })
-
-    this.model.core.on('ping', (origin, pseudo) => {
-      this.atPing(origin, pseudo)
-    })
-  }
 
 
 
@@ -183,7 +127,6 @@ export class EditorController extends EventEmitter {
       })
     }
     this.UpdateComments()
-
     //comment module initialization
     let commentOpt = this.viewEditor.options.modules.comment
     commentOpt.commentAddOn = this.markers[id].animal
@@ -191,6 +134,67 @@ export class EditorController extends EventEmitter {
     commentOpt.color = this.markers[id].colorRGB
   }
 
+
+  /**
+   * Start all the event listeners related to the editor
+   */
+  startEventListeners() {
+   
+   //Menu Bar events
+    jQuery(`#${this._editorContainerID} #saveicon`).click(() => {
+      this.saveDocument()
+    })
+
+    jQuery(`#${this._editorContainerID} #title`).focusout(() => {
+      this.changeTitle()
+      this.emit('thereAreChanges')
+    })
+
+
+    // Local events 
+    this.viewEditor.on('selection-change', (range, oldRange, source) => {
+      if (range) {
+        this.model.core.caretMoved(range)
+      }
+    })
+
+    this.viewEditor.on('text-change', (delta, oldDelta, source) => {
+      this.textChange(delta, oldDelta, source)
+      this.emit('thereAreChanges')
+
+    })
+
+
+    // Remote events
+    this.model.core.on('remoteInsert', (element, indexp) => {
+      this.remoteInsert(element, indexp)
+      this.emit('thereAreChanges')
+    })
+
+    this.model.core.on('remoteRemove', (index) => {
+      this.remoteRemove(index)
+      this.emit('thereAreChanges')
+    })
+
+    this.model.core.on('remoteCaretMoved', (range, origin) => {
+      this.remoteCaretMoved(range, origin)
+    })
+
+    this.model.core.on('remoteCaretMoved', (range, origin) => {
+      this.remoteCaretMoved(range, origin)
+    })
+
+    //At the reception of Title changed operation 
+    this.model.on('changeTitle', (title) => {
+      jQuery(`#${this._editorContainerID} #title`).text(title)
+      this.emit('thereAreChanges')
+    })
+
+    this.model.core.on('ping', (origin, pseudo) => {
+      this.atPing(origin, pseudo)
+    })
+
+  } 
   /**
    * createViewDocument  Create quill editor options for the editor that we wan to create
    * @param  {[type]} containerID [description]
@@ -601,7 +605,9 @@ export class EditorController extends EventEmitter {
     if (this.markers[origin]) {
       this.markers[origin].update(range, true) // to keep avatar
 
-    } else {
+    } else {   
+      console.log('oringin',origin, 'id',this.model.uid);
+      
       let options = {
         lifeTime: 5 * 1000,
         range,

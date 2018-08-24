@@ -50999,58 +50999,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     _this._sessionID = sessionID;
 
     _this.loadDocument(sessionID);
-
     _this.startPing(5000);
-
-    jQuery("#" + _this._editorContainerID + " #saveicon").click(function () {
-      _this.saveDocument();
-    });
-
-    jQuery("#" + _this._editorContainerID + " #title").focusout(function () {
-      _this.changeTitle();
-      _this.emit('thereAreChanges');
-    });
-
-    // EDITOR listeners 
-    _this.viewEditor.on('selection-change', function (range, oldRange, source) {
-      if (range) {
-        _this.model.core.caretMoved(range);
-      }
-    });
-
-    _this.viewEditor.on('text-change', function (delta, oldDelta, source) {
-      _this.textChange(delta, oldDelta, source);
-      _this.emit('thereAreChanges');
-    });
-
-    // Core listeners 
-    _this.model.core.on('remoteInsert', function (element, indexp) {
-      _this.remoteInsert(element, indexp);
-      _this.emit('thereAreChanges');
-    });
-
-    _this.model.core.on('remoteRemove', function (index) {
-      _this.remoteRemove(index);
-      _this.emit('thereAreChanges');
-    });
-
-    _this.model.core.on('remoteCaretMoved', function (range, origin) {
-      _this.remoteCaretMoved(range, origin);
-    });
-
-    _this.model.core.on('remoteCaretMoved', function (range, origin) {
-      _this.remoteCaretMoved(range, origin);
-    });
-
-    //At the reception of Title changed operation 
-    _this.model.on('changeTitle', function (title) {
-      jQuery("#" + _this._editorContainerID + " #title").text(title);
-      _this.emit('thereAreChanges');
-    });
-
-    _this.model.core.on('ping', function (origin, pseudo) {
-      _this.atPing(origin, pseudo);
-    });
+    _this.startEventListeners();
     return _this;
   }
 
@@ -51125,7 +51075,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         });
       }
       this.UpdateComments();
-
       //comment module initialization
       var commentOpt = this.viewEditor.options.modules.comment;
       commentOpt.commentAddOn = this.markers[id].animal;
@@ -51133,6 +51082,66 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       commentOpt.color = this.markers[id].colorRGB;
     }
 
+    /**
+     * Start all the event listeners related to the editor
+     */
+
+  }, {
+    key: "startEventListeners",
+    value: function startEventListeners() {
+      var _this3 = this;
+
+      //Menu Bar events
+      jQuery("#" + this._editorContainerID + " #saveicon").click(function () {
+        _this3.saveDocument();
+      });
+
+      jQuery("#" + this._editorContainerID + " #title").focusout(function () {
+        _this3.changeTitle();
+        _this3.emit('thereAreChanges');
+      });
+
+      // Local events 
+      this.viewEditor.on('selection-change', function (range, oldRange, source) {
+        if (range) {
+          _this3.model.core.caretMoved(range);
+        }
+      });
+
+      this.viewEditor.on('text-change', function (delta, oldDelta, source) {
+        _this3.textChange(delta, oldDelta, source);
+        _this3.emit('thereAreChanges');
+      });
+
+      // Remote events
+      this.model.core.on('remoteInsert', function (element, indexp) {
+        _this3.remoteInsert(element, indexp);
+        _this3.emit('thereAreChanges');
+      });
+
+      this.model.core.on('remoteRemove', function (index) {
+        _this3.remoteRemove(index);
+        _this3.emit('thereAreChanges');
+      });
+
+      this.model.core.on('remoteCaretMoved', function (range, origin) {
+        _this3.remoteCaretMoved(range, origin);
+      });
+
+      this.model.core.on('remoteCaretMoved', function (range, origin) {
+        _this3.remoteCaretMoved(range, origin);
+      });
+
+      //At the reception of Title changed operation 
+      this.model.on('changeTitle', function (title) {
+        jQuery("#" + _this3._editorContainerID + " #title").text(title);
+        _this3.emit('thereAreChanges');
+      });
+
+      this.model.core.on('ping', function (origin, pseudo) {
+        _this3.atPing(origin, pseudo);
+      });
+    }
     /**
      * createViewDocument  Create quill editor options for the editor that we wan to create
      * @param  {[type]} containerID [description]
@@ -51305,7 +51314,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "applyChanges",
     value: function applyChanges(delta, iniRetain) {
-      var _this3 = this;
+      var _this4 = this;
 
       var changes = JSON.parse(JSON.stringify(delta, null, 2));
 
@@ -51336,7 +51345,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
         var isItInsertWithAtt = false; // to know if we have to update comments or not, if its delete because of changing style, no update comments is needed
 
-        retain = _this3.sendIt(text, att, 0, value, oper, retain, isItInsertWithAtt);
+        retain = _this4.sendIt(text, att, 0, value, oper, retain, isItInsertWithAtt);
       });
     }
 
@@ -51540,6 +51549,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       if (this.markers[origin]) {
         this.markers[origin].update(range, true); // to keep avatar
       } else {
+        console.log('oringin', origin, 'id', this.model.uid);
+
         var options = {
           lifeTime: 5 * 1000,
           range: range,
@@ -51609,14 +51620,14 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "startPing",
     value: function startPing(interval) {
-      var _this4 = this;
+      var _this5 = this;
 
       this.startTimer = setInterval(function () {
         var pseudo = "Anonymous";
         if (store.get('myId').pseudo) {
           pseudo = store.get('myId').pseudo;
         }
-        _this4.model.core.sendPing(pseudo);
+        _this5.model.core.sendPing(pseudo);
       }, interval);
     }
 
@@ -51671,7 +51682,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "UpdateComments",
     value: function UpdateComments() {
-      var _this5 = this;
+      var _this6 = this;
 
       // clear comments 
       jQuery("#" + this._editorContainerID + " #comments").empty();
@@ -51683,8 +51694,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
               var id = op.attributes.commentAuthor;
               //
               var m = {};
-              if (_this5.markers[id]) {
-                m = _this5.markers[id];
+              if (_this6.markers[id]) {
+                m = _this6.markers[id];
               } else {
                 m = {
                   animal: _marker2.default.getPseudoname(id, null),
@@ -51697,7 +51708,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
               var pseudoName = m.pseudoName;
               var colorRGB = m.colorRGB;
 
-              _this5._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp);
+              _this6._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp);
             }
           }
         }
@@ -52102,7 +52113,7 @@ var Marker = function () {
 
 
     /**
-     * getAvatar return the div that contains this user id
+     * getAvatar return a div that contains this user id
      * @return {[type]} [description]
      */
     value: function getAvatar() {

@@ -101,7 +101,7 @@ export default class Marker {
       if (options.isItME) {
         this.addAvatar()
       } else if (this.cursor) {
-        this.addCursor(options.range);
+        this.addCursor(options.range);  
       }
     }
   };
@@ -223,7 +223,7 @@ export default class Marker {
   };
 
   /**
-   * getAvatar return the div that contains this user id
+   * getAvatar return a div that contains this user id
    * @return {[type]} [description]
    */
   getAvatar() {
@@ -235,7 +235,7 @@ export default class Marker {
    * getAvatar return the div that contains this user id
    * @return {[type]} [description]
    */
- static getAvatar(id) {
+  static getAvatar(id) {
     return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
   };
 
@@ -268,9 +268,9 @@ export default class Marker {
    * addCursor add the cursor to the editor
    * @param {[{index: index,length: 0}]} range [description]
    */
-  addCursor(range) {
+  addCursor(range) { 
     this.cursor = true;
-    this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
+    this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB); 
   };
 
 }
