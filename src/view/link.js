@@ -75,7 +75,7 @@ export class LinkView {
             .css('z-index', '15');
 
         var self = this;
-        this.dismiss.unbind("click").click(function() {
+        this.dismiss.unbind("click").click(function () {
             self.linkContainer.hide();
         });
     };

@@ -9,12 +9,12 @@ export class Comments {
 	 * @return {[type]}                   [description]
 	 */
 
-	constructor(authorId,editorContainerID,markerManger) {
+	constructor(authorId, editorContainerID, markerManger) {
 		// Selectors
 		this._authorId = authorId
 		this._editorContainerID = editorContainerID
 		this._viewEditor = {}
-		this._markerManager= markerManger
+		this._markerManager = markerManger
 
 		this._commentCallback = {}
 		this.setSelectors()
@@ -24,13 +24,13 @@ export class Comments {
 	}
 
 	addAuthorInformation() {
-			const commentOpt = this._viewEditor.options.modules.comment
-			commentOpt.commentAuthorId =this._authorId
-			commentOpt.commentAddOn = this._markerManager.markers[this._authorId].animal
-			commentOpt.color = this._markerManager.markers[this._authorId].colorRGB
+		const commentOpt = this._viewEditor.options.modules.comment
+		commentOpt.commentAuthorId = this._authorId
+		commentOpt.commentAddOn = this._markerManager.getMarker(this._authorId).animal
+		commentOpt.color = this._markerManager.getMarker(this._authorId).colorRGB
 	}
 
-	setSelectors(){
+	setSelectors() {
 		this._inputCommentModel = $(`#${this._editorContainerID} #inputCommentModal`)
 		this._comments = $(`#${this._editorContainerID} #comments`)
 		this._ql_editor = $(`#${this._editorContainerID} .ql-editor`)
@@ -46,7 +46,7 @@ export class Comments {
 		this._viewEditor = Editor
 	}
 
-	commentAddClick(cb,self) {
+	commentAddClick(cb, self) {
 		this._commentCallback = cb.bind(self);
 		this._inputCommentModel.modal('show');
 	}
@@ -82,20 +82,22 @@ export class Comments {
 	}
 
 	async addCommentToList(comment, authorId) {
-		
-		const marker = this._markerManager.addMarker(authorId,false,{lifetime:-1}) 
+
+		const marker = this._markerManager.addMarker(authorId, false, {
+			lifetime: -1
+		})
 		const date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
 
-		const currentTimestamp= await this.getCurrentTimestamp()
-		const divId = 'ql-comment-' + authorId + '-' + currentTimestamp;	
+		const currentTimestamp = await this.getCurrentTimestamp()
+		const divId = 'ql-comment-' + authorId + '-' + currentTimestamp;
 
 		const opts = {
-			id:divId,
-			date:date,
-			pseudoName:marker.pseudoName,
-			colorRGB:marker.colorRGB,
-			comment:comment,
-			iconURL:`./icons/${marker.animal}.png`
+			id: divId,
+			date: date,
+			pseudoName: marker.pseudoName,
+			colorRGB: marker.colorRGB,
+			comment: comment,
+			iconURL: `./icons/${marker.animal}.png`
 		}
 
 		const cmtBox = this.getCommentBoxDiv(opts)
@@ -106,7 +108,7 @@ export class Comments {
 
 	getCommentBoxDiv(opts) {
 
-	const cmtbox = $(
+		const cmtbox = $(
 			`<div class='comment-box ${opts.id} row' id='comment-box-${opts.id}' tabindex="1" title='${opts.date}'>
       <div class='comment-head row'>
         <div id="${opts.id}"style="background-color:${opts.colorRGB};width: 40px;" ><img class="imageuser" src="${opts.iconURL}" alt="${opts.pseudoName}"></div>
@@ -121,21 +123,21 @@ export class Comments {
 		);
 		return cmtbox
 	}
-	
-	addFocusEffects(divId) {	
+
+	addFocusEffects(divId) {
 		$('#comment-box-' + divId).focusin(() => {
 			this.commentBoxFocus(divId)
-		
-			})
-	
+
+		})
+
 		$('#comment-box-' + divId).focusout(() => {
-				this.commentBoxFocus(divId, 'out')
-			})	
+			this.commentBoxFocus(divId, 'out')
+		})
 	}
-	
+
 	async saveComment() {
 		let comment = this._commentInput.val();
-		
+
 		await this.addCommentToList(comment, this._authorId)
 		this._commentCallback(comment);
 	}
@@ -152,26 +154,25 @@ export class Comments {
 
 	}
 
-   /**
-   * UpdateComments This function to extract the comments form the editor and show them in #comments
-   */
-  	UpdateComments() {
-    // clear comments 
-    this.clearComments()
-    // for each insert check att if it contains the author then insert comment 
-    this.viewEditor.editor.delta.ops.forEach((op) => {
-      if (op.insert && op.attributes && op.attributes.commentAuthor) {
-            const id = op.attributes.commentAuthor	
-			this.addCommentToList(op.attributes.comment, id, op.attributes.commentTimestamp)
-          }
+	/**
+	 * UpdateComments This function to extract the comments form the editor and show them in #comments
+	 */
+	UpdateComments() {
+		// clear comments 
+		this.clearComments()
+		// for each insert check att if it contains the author then insert comment 
+		this.viewEditor.editor.delta.ops.forEach((op) => {
+			if (op.insert && op.attributes && op.attributes.commentAuthor) {
+				const id = op.attributes.commentAuthor
+				this.addCommentToList(op.attributes.comment, id, op.attributes.commentTimestamp)
+			}
 
-        })
+		})
 
-    }
+	}
 
 
-  clearComments(){
-	jQuery(`#${this._editorContainerID} #comments`).empty()
-  }
+	clearComments() {
+		jQuery(`#${this._editorContainerID} #comments`).empty()
+	}
 }
-

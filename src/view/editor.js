@@ -1,8 +1,16 @@
 import Marker from "../view/marker"
-import {Comments} from "../view/comments"
-import {EventEmitter} from "events"
-import {MarkerManager} from "./maker-manager"
-import {QuillManager} from "./QuillManger"
+import {
+  Comments
+} from "../view/comments"
+import {
+  EventEmitter
+} from "events"
+import {
+  MarkerManager
+} from "./maker-manager"
+import {
+  QuillManager
+} from "./QuillManger"
 
 var debug = require('debug')('crate:view:editor')
 
@@ -28,10 +36,10 @@ export class EditorController extends EventEmitter {
      */
     this.model = model
 
-    this.markerManager=new MarkerManager(this.model.core, this)
-   
-   
-    
+    this.markerManager = new MarkerManager(this.model.core, this)
+
+
+
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
@@ -46,7 +54,7 @@ export class EditorController extends EventEmitter {
 
     this.loadDocument(sessionID)
     this.startEventListeners()
-      }
+  }
 
 
 
@@ -57,13 +65,13 @@ export class EditorController extends EventEmitter {
    * @return {[type]} [description]
    */
   loadDocument(sessionID) {
-    const itIsMe=true
-    this.markerManager.addMarker(this.model.uid,itIsMe)
-    this._comments=new Comments(this.model.uid,this._editorContainerID,this.markerManager)
+    const itIsMe = true
+    this.markerManager.addMarker(this.model.uid, itIsMe)
+    this._comments = new Comments(this.model.uid, this._editorContainerID, this.markerManager)
     this.createViewDocument()
- 
-  
-    
+
+
+
 
     if (store.get("CRATE2-" + sessionID)) {
       var doc = store.get("CRATE2-" + sessionID)
@@ -87,8 +95,8 @@ export class EditorController extends EventEmitter {
    * Start all the event listeners related to the editor
    */
   startEventListeners() {
-   
-   //Menu Bar events
+
+    //Menu Bar events
     jQuery(`#${this._editorContainerID} #saveicon`).click(() => {
       this.saveDocument()
     })
@@ -129,9 +137,9 @@ export class EditorController extends EventEmitter {
       this.emit('thereAreChanges')
     })
 
-    
-  } 
-  
+
+  }
+
   /**
    * createViewDocument  Create quill editor options for the editor that we wan to create
    * @param  {[type]} containerID [description]
@@ -139,9 +147,9 @@ export class EditorController extends EventEmitter {
    */
   createViewDocument() {
 
-    const quillManager = new QuillManager(this._editorContainerID,this._comments)
-    const quill= quillManager.getQuill()
-    
+    const quillManager = new QuillManager(this._editorContainerID, this._comments)
+    const quill = quillManager.getQuill()
+
     this._comments.viewEditor = quill
     this.viewEditor = quill
   }
@@ -309,7 +317,7 @@ export class EditorController extends EventEmitter {
 
               for (var i = retain; i < (retain + text.length); ++i) {
                 att = this.viewEditor.getFormat(i, 1)
-               debug("Local insert : ", text[i - retain], i)
+                debug("Local insert : ", text[i - retain], i)
                 this.model.core.insert({
                   type: 'char',
                   text: text[i - retain],
@@ -417,7 +425,7 @@ export class EditorController extends EventEmitter {
   }
 
 
- 
+
   /**
    * cleanQuill description
    * @return {[type]} [description]

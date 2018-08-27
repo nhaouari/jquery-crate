@@ -50850,11 +50850,12 @@ var QuillManager = exports.QuillManager = function () {
       //  [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
       // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
       /* [{
-         'direction': 'rtl'
-       }], // text direction
-               [{
-         'size': ['small', false, 'large', 'huge']
-       }], // custom dropdown*/
+               'direction': 'rtl'
+             }], // text direction
+      
+             [{
+               'size': ['small', false, 'large', 'huge']
+             }], // custom dropdown*/
 
       [{
         'color': []
@@ -50989,8 +50990,8 @@ var Comments = exports.Comments = function () {
 		value: function addAuthorInformation() {
 			var commentOpt = this._viewEditor.options.modules.comment;
 			commentOpt.commentAuthorId = this._authorId;
-			commentOpt.commentAddOn = this._markerManager.markers[this._authorId].animal;
-			commentOpt.color = this._markerManager.markers[this._authorId].colorRGB;
+			commentOpt.commentAddOn = this._markerManager.getMarker(this._authorId).animal;
+			commentOpt.color = this._markerManager.getMarker(this._authorId).colorRGB;
 		}
 	}, {
 		key: "setSelectors",
@@ -51047,7 +51048,9 @@ var Comments = exports.Comments = function () {
 					while (1) {
 						switch (_context.prev = _context.next) {
 							case 0:
-								marker = this._markerManager.addMarker(authorId, false, { lifetime: -1 });
+								marker = this._markerManager.addMarker(authorId, false, {
+									lifetime: -1
+								});
 								date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
 								_context.next = 4;
 								return this.getCurrentTimestamp();
@@ -51145,8 +51148,8 @@ var Comments = exports.Comments = function () {
 		}
 
 		/**
-  * UpdateComments This function to extract the comments form the editor and show them in #comments
-  */
+   * UpdateComments This function to extract the comments form the editor and show them in #comments
+   */
 
 	}, {
 		key: "UpdateComments",
@@ -51875,34 +51878,100 @@ var LinkView = exports.LinkView = function () {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.MarkerManager = undefined;
+exports.MarkerManager = exports.MarkerEvent = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
-
-var _marker = __webpack_require__(/*! ../view/marker */ "./src/view/marker.js");
+var _marker = __webpack_require__(/*! ./marker */ "./src/view/marker.js");
 
 var _marker2 = _interopRequireDefault(_marker);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var MarkerEvent = exports.MarkerEvent = function () {
+  function MarkerEvent(opts) {
+    _classCallCheck(this, MarkerEvent);
+
+    this._markers = opts.markers;
+    this._core = opts.core;
+    this._editor = opts.editor;
+
+    this._defaultOptions = {
+      lifeTime: 5 * 1000,
+      range: {
+        index: 0,
+        length: 0
+      },
+      cursor: false
+    };
+  }
+
+  _createClass(MarkerEvent, [{
+    key: 'addMarker',
+    value: function addMarker(id) {
+      var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      var options = Object.assign(_extends({}, this._defaultOptions, {
+        isItMe: isItMe
+      }), opts);
+
+      if (!this._markers.hasOwnProperty(id)) {
+        this._markers[id] = new _marker2.default(id, options, this._editor);
+
+        if (isItMe) {
+          if (store.get('myId')) {
+            this._markers[id].setPseudo(store.get('myId').pseudo);
+          } else {
+            store.set('myId', {
+              id: id,
+              pseudo: this._markers[id].pseudoName
+            });
+          }
+        }
+      }
+      return this._markers[id];
+    }
+  }, {
+    key: 'getMarker',
+    value: function getMarker(id) {
+      return this._markers[id];
+    }
+  }, {
+    key: 'removeMarker',
+    value: function removeMarker() {}
+  }]);
+
+  return MarkerEvent;
+}();
+
 /**
  * This class manages markers,pings,cursors of the different users
  */
-var MarkerManager = exports.MarkerManager = function (_EventEmitter) {
-  _inherits(MarkerManager, _EventEmitter);
+
+
+var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
+  _inherits(MarkerManager, _MarkerEvent);
 
   function MarkerManager(core, editor) {
     _classCallCheck(this, MarkerManager);
 
-    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this));
+    var markers = {};
+    var opts = {
+      markers: markers,
+      core: core,
+      editor: editor
+    };
+
+    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, opts));
 
     _this._core = core;
     _this._editor = editor;
@@ -51911,109 +51980,69 @@ var MarkerManager = exports.MarkerManager = function (_EventEmitter) {
      * markers contains all marks of the users: carets, avatars...
      * @type {Marker[]}
      */
-    _this.markers = {};
+
+    _this._markers = markers;
+
+    _this._pingManager = new PingManger(_extends({}, opts, {
+      period: 5000
+    }));
+
+    _this._caretManger = new CaretManger(_extends({}, opts));
+
+    return _this;
+  }
+
+  /**
+   * Set the current caret position
+   * @param {*} range the current caret position 
+   */
+
+
+  _createClass(MarkerManager, [{
+    key: 'caretMoved',
+    value: function caretMoved(range) {
+      this._caretManger.caretMoved(range);
+    }
+  }]);
+
+  return MarkerManager;
+}(MarkerEvent);
+
+var PingManger = function (_MarkerEvent2) {
+  _inherits(PingManger, _MarkerEvent2);
+
+  function PingManger(opts) {
+    _classCallCheck(this, PingManger);
 
     /**
      * startimer A timer used for sending pings
      * @type {Timer}
      */
-    _this.startTimer = {};
+    var _this2 = _possibleConstructorReturn(this, (PingManger.__proto__ || Object.getPrototypeOf(PingManger)).call(this, opts));
+
+    _this2._startTimer = {};
 
     /**
-    * @todo: make ping interval as option
-    */
-    _this.startPing(5000);
+     * @todo: make ping interval as option
+     */
+    _this2.startPing(opts.period);
 
-    _this.startEventListeners();
-
-    return _this;
+    _this2._core.on('ping', function (origin, pseudo) {
+      _this2.atPing(origin, pseudo);
+    });
+    return _this2;
   }
 
-  _createClass(MarkerManager, [{
-    key: "startEventListeners",
-    value: function startEventListeners() {
-      var _this2 = this;
+  /**
+   * startPing send periodically ping
+   * @param  {[type]} interval [description]
+   * @return {[type]}          [description]
+   * @todo TODO: Make interval as global parameter
+   */
 
-      this._core.on('remoteCaretMoved', function (range, origin) {
-        _this2.remoteCaretMoved(range, origin);
-      });
 
-      this._core.on('ping', function (origin, pseudo) {
-        _this2.atPing(origin, pseudo);
-      });
-    }
-  }, {
-    key: "addMarker",
-    value: function addMarker(id) {
-      var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-      var defaultOptions = {
-        lifeTime: 5 * 1000,
-        range: {
-          index: 0,
-          length: 0 },
-        cursor: false,
-        isItME: isItMe
-      };
-
-      var options = Object.assign(defaultOptions, opts);
-
-      if (!this.markers.hasOwnProperty(id)) {
-        this.markers[id] = new _marker2.default(id, options, this._editor);
-
-        if (isItMe) {
-          if (store.get('myId')) {
-            this.markers[id].setPseudo(store.get('myId').pseudo);
-          } else {
-            store.set('myId', {
-              id: id,
-              pseudo: this.markers[id].pseudoName
-            });
-          }
-        }
-      }
-      return this.markers[id];
-    }
-  }, {
-    key: "getMarker",
-    value: function getMarker(id) {
-      return this.markers[id];
-    }
-  }, {
-    key: "caretMoved",
-    value: function caretMoved(range) {
-      this._core.caretMoved(range);
-    }
-
-    /**
-    * remoteCaretMoved At the reception of CARET position
-    * @param  {[type]} range  [description]
-    * @param  {[type]} origin [description]
-    * @return {[type]}        [description]
-    */
-
-  }, {
-    key: "remoteCaretMoved",
-    value: function remoteCaretMoved(range, origin) {
-      if (!origin) return;
-
-      if (this.markers[origin]) {
-        this.markers[origin].update(range, true); // to keep avatar
-      } else {
-        this.addMarker(origin, false, { range: range, cursor: true });
-      }
-    }
-
-    /**
-     * startPing send periodically ping
-     * @param  {[type]} interval [description]
-     * @return {[type]}          [description]
-     * @todo TODO: Make interval as global parameter
-     */
-
-  }, {
-    key: "startPing",
+  _createClass(PingManger, [{
+    key: 'startPing',
     value: function startPing(interval) {
       var _this3 = this;
 
@@ -52033,7 +52062,7 @@ var MarkerManager = exports.MarkerManager = function (_EventEmitter) {
      */
 
   }, {
-    key: "stopPing",
+    key: 'stopPing',
     value: function stopPing() {
       clearInterval(this._startTimer);
     }
@@ -52046,21 +52075,71 @@ var MarkerManager = exports.MarkerManager = function (_EventEmitter) {
      */
 
   }, {
-    key: "atPing",
+    key: 'atPing',
     value: function atPing(origin, pseudo) {
-      if (this.markers[origin]) {
-        this.markers[origin].update(null, false); // to keep avatar
-        this.markers[origin].setPseudo(pseudo);
+      if (this.getMarker(origin)) {
+        this.getMarker(origin).update(null, false) // to keep avatar
+        .setPseudo(pseudo);
       } else {
         // to create the avatar
-        this.addMarker(origin, false);
-        this.markers[origin].setPseudo(pseudo);
+        this.addMarker(origin, false).setPseudo(pseudo);
       }
     }
   }]);
 
-  return MarkerManager;
-}(_events.EventEmitter);
+  return PingManger;
+}(MarkerEvent);
+
+var CaretManger = function (_MarkerEvent3) {
+  _inherits(CaretManger, _MarkerEvent3);
+
+  function CaretManger(opts) {
+    _classCallCheck(this, CaretManger);
+
+    var _this4 = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, opts));
+
+    _this4._core = opts.core;
+    _this4._defaultOptions = {
+      lifeTime: 5 * 1000,
+      cursor: true
+    };
+
+    _this4._core.on('remoteCaretMoved', function (range, origin) {
+      _this4.remoteCaretMoved(range, origin);
+    });
+    return _this4;
+  }
+
+  _createClass(CaretManger, [{
+    key: 'caretMoved',
+    value: function caretMoved(range) {
+      this._core.caretMoved(range);
+    }
+
+    /**
+     * remoteCaretMoved At the reception of CARET position
+     * @param  {[type]} range  [description]
+     * @param  {[type]} origin [description]
+     * @return {[type]}        [description]
+     */
+
+  }, {
+    key: 'remoteCaretMoved',
+    value: function remoteCaretMoved(range, origin) {
+      if (!origin) return;
+
+      if (this.getMarker(origin)) {
+        this.getMarker(origin).update(range, true); // to keep avatar
+      } else {
+        this.addMarker(origin, false, {
+          range: range
+        });
+      }
+    }
+  }]);
+
+  return CaretManger;
+}(MarkerEvent);
 
 /***/ }),
 
@@ -52112,7 +52191,6 @@ var Marker = function () {
     _classCallCheck(this, Marker);
 
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
-
 
     if (options == null) {
       var options = {
@@ -52187,13 +52265,20 @@ var Marker = function () {
 
     if (this.lifeTime != -1) {
       // -1 => created without timer avatar cursor 
-      if (options.isItME) {
+      if (options.isItMe) {
         this.addAvatar();
       } else if (this.cursor) {
         this.addCursor(options.range);
       }
     }
   }
+
+  /**
+   * capitalize uppercase the first letter
+   * @param  {[string]} s [string]
+   * @return {[string]}   [String the first letter is in uppercase]
+   */
+
 
   _createClass(Marker, [{
     key: "update",
@@ -52224,6 +52309,7 @@ var Marker = function () {
         this.cursor = cursor;
         this.addCursor(range);
       }
+      return this;
     }
   }, {
     key: "checkIfOutdated",
@@ -52262,13 +52348,14 @@ var Marker = function () {
 
       var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "#users";
 
+
       jQuery("#" + this._editorContainerID + " " + divID).append(this.getAvatar());
       var avatar = $("#" + this._editorContainerID + " #" + this.origin);
       avatar.attr('data-toggle', 'tooltip');
       avatar.attr('title', this.pseudoName);
       this.avatarAdd = true;
 
-      if (!this.options.isItME) {
+      if (!this.options.isItMe) {
         /**
          * a timer that is used to check if the user is Outdated
          * @return {[type]}   [description]
@@ -52278,6 +52365,7 @@ var Marker = function () {
           return _this.checkIfOutdated();
         }, 1000);
       }
+      return this;
     }
   }, {
     key: "getAvatar",
@@ -52304,6 +52392,7 @@ var Marker = function () {
       avatar.remove();
       this.avatarAdd = false;
       clearInterval(this.timer);
+      return this;
     }
   }, {
     key: "setPseudo",
@@ -52320,6 +52409,7 @@ var Marker = function () {
       if (avatar.length) {
         avatar.attr('title', this.pseudoName);
       }
+      return this;
     }
   }, {
     key: "addCursor",
@@ -52332,16 +52422,10 @@ var Marker = function () {
     value: function addCursor(range) {
       this.cursor = true;
       this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
+      return this;
     }
   }], [{
     key: "capitalize",
-
-
-    /**
-     * capitalize uppercase the first letter
-     * @param  {[string]} s [string]
-     * @return {[string]}   [String the first letter is in uppercase]
-     */
     value: function capitalize(s) {
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
@@ -52387,9 +52471,9 @@ var Marker = function () {
 
 
     /**
-    * getAvatar return the div that contains this user id
-    * @return {[type]} [description]
-    */
+     * getAvatar return the div that contains this user id
+     * @return {[type]} [description]
+     */
     value: function getAvatar(id) {
       return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
     }

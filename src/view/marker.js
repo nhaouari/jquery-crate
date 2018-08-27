@@ -1,4 +1,3 @@
-
 import animals from "animals";
 import hash from "string-hash";
 
@@ -21,8 +20,6 @@ export default class Marker {
 
   constructor(origin, options, editor) {
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
-
-
 
     if (options == null) {
       var options = {
@@ -94,19 +91,19 @@ export default class Marker {
 
     this._editor = editor
 
-    
+
     if (editor) {
       this._editorContainerID = editor._editorContainerID
     }
 
     if (this.lifeTime != -1) { // -1 => created without timer avatar cursor 
-      if (options.isItME) {
+      if (options.isItMe) {
         this.addAvatar()
       } else if (this.cursor) {
-        this.addCursor(options.range);  
+        this.addCursor(options.range);
       }
     }
-  };
+  }
 
 
   /**
@@ -143,7 +140,7 @@ export default class Marker {
 
   static getPseudoname(id, format = 'Anonymous') {
 
-    if (format === 'Anonymous') { 
+    if (format === 'Anonymous') {
       return 'Anonymous ' +
         this.capitalize(animals.words[hash(id) % animals.words.length]);
     }
@@ -156,9 +153,9 @@ export default class Marker {
    */
   update(range, cursor) {
     this.time = new Date().getTime();
-    let editor =  $(`#${this._editorContainerID}`)
+    let editor = $(`#${this._editorContainerID}`)
     let avatar = $(`#${this._editorContainerID} #${this.origin}`)
-    
+
     if (!avatar.length && editor.length) {
       this.addAvatar();
     }
@@ -175,8 +172,9 @@ export default class Marker {
       this.cursor = cursor;
       this.addCursor(range);
     }
+    return this
   };
-  
+
 
   /**
    * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
@@ -194,10 +192,9 @@ export default class Marker {
       this.removeAvatar();
       return true
     } else {
-     // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
+      // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
       return false
     }
-
   }
 
 
@@ -207,13 +204,14 @@ export default class Marker {
    * @param {String} divID [the id of the div where the avatars are placed]
    */
   addAvatar(divID = "#users") {
+ 
     jQuery(`#${this._editorContainerID} ${divID}`).append(this.getAvatar());
     let avatar = $(`#${this._editorContainerID} #${this.origin}`)
     avatar.attr('data-toggle', 'tooltip')
     avatar.attr('title', this.pseudoName)
     this.avatarAdd = true;
-    
-    if (!this.options.isItME) {
+
+    if (!this.options.isItMe) {
       /**
        * a timer that is used to check if the user is Outdated
        * @return {[type]}   [description]
@@ -221,7 +219,7 @@ export default class Marker {
 
       this.timer = setInterval(() => this.checkIfOutdated(), 1000);
     }
-
+    return this
   };
 
   /**
@@ -233,7 +231,7 @@ export default class Marker {
   };
 
 
-   /**
+  /**
    * getAvatar return the div that contains this user id
    * @return {[type]} [description]
    */
@@ -251,6 +249,7 @@ export default class Marker {
     avatar.remove()
     this.avatarAdd = false;
     clearInterval(this.timer);
+    return this
   };
 
   /**
@@ -264,17 +263,18 @@ export default class Marker {
     if (avatar.length) {
       avatar.attr('title', this.pseudoName);
     }
+    return this
   };
 
   /**
    * addCursor add the cursor to the editor
    * @param {[{index: index,length: 0}]} range [description]
    */
-  addCursor(range) { 
+  addCursor(range) {
     this.cursor = true;
-    this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB); 
-  
+    this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
+    return this
   };
+  
 
 }
-
