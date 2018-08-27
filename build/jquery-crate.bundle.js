@@ -49230,7 +49230,7 @@ var View = exports.View = function () {
   }, {
     key: "saveComment",
     value: function saveComment() {
-      this._editor.saveComment();
+      this._editor._comments.saveComment();
     }
 
     // Remote session 
@@ -50901,7 +50901,7 @@ var QuillManager = exports.QuillManager = function () {
         color: 'yellow', // comment background color in the text
         commentAddClick: this._comments.commentAddClick, // get called when `ADD COMMENT` btn on options bar is clicked
         commentsClick: this._comments.commentsClick, // get called when you click `COMMENTS` btn on options bar for you to do additional things beside color on/off. Color on/off is already done before the callback is called.
-        commentTimestamp: this._comments.commentServerTimestamp,
+        commentTimestamp: this._comments.getCurrentTimestamp,
         containerID: this._editorContainerID
       };
       return opts;
@@ -50954,6 +50954,8 @@ var _dateformat2 = _interopRequireDefault(_dateformat);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /**
@@ -50966,37 +50968,51 @@ var Comments = exports.Comments = function () {
   * @return {[type]}                   [description]
   */
 
-	function Comments(editorContainerID) {
+	function Comments(authorId, editorContainerID, markerManger) {
 		_classCallCheck(this, Comments);
 
 		// Selectors
+		this._authorId = authorId;
 		this._editorContainerID = editorContainerID;
 		this._viewEditor = {};
-		this._inputCommentModel = $("#" + this._editorContainerID + " #inputCommentModal");
-		this._comments = $("#" + this._editorContainerID + " #comments");
-		this._ql_editor = $("#" + this._editorContainerID + " .ql-editor");
-		this._editor = $("#" + this._editorContainerID + " .editor");
-		this._commentInput = $("#" + this._editorContainerID + " #commentInput");
-		this._currentTimestamp = {};
+		this._markerManager = markerManger;
+
 		this._commentCallback = {};
+		this.setSelectors();
+
 		this.commentAddClick = this.commentAddClick.bind(this);
 		this.commentsClick = this.commentsClick.bind(this);
 	}
 
 	_createClass(Comments, [{
+		key: "addAuthorInformation",
+		value: function addAuthorInformation() {
+			var commentOpt = this._viewEditor.options.modules.comment;
+			commentOpt.commentAuthorId = this._authorId;
+			commentOpt.commentAddOn = this._markerManager.markers[this._authorId].animal;
+			commentOpt.color = this._markerManager.markers[this._authorId].colorRGB;
+		}
+	}, {
+		key: "setSelectors",
+		value: function setSelectors() {
+			this._inputCommentModel = $("#" + this._editorContainerID + " #inputCommentModal");
+			this._comments = $("#" + this._editorContainerID + " #comments");
+			this._ql_editor = $("#" + this._editorContainerID + " .ql-editor");
+			this._editor = $("#" + this._editorContainerID + " .editor");
+			this._commentInput = $("#" + this._editorContainerID + " #commentInput");
+		}
+	}, {
 		key: "commentAddClick",
 		value: function commentAddClick(cb, self) {
 			this._commentCallback = cb.bind(self);
 			this._inputCommentModel.modal('show');
 		}
 	}, {
-		key: "commentServerTimestamp",
-		value: function commentServerTimestamp() {
-			var _this = this;
-
+		key: "getCurrentTimestamp",
+		value: function getCurrentTimestamp() {
 			return new Promise(function (resolve, reject) {
-				_this._currentTimestamp = Math.round(new Date().getTime() / 1000); // call from server
-				resolve(_this._currentTimestamp);
+				var currentTimestamp = Math.round(new Date().getTime() / 1000); // call from server
+				resolve(currentTimestamp);
 			});
 		}
 	}, {
@@ -51024,41 +51040,98 @@ var Comments = exports.Comments = function () {
 		}
 	}, {
 		key: "addCommentToList",
-		value: function addCommentToList(comment, idAuthor, pseudo, name, color, currentTimestamp) {
-			var _this2 = this;
+		value: function () {
+			var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(comment, authorId) {
+				var marker, date, currentTimestamp, divId, opts, cmtBox;
+				return regeneratorRuntime.wrap(function _callee$(_context) {
+					while (1) {
+						switch (_context.prev = _context.next) {
+							case 0:
+								marker = this._markerManager.addMarker(authorId, false, { lifetime: -1 });
+								date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
+								_context.next = 4;
+								return this.getCurrentTimestamp();
 
-			var utcSeconds = currentTimestamp;
-			var d = new Date(); // The 0 there is the key, which sets the date to the epoch
-			var date = dateFormat(d, "dddd, mmmm dS, yyyy, h:MM:ss TT");
+							case 4:
+								currentTimestamp = _context.sent;
+								divId = 'ql-comment-' + authorId + '-' + currentTimestamp;
+								opts = {
+									id: divId,
+									date: date,
+									pseudoName: marker.pseudoName,
+									colorRGB: marker.colorRGB,
+									comment: comment,
+									iconURL: "./icons/" + marker.animal + ".png"
+								};
+								cmtBox = this.getCommentBoxDiv(opts);
 
-			var id = 'ql-comment-' + idAuthor + '-' + utcSeconds;
+								this._comments.append(cmtBox);
+								this.addFocusEffects(divId);
 
-			var cmtbox = $("<div class='comment-box " + id + " row' id='comment-box-" + id + "' tabindex=\"1\" title='" + date + "'>\n      <div class='comment-head row'>\n        <div id=\"" + id + "\"style=\"background-color:" + color + ";width: 40px;\" ><img class=\"imageuser\" src=\"./icons/" + pseudo + ".png\" alt=\"" + name + "\"></div>\n    \n        <div class='comment-details'>\n          <div class='comment-author'>" + name + "</div>\n        </div>\n      </div>\n      <div class='comment-body row' >" + comment + "</div>\n  \n    </div>");
+							case 10:
+							case "end":
+								return _context.stop();
+						}
+					}
+				}, _callee, this);
+			}));
 
-			this._comments.append(cmtbox);
+			function addCommentToList(_x, _x2) {
+				return _ref.apply(this, arguments);
+			}
 
-			$('#comment-box-' + id).focusin(function () {
-				_this2.commentBoxFocus(id);
+			return addCommentToList;
+		}()
+	}, {
+		key: "getCommentBoxDiv",
+		value: function getCommentBoxDiv(opts) {
+
+			var cmtbox = $("<div class='comment-box " + opts.id + " row' id='comment-box-" + opts.id + "' tabindex=\"1\" title='" + opts.date + "'>\n      <div class='comment-head row'>\n        <div id=\"" + opts.id + "\"style=\"background-color:" + opts.colorRGB + ";width: 40px;\" ><img class=\"imageuser\" src=\"" + opts.iconURL + "\" alt=\"" + opts.pseudoName + "\"></div>\n    \n        <div class='comment-details'>\n          <div class='comment-author'>" + opts.pseudoName + "</div>\n        </div>\n      </div>\n      <div class='comment-body row' >" + opts.comment + "</div>\n  \n    </div>");
+			return cmtbox;
+		}
+	}, {
+		key: "addFocusEffects",
+		value: function addFocusEffects(divId) {
+			var _this = this;
+
+			$('#comment-box-' + divId).focusin(function () {
+				_this.commentBoxFocus(divId);
 			});
 
-			$('#comment-box-' + id).focusout(function () {
-				_this2.commentBoxFocus(id, 'out');
+			$('#comment-box-' + divId).focusout(function () {
+				_this.commentBoxFocus(divId, 'out');
 			});
 		}
 	}, {
 		key: "saveComment",
-		value: function saveComment() {
-			var comment = this._commentInput.val();
-			this._commentCallback(comment);
+		value: function () {
+			var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+				var comment;
+				return regeneratorRuntime.wrap(function _callee2$(_context2) {
+					while (1) {
+						switch (_context2.prev = _context2.next) {
+							case 0:
+								comment = this._commentInput.val();
+								_context2.next = 3;
+								return this.addCommentToList(comment, this._authorId);
 
-			var name = this._viewEditor.options.modules.comment.commentAddOn;
+							case 3:
+								this._commentCallback(comment);
 
-			var id = this._viewEditor.options.modules.comment.commentAuthorId;
+							case 4:
+							case "end":
+								return _context2.stop();
+						}
+					}
+				}, _callee2, this);
+			}));
 
-			var color = this._viewEditor.options.modules.comment.color;
+			function saveComment() {
+				return _ref2.apply(this, arguments);
+			}
 
-			this.addCommentToList(comment, id, name, store.get('myId').pseudo, color, this._currentTimestamp);
-		}
+			return saveComment;
+		}()
 	}, {
 		key: "commentBoxFocus",
 		value: function commentBoxFocus(id, type) {
@@ -51069,6 +51142,31 @@ var Comments = exports.Comments = function () {
 				$('.ql-comments #' + id).removeClass('commentFocus');
 				this._comments.find('.comment-box').css('border-color', '#F0F0F0');
 			}
+		}
+
+		/**
+  * UpdateComments This function to extract the comments form the editor and show them in #comments
+  */
+
+	}, {
+		key: "UpdateComments",
+		value: function UpdateComments() {
+			var _this2 = this;
+
+			// clear comments 
+			this.clearComments();
+			// for each insert check att if it contains the author then insert comment 
+			this.viewEditor.editor.delta.ops.forEach(function (op) {
+				if (op.insert && op.attributes && op.attributes.commentAuthor) {
+					var id = op.attributes.commentAuthor;
+					_this2.addCommentToList(op.attributes.comment, id, op.attributes.commentTimestamp);
+				}
+			});
+		}
+	}, {
+		key: "clearComments",
+		value: function clearComments() {
+			jQuery("#" + this._editorContainerID + " #comments").empty();
 		}
 	}, {
 		key: "viewEditor",
@@ -51161,7 +51259,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
     _this._editorContainerID = editorContainerID;
 
-    _this._comments = new _comments.Comments(_this._editorContainerID);
+    _this._comments = {};
     _this._sessionID = sessionID;
 
     _this.loadDocument(sessionID);
@@ -51181,9 +51279,10 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     value: function loadDocument(sessionID) {
       var _this2 = this;
 
-      this.createViewDocument();
       var itIsMe = true;
       this.markerManager.addMarker(this.model.uid, itIsMe);
+      this._comments = new _comments.Comments(this.model.uid, this._editorContainerID, this.markerManager);
+      this.createViewDocument();
 
       if (store.get("CRATE2-" + sessionID)) {
         var doc = store.get("CRATE2-" + sessionID);
@@ -51197,13 +51296,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
       });
 
-      this.UpdateComments();
-      //comment module initialization
-
-      var commentOpt = this.viewEditor.options.modules.comment;
-      commentOpt.commentAddOn = this.markerManager.markers[this.model.uid].animal;
-      commentOpt.commentAuthorId = this.model.uid;
-      commentOpt.color = this.markerManager.markers[this.model.uid].colorRGB;
+      this._comments.addAuthorInformation();
+      this._comments.UpdateComments();
     }
 
     /**
@@ -51456,7 +51550,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
           //to ensure that the editor contains just \n without any attributes 
           if (!isItInsertWithAtt) {
-            this.UpdateComments();
+            this._comments.UpdateComments();
           }
           if (start == 0) {
             start = retain;
@@ -51514,7 +51608,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
           }
 
           if (element.att.commentAuthor) {
-            this.UpdateComments();
+            this._comments.UpdateComments();
           }
 
           if (element.att.link) {
@@ -51540,7 +51634,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var removedIndex = index - 1;
       if (removedIndex !== -1) {
         this.viewEditor.deleteText(removedIndex, 1, 'silent');
-        this.UpdateComments();
+        this._comments.UpdateComments();
       }
       this.cleanQuill();
     }
@@ -51592,51 +51686,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       this.model.name = jQuery("#" + this._editorContainerID + " #title").text();
       //TODO: Optimize change only if the text is changed from last state 
       this.model.core.sendChangeTitle(jQuery("#" + this._editorContainerID + " #title").text());
-    }
-
-    /**
-     * UpdateComments This function to extract the comments form the editor and show them in #comments
-     */
-
-  }, {
-    key: "UpdateComments",
-    value: function UpdateComments() {
-      var _this5 = this;
-
-      // clear comments 
-      jQuery("#" + this._editorContainerID + " #comments").empty();
-      // for each insert check att if it contains the author then insert comment 
-      this.viewEditor.editor.delta.ops.forEach(function (op) {
-        if (op.insert) {
-          if (op.attributes) {
-            if (op.attributes.commentAuthor) {
-              var id = op.attributes.commentAuthor;
-              //
-              var m = {};
-              if (_this5.markerManager.markers[id]) {
-                m = _this5.markerManager.markers[id];
-              } else {
-                m = {
-                  animal: _marker2.default.getPseudoname(id, null),
-                  pseudoName: _marker2.default.getPseudoname(id),
-                  colorRGB: _marker2.default.getColor(id, 'rgb')
-                };
-              }
-
-              var animal = m.animal;
-              var pseudoName = m.pseudoName;
-              var colorRGB = m.colorRGB;
-
-              _this5._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp);
-            }
-          }
-        }
-      });
-    }
-  }, {
-    key: "saveComment",
-    value: function saveComment() {
-      this._comments.saveComment();
     }
   }]);
 
@@ -51909,18 +51958,27 @@ var MarkerManager = exports.MarkerManager = function (_EventEmitter) {
       };
 
       var options = Object.assign(defaultOptions, opts);
-      this.markers[id] = new _marker2.default(id, options, this._editor);
 
-      if (isItMe) {
-        if (store.get('myId')) {
-          this.markers[id].setPseudo(store.get('myId').pseudo);
-        } else {
-          store.set('myId', {
-            id: id,
-            pseudo: this.markers[id].pseudoName
-          });
+      if (!this.markers.hasOwnProperty(id)) {
+        this.markers[id] = new _marker2.default(id, options, this._editor);
+
+        if (isItMe) {
+          if (store.get('myId')) {
+            this.markers[id].setPseudo(store.get('myId').pseudo);
+          } else {
+            store.set('myId', {
+              id: id,
+              pseudo: this.markers[id].pseudoName
+            });
+          }
         }
       }
+      return this.markers[id];
+    }
+  }, {
+    key: "getMarker",
+    value: function getMarker(id) {
+      return this.markers[id];
     }
   }, {
     key: "caretMoved",

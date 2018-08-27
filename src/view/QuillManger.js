@@ -122,7 +122,7 @@ export class QuillManager {
             color: 'yellow', // comment background color in the text
             commentAddClick: this._comments.commentAddClick, // get called when `ADD COMMENT` btn on options bar is clicked
             commentsClick: this._comments.commentsClick, // get called when you click `COMMENTS` btn on options bar for you to do additional things beside color on/off. Color on/off is already done before the callback is called.
-            commentTimestamp: this._comments.commentServerTimestamp,
+            commentTimestamp: this._comments.getCurrentTimestamp,
             containerID: this._editorContainerID
           }
         return opts

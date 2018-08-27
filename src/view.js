@@ -202,7 +202,7 @@ export class View {
   }
 
   saveComment() {
-    this._editor.saveComment()
+    this._editor._comments.saveComment()
   }
 
 

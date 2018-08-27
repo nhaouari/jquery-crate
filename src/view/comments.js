@@ -9,19 +9,33 @@ export class Comments {
 	 * @return {[type]}                   [description]
 	 */
 
-	constructor(editorContainerID) {
+	constructor(authorId,editorContainerID,markerManger) {
 		// Selectors
+		this._authorId = authorId
 		this._editorContainerID = editorContainerID
 		this._viewEditor = {}
+		this._markerManager= markerManger
+
+		this._commentCallback = {}
+		this.setSelectors()
+
+		this.commentAddClick = this.commentAddClick.bind(this)
+		this.commentsClick = this.commentsClick.bind(this)
+	}
+
+	addAuthorInformation() {
+			const commentOpt = this._viewEditor.options.modules.comment
+			commentOpt.commentAuthorId =this._authorId
+			commentOpt.commentAddOn = this._markerManager.markers[this._authorId].animal
+			commentOpt.color = this._markerManager.markers[this._authorId].colorRGB
+	}
+
+	setSelectors(){
 		this._inputCommentModel = $(`#${this._editorContainerID} #inputCommentModal`)
 		this._comments = $(`#${this._editorContainerID} #comments`)
 		this._ql_editor = $(`#${this._editorContainerID} .ql-editor`)
 		this._editor = $(`#${this._editorContainerID} .editor`)
 		this._commentInput = $(`#${this._editorContainerID} #commentInput`)
-		this._currentTimestamp = {}
-		this._commentCallback = {}
-		this.commentAddClick = this.commentAddClick.bind(this)
-		this.commentsClick = this.commentsClick.bind(this)
 	}
 
 	get viewEditor() {
@@ -37,10 +51,10 @@ export class Comments {
 		this._inputCommentModel.modal('show');
 	}
 
-	commentServerTimestamp() {
+	getCurrentTimestamp() {
 		return new Promise((resolve, reject) => {
-			this._currentTimestamp = Math.round((new Date()).getTime() / 1000); // call from server
-			resolve(this._currentTimestamp);
+			const currentTimestamp = Math.round((new Date()).getTime() / 1000); // call from server
+			resolve(currentTimestamp);
 		});
 	}
 
@@ -67,55 +81,63 @@ export class Comments {
 		}
 	}
 
-	addCommentToList(comment, idAuthor, pseudo, name, color, currentTimestamp) {
-		let utcSeconds = currentTimestamp;
-		let d = new Date(); // The 0 there is the key, which sets the date to the epoch
-		let date = dateFormat(d, "dddd, mmmm dS, yyyy, h:MM:ss TT");
+	async addCommentToList(comment, authorId) {
+		
+		const marker = this._markerManager.addMarker(authorId,false,{lifetime:-1}) 
+		const date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
 
-		let id = 'ql-comment-' + idAuthor + '-' + utcSeconds;
+		const currentTimestamp= await this.getCurrentTimestamp()
+		const divId = 'ql-comment-' + authorId + '-' + currentTimestamp;	
 
-		let cmtbox = $(
-			`<div class='comment-box ${id} row' id='comment-box-${id}' tabindex="1" title='${date}'>
+		const opts = {
+			id:divId,
+			date:date,
+			pseudoName:marker.pseudoName,
+			colorRGB:marker.colorRGB,
+			comment:comment,
+			iconURL:`./icons/${marker.animal}.png`
+		}
+
+		const cmtBox = this.getCommentBoxDiv(opts)
+		this._comments.append(cmtBox);
+		this.addFocusEffects(divId)
+
+	}
+
+	getCommentBoxDiv(opts) {
+
+	const cmtbox = $(
+			`<div class='comment-box ${opts.id} row' id='comment-box-${opts.id}' tabindex="1" title='${opts.date}'>
       <div class='comment-head row'>
-        <div id="${id}"style="background-color:${color};width: 40px;" ><img class="imageuser" src="./icons/${pseudo}.png" alt="${name}"></div>
+        <div id="${opts.id}"style="background-color:${opts.colorRGB};width: 40px;" ><img class="imageuser" src="${opts.iconURL}" alt="${opts.pseudoName}"></div>
     
         <div class='comment-details'>
-          <div class='comment-author'>${name}</div>
+          <div class='comment-author'>${opts.pseudoName}</div>
         </div>
       </div>
-      <div class='comment-body row' >${comment}</div>
+      <div class='comment-body row' >${opts.comment}</div>
   
     </div>`
 		);
-
-		this._comments.append(cmtbox);
-
-		$('#comment-box-' + id).focusin(() => {
-		this.commentBoxFocus(id)
-	
-		})
-
-		$('#comment-box-' + id).focusout(() => {
-			this.commentBoxFocus(id, 'out')
-		})
-
-		
-
-		
+		return cmtbox
 	}
-
-
-	saveComment() {
+	
+	addFocusEffects(divId) {	
+		$('#comment-box-' + divId).focusin(() => {
+			this.commentBoxFocus(divId)
+		
+			})
+	
+		$('#comment-box-' + divId).focusout(() => {
+				this.commentBoxFocus(divId, 'out')
+			})	
+	}
+	
+	async saveComment() {
 		let comment = this._commentInput.val();
+		
+		await this.addCommentToList(comment, this._authorId)
 		this._commentCallback(comment);
-
-		let name = this._viewEditor.options.modules.comment.commentAddOn;
-
-		let id = this._viewEditor.options.modules.comment.commentAuthorId;
-
-		let color = this._viewEditor.options.modules.comment.color;
-
-		this.addCommentToList(comment, id, name, store.get('myId').pseudo, color, this._currentTimestamp)
 	}
 
 	commentBoxFocus(id, type) {
@@ -130,5 +152,26 @@ export class Comments {
 
 	}
 
+   /**
+   * UpdateComments This function to extract the comments form the editor and show them in #comments
+   */
+  	UpdateComments() {
+    // clear comments 
+    this.clearComments()
+    // for each insert check att if it contains the author then insert comment 
+    this.viewEditor.editor.delta.ops.forEach((op) => {
+      if (op.insert && op.attributes && op.attributes.commentAuthor) {
+            const id = op.attributes.commentAuthor	
+			this.addCommentToList(op.attributes.comment, id, op.attributes.commentTimestamp)
+          }
+
+        })
+
+    }
+
+
+  clearComments(){
+	jQuery(`#${this._editorContainerID} #comments`).empty()
+  }
 }
 

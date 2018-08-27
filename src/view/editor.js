@@ -41,7 +41,7 @@ export class EditorController extends EventEmitter {
 
     this._editorContainerID = editorContainerID
 
-    this._comments = new Comments(this._editorContainerID)
+    this._comments = {}
     this._sessionID = sessionID
 
     this.loadDocument(sessionID)
@@ -57,9 +57,13 @@ export class EditorController extends EventEmitter {
    * @return {[type]} [description]
    */
   loadDocument(sessionID) {
-    this.createViewDocument()
     const itIsMe=true
     this.markerManager.addMarker(this.model.uid,itIsMe)
+    this._comments=new Comments(this.model.uid,this._editorContainerID,this.markerManager)
+    this.createViewDocument()
+ 
+  
+    
 
     if (store.get("CRATE2-" + sessionID)) {
       var doc = store.get("CRATE2-" + sessionID)
@@ -73,14 +77,9 @@ export class EditorController extends EventEmitter {
       jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
     })
 
-   
-    this.UpdateComments()
-    //comment module initialization
-   
-    let commentOpt = this.viewEditor.options.modules.comment
-    commentOpt.commentAddOn = this.markerManager.markers[this.model.uid].animal
-    commentOpt.commentAuthorId =this.model.uid
-    commentOpt.color = this.markerManager.markers[this.model.uid].colorRGB
+    this._comments.addAuthorInformation()
+    this._comments.UpdateComments()
+
   }
 
 
@@ -328,7 +327,7 @@ export class EditorController extends EventEmitter {
 
         //to ensure that the editor contains just \n without any attributes 
         if (!isItInsertWithAtt) {
-          this.UpdateComments()
+          this._comments.UpdateComments()
         }
         if (start == 0) {
           start = retain
@@ -384,7 +383,7 @@ export class EditorController extends EventEmitter {
         }
 
         if (element.att.commentAuthor) {
-          this.UpdateComments()
+          this._comments.UpdateComments()
         }
 
         if (element.att.link) {
@@ -412,7 +411,7 @@ export class EditorController extends EventEmitter {
     let removedIndex = index - 1
     if (removedIndex !== -1) {
       this.viewEditor.deleteText(removedIndex, 1, 'silent')
-      this.UpdateComments()
+      this._comments.UpdateComments()
     }
     this.cleanQuill()
   }
@@ -468,55 +467,5 @@ export class EditorController extends EventEmitter {
     //TODO: Optimize change only if the text is changed from last state 
     this.model.core.sendChangeTitle(jQuery(`#${this._editorContainerID} #title`).text())
   }
-
-
-
-  /**
-   * UpdateComments This function to extract the comments form the editor and show them in #comments
-   */
-  UpdateComments() {
-    // clear comments 
-    jQuery(`#${this._editorContainerID} #comments`).empty()
-    // for each insert check att if it contains the author then insert comment 
-    this.viewEditor.editor.delta.ops.forEach((op) => {
-      if (op.insert) {
-        if (op.attributes) {
-          if (op.attributes.commentAuthor) {
-            var id = op.attributes.commentAuthor
-            //
-            let m = {}
-            if (this.markerManager.markers[id]) {
-              m = this.markerManager.markers[id]
-            } else {
-              m = {
-                animal: Marker.getPseudoname(id, null),
-                pseudoName: Marker.getPseudoname(id),
-                colorRGB: Marker.getColor(id, 'rgb')
-              }
-            }
-
-            const animal = m.animal
-            const pseudoName = m.pseudoName
-            const colorRGB = m.colorRGB
-
-
-            
-            this._comments.addCommentToList(op.attributes.comment, id, animal, pseudoName, colorRGB, op.attributes.commentTimestamp)
-          }
-
-        }
-
-      }
-
-
-
-    })
-
-  }
-
-  saveComment() {
-    this._comments.saveComment();
-  }
-
 
 }

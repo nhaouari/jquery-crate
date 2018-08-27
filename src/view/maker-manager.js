@@ -53,20 +53,28 @@ export class MarkerManager  extends EventEmitter {
           }
 
         const options = Object.assign(defaultOptions, opts);
-        this.markers[id] = new Marker(id, options, this._editor)
-        
-        if (isItMe) {
-            if (store.get('myId')) {
-            this.markers[id].setPseudo(store.get('myId').pseudo)
-            } else {
-            store.set('myId', {
-                id: id,
-                pseudo: this.markers[id].pseudoName
-            })
+       
+       if(!this.markers.hasOwnProperty(id)){
+            this.markers[id] = new Marker(id, options, this._editor)
+            
+            if (isItMe) {
+                if (store.get('myId')) {
+                this.markers[id].setPseudo(store.get('myId').pseudo)
+                } else {
+                store.set('myId', {
+                    id: id,
+                    pseudo: this.markers[id].pseudoName
+                })
+                }
             }
         }
+        return this.markers[id]
     }
 
+    getMarker(id) {
+        return this.markers[id] 
+    }
+    
     caretMoved(range){
         this._core.caretMoved(range)
     }

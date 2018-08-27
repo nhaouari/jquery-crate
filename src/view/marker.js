@@ -20,7 +20,6 @@ export default class Marker {
    */
 
   constructor(origin, options, editor) {
-
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
 
 
