@@ -49367,10 +49367,10 @@ View.addMoveShortcuts();
 
 /***/ }),
 
-/***/ "./src/crate-core/crate-core.js":
-/*!**************************************!*\
-  !*** ./src/crate-core/crate-core.js ***!
-  \**************************************/
+/***/ "./src/communication/communication.js":
+/*!********************************************!*\
+  !*** ./src/communication/communication.js ***!
+  \********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -49395,7 +49395,7 @@ var _LSEQTree2 = _interopRequireDefault(_LSEQTree);
 
 var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
 
-var _messages = __webpack_require__(/*! ./messages */ "./src/crate-core/messages.js");
+var _messages = __webpack_require__(/*! ./messages */ "./src/communication/messages.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -49412,15 +49412,15 @@ var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.j
  * \param options the webrtc specific options 
  */
 
-var CrateCore = function (_EventEmitter) {
-    _inherits(CrateCore, _EventEmitter);
+var Communication = function (_EventEmitter) {
+    _inherits(Communication, _EventEmitter);
 
-    function CrateCore(id, options, data_comm, behaviours_comm) {
-        _classCallCheck(this, CrateCore);
+    function Communication(id, options, data_comm, behaviours_comm) {
+        _classCallCheck(this, Communication);
 
         // EventEmitter.call(this);
 
-        var _this = _possibleConstructorReturn(this, (CrateCore.__proto__ || Object.getPrototypeOf(CrateCore)).call(this));
+        var _this = _possibleConstructorReturn(this, (Communication.__proto__ || Object.getPrototypeOf(Communication)).call(this));
 
         _this.options = options;
 
@@ -49530,7 +49530,7 @@ var CrateCore = function (_EventEmitter) {
      */
 
 
-    _createClass(CrateCore, [{
+    _createClass(Communication, [{
         key: "checkIfOutdated",
         value: function checkIfOutdated() {
             var timeNow = new Date().getTime();
@@ -49813,17 +49813,17 @@ var CrateCore = function (_EventEmitter) {
         }
     }]);
 
-    return CrateCore;
+    return Communication;
 }(_events.EventEmitter);
 
-exports.default = CrateCore;
+exports.default = Communication;
 
 /***/ }),
 
-/***/ "./src/crate-core/messages.js":
-/*!************************************!*\
-  !*** ./src/crate-core/messages.js ***!
-  \************************************/
+/***/ "./src/communication/messages.js":
+/*!***************************************!*\
+  !*** ./src/communication/messages.js ***!
+  \***************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -49943,9 +49943,9 @@ var _shortid2 = _interopRequireDefault(_shortid);
 
 var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
 
-var _crateCore = __webpack_require__(/*! ./crate-core/crate-core.js */ "./src/crate-core/crate-core.js");
+var _communication = __webpack_require__(/*! ./communication/communication.js */ "./src/communication/communication.js");
 
-var _crateCore2 = _interopRequireDefault(_crateCore);
+var _communication2 = _interopRequireDefault(_communication);
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
@@ -50025,7 +50025,7 @@ var doc = function (_EventEmitter) {
                 this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "anti-entropy");
                 this._behaviours_comm = new _fogletCore.communication(this._foglet.overlay().network, "No-anti-entropy");
 
-                this.core = new _crateCore2.default(this.uid, {
+                this.core = new _communication2.default(this.uid, {
                   webrtc: options.webRTCOptions,
                   signalingOptions: options.signalingOptions,
                   editingSessionID: options.editingSessionID

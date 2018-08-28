@@ -13,7 +13,7 @@ var debug = require('debug')('crate:crate-core')
  */
 
 
-export default class CrateCore extends EventEmitter {
+export default class Communication extends EventEmitter {
 
     constructor(id, options, data_comm, behaviours_comm) {
         super()

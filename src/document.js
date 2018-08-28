@@ -1,6 +1,6 @@
 import shortid from "shortid"
 import {Foglet,communication} from "foglet-core"
-import Core from "./crate-core/crate-core.js"
+import Communication from "./communication/communication.js"
 import {EventEmitter} from "events"
 
 
@@ -43,7 +43,7 @@ export default class doc extends EventEmitter {
         "No-anti-entropy"
       );
 
-      this.core = new Core(
+      this.core = new Communication(
         this.uid,
         {
           webrtc: options.webRTCOptions,
