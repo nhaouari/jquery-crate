@@ -52134,10 +52134,21 @@ var CaretManger = function (_MarkerEvent3) {
     return _this4;
   }
 
+  /**
+   * [caretMoved description]
+   * @param  {[type]} range [description]
+   * @return {[type]}       [description]
+   */
+
+
   _createClass(CaretManger, [{
     key: 'caretMoved',
-    value: function caretMoved(range) {}
-    //this._document.caretMoved(range)
+    value: function caretMoved(range) {
+      this._communicationChannel.sendBroadcast(new MCaretMovedOperation(range, this._document.uid));
+      return range;
+    }
+  }, {
+    key: 'remoteCaretMoved',
 
 
     /**
@@ -52146,9 +52157,6 @@ var CaretManger = function (_MarkerEvent3) {
      * @param  {[type]} origin [description]
      * @return {[type]}        [description]
      */
-
-  }, {
-    key: 'remoteCaretMoved',
     value: function remoteCaretMoved(range, origin) {
       if (!origin) return;
 

@@ -188,9 +188,16 @@ class CaretManger extends MarkerEvent {
     })
   }
 
+  /**
+   * [caretMoved description]
+   * @param  {[type]} range [description]
+   * @return {[type]}       [description]
+   */
   caretMoved(range) {
-    //this._document.caretMoved(range)
-  }
+    this._communicationChannel.sendBroadcast(new MCaretMovedOperation(range, this._document.uid));
+    return range;
+  };
+
 
 
   /**
