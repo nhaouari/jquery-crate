@@ -36,7 +36,7 @@ export class EditorController extends EventEmitter {
      */
     this.model = model
 
-    this.markerManager = new MarkerManager(this.model.core, this)
+    this.markerManager = new MarkerManager(this.model, this)
 
 
 

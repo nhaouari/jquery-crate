@@ -5,8 +5,9 @@ import Marker from './marker';
 export class MarkerEvent {
   constructor(opts) {
     this._markers = opts.markers
-    this._core = opts.core
+    this._document = opts.core
     this._editor = opts.editor
+    this._communicationChannel =  this._document._behaviors_comm
 
     this._defaultOptions = {
       lifeTime: 5 * 1000,
@@ -67,7 +68,7 @@ export class MarkerManager extends MarkerEvent {
     }
     super(opts)
 
-    this._core = core
+    this._document = core
     this._editor = editor
 
     /**
@@ -114,7 +115,7 @@ class PingManger extends MarkerEvent {
      */
     this.startPing(opts.period)
 
-    this._core.on('ping', (origin, pseudo) => {
+    this._document.on('Mping', (origin, pseudo) => {
       this.atPing(origin, pseudo)
     })
   }
@@ -128,11 +129,14 @@ class PingManger extends MarkerEvent {
    */
   startPing(interval) {
     this._startTimer = setInterval(() => {
-      let pseudo = "Anonymous"
-      if (store.get('myId').pseudo) {
-        pseudo = store.get('myId').pseudo;
-      }
-      this._core.sendPing(pseudo)
+      const id=this._document.uid
+      const pseudo = this.getMarker(id).pseudoName
+      this._communicationChannel.sendBroadcast({
+          type: 'Mping',
+          origin: id,
+          pseudo: pseudo
+      });
+
     }, interval)
   }
 
@@ -151,14 +155,18 @@ class PingManger extends MarkerEvent {
    * @param  {[type]} pseudo [description]
    * @return {[type]}        [description]
    */
-  atPing(origin, pseudo) {
-    if (this.getMarker(origin)) {
-      this.getMarker(origin)
+  atPing(msg) {
+    const id = msg.origin
+    const pseudo = msg.pseudo
+ 
+  
+    if (this.getMarker(id)) {
+      this.getMarker(id)
         .update(null, false) // to keep avatar
         .setPseudo(pseudo)
 
     } else { // to create the avatar
-      this.addMarker(origin, false)
+      this.addMarker(id, false)
         .setPseudo(pseudo)
     }
   }
@@ -169,19 +177,19 @@ class PingManger extends MarkerEvent {
 class CaretManger extends MarkerEvent {
   constructor(opts) {
     super(opts)
-    this._core = opts.core
+    this._document = opts.core
     this._defaultOptions = {
       lifeTime: 5 * 1000,
       cursor: true
     }
 
-    this._core.on('remoteCaretMoved', (range, origin) => {
+    this._document.on('MCaretMovedOperation', (range, origin) => {
       this.remoteCaretMoved(range, origin)
     })
   }
 
   caretMoved(range) {
-    this._core.caretMoved(range)
+    //this._document.caretMoved(range)
   }
 
 
@@ -204,3 +212,15 @@ class CaretManger extends MarkerEvent {
   }
 
 }
+
+
+/*!
+ * \brief object that represents the result of a caretMoved Operation
+ * \param range the selection range
+ * \param origin the origin of the selection
+ */
+export function MCaretMovedOperation(range, origin){
+  this.type = "MCaretMovedOperation";
+  this.range = range;
+  this.origin = origin;
+};

@@ -50023,13 +50023,13 @@ var doc = function (_EventEmitter) {
               case 12:
                 console.log("application connected!");
                 this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "anti-entropy");
-                this._behaviours_comm = new _fogletCore.communication(this._foglet.overlay().network, "No-anti-entropy");
+                this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "No-anti-entropy");
 
                 this.core = new _communication2.default(this.uid, {
                   webrtc: options.webRTCOptions,
                   signalingOptions: options.signalingOptions,
                   editingSessionID: options.editingSessionID
-                }, this._data_comm, this._behaviours_comm);
+                }, this._data_comm, this._behaviors_comm);
 
                 // send actual title after anti-antropy
                 this.core.on("sendChangeTitle", function () {
@@ -50050,7 +50050,7 @@ var doc = function (_EventEmitter) {
                 // #2 grant fast access
 
                 this.broadcast = this._data_comm.broadcast;
-                this.broadcastCaret = this._behaviours_comm.broadcast;
+                this.broadcastCaret = this._behaviors_comm.broadcast;
                 this.rps = this._data_comm.network.rps;
                 this.sequence = this.core.sequence;
                 this.causality = this.broadcast._causality;
@@ -50073,11 +50073,11 @@ var doc = function (_EventEmitter) {
                 this._view = new View(options, this, options.containerID);
 
               case 31:
-
+                this.pingCommunicationInit();
                 this._foglet.emit("connected");
                 this.emit("connected");
 
-              case 33:
+              case 34:
               case "end":
                 return _context.stop();
             }
@@ -50091,6 +50091,22 @@ var doc = function (_EventEmitter) {
 
       return init;
     }()
+  }, {
+    key: "pingCommunicationInit",
+    value: function pingCommunicationInit() {
+      var _this3 = this;
+
+      this._behaviors_comm.onBroadcast(function (id, message) {
+        switch (message.type) {
+          case 'MCaretMovedOperation':
+            _this3.emit('MCaretMovedOperation', message.range, message.origin);
+            break;
+          case 'Mping':
+            _this3.emit('Mping', message);
+            break;
+        };
+      });
+    }
   }]);
 
   return doc;
@@ -51251,7 +51267,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
     _this.model = model;
 
-    _this.markerManager = new _makerManager.MarkerManager(_this.model.core, _this);
+    _this.markerManager = new _makerManager.MarkerManager(_this.model, _this);
 
     /**
      *  ViewEditor the used editor, here it is Quill editor 
@@ -51884,6 +51900,8 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+exports.MCaretMovedOperation = MCaretMovedOperation;
+
 var _marker = __webpack_require__(/*! ./marker */ "./src/view/marker.js");
 
 var _marker2 = _interopRequireDefault(_marker);
@@ -51901,8 +51919,9 @@ var MarkerEvent = exports.MarkerEvent = function () {
     _classCallCheck(this, MarkerEvent);
 
     this._markers = opts.markers;
-    this._core = opts.core;
+    this._document = opts.core;
     this._editor = opts.editor;
+    this._communicationChannel = this._document._behaviors_comm;
 
     this._defaultOptions = {
       lifeTime: 5 * 1000,
@@ -51973,7 +51992,7 @@ var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
 
     var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, opts));
 
-    _this._core = core;
+    _this._document = core;
     _this._editor = editor;
 
     /**
@@ -52027,7 +52046,7 @@ var PingManger = function (_MarkerEvent2) {
      */
     _this2.startPing(opts.period);
 
-    _this2._core.on('ping', function (origin, pseudo) {
+    _this2._document.on('Mping', function (origin, pseudo) {
       _this2.atPing(origin, pseudo);
     });
     return _this2;
@@ -52047,11 +52066,13 @@ var PingManger = function (_MarkerEvent2) {
       var _this3 = this;
 
       this._startTimer = setInterval(function () {
-        var pseudo = "Anonymous";
-        if (store.get('myId').pseudo) {
-          pseudo = store.get('myId').pseudo;
-        }
-        _this3._core.sendPing(pseudo);
+        var id = _this3._document.uid;
+        var pseudo = _this3.getMarker(id).pseudoName;
+        _this3._communicationChannel.sendBroadcast({
+          type: 'Mping',
+          origin: id,
+          pseudo: pseudo
+        });
       }, interval);
     }
 
@@ -52076,13 +52097,16 @@ var PingManger = function (_MarkerEvent2) {
 
   }, {
     key: 'atPing',
-    value: function atPing(origin, pseudo) {
-      if (this.getMarker(origin)) {
-        this.getMarker(origin).update(null, false) // to keep avatar
+    value: function atPing(msg) {
+      var id = msg.origin;
+      var pseudo = msg.pseudo;
+
+      if (this.getMarker(id)) {
+        this.getMarker(id).update(null, false) // to keep avatar
         .setPseudo(pseudo);
       } else {
         // to create the avatar
-        this.addMarker(origin, false).setPseudo(pseudo);
+        this.addMarker(id, false).setPseudo(pseudo);
       }
     }
   }]);
@@ -52098,13 +52122,13 @@ var CaretManger = function (_MarkerEvent3) {
 
     var _this4 = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, opts));
 
-    _this4._core = opts.core;
+    _this4._document = opts.core;
     _this4._defaultOptions = {
       lifeTime: 5 * 1000,
       cursor: true
     };
 
-    _this4._core.on('remoteCaretMoved', function (range, origin) {
+    _this4._document.on('MCaretMovedOperation', function (range, origin) {
       _this4.remoteCaretMoved(range, origin);
     });
     return _this4;
@@ -52112,9 +52136,9 @@ var CaretManger = function (_MarkerEvent3) {
 
   _createClass(CaretManger, [{
     key: 'caretMoved',
-    value: function caretMoved(range) {
-      this._core.caretMoved(range);
-    }
+    value: function caretMoved(range) {}
+    //this._document.caretMoved(range)
+
 
     /**
      * remoteCaretMoved At the reception of CARET position
@@ -52140,6 +52164,19 @@ var CaretManger = function (_MarkerEvent3) {
 
   return CaretManger;
 }(MarkerEvent);
+
+/*!
+ * \brief object that represents the result of a caretMoved Operation
+ * \param range the selection range
+ * \param origin the origin of the selection
+ */
+
+
+function MCaretMovedOperation(range, origin) {
+  this.type = "MCaretMovedOperation";
+  this.range = range;
+  this.origin = origin;
+};
 
 /***/ }),
 

@@ -38,7 +38,7 @@ export default class doc extends EventEmitter {
         this._foglet.overlay().network,
         "anti-entropy"
       );
-      this._behaviours_comm = new communication(
+      this._behaviors_comm = new communication(
         this._foglet.overlay().network,
         "No-anti-entropy"
       );
@@ -51,7 +51,7 @@ export default class doc extends EventEmitter {
           editingSessionID: options.editingSessionID
         },
         this._data_comm,
-        this._behaviours_comm
+        this._behaviors_comm
       );
 
       // send actual title after anti-antropy
@@ -73,7 +73,7 @@ export default class doc extends EventEmitter {
       // #2 grant fast access
 
       this.broadcast = this._data_comm.broadcast;
-      this.broadcastCaret = this._behaviours_comm.broadcast;
+      this.broadcastCaret = this._behaviors_comm.broadcast;
       this.rps = this._data_comm.network.rps;
       this.sequence = this.core.sequence;
       this.causality = this.broadcast._causality;
@@ -83,10 +83,28 @@ export default class doc extends EventEmitter {
         const {View} = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ "./View.js")
         this._view = new View(options, this, options.containerID);
       }
-      
+      this.pingCommunicationInit()
       this._foglet.emit("connected");
       this.emit("connected");
 
+
 }
+
+pingCommunicationInit() {
+  
+  this._behaviors_comm.onBroadcast((id, message) => {
+    switch (message.type) {
+        case 'MCaretMovedOperation':
+            this.emit('MCaretMovedOperation',message.range, message.origin)
+            break;
+        case 'Mping':
+            this.emit('Mping',message)
+            break;
+    };
+
+})
+}
+
+
 }
 
