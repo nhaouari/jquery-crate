@@ -49,7 +49,7 @@ export class Event extends EventEmitter {
     }
 
     action(msg) {
-        console.log('this is an action')
+        console.error('action not defined',this._name)
     }
 
     sendAction(name,args){

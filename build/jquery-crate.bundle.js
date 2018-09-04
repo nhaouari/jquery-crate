@@ -49791,7 +49791,7 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: "action",
         value: function action(msg) {
-            console.log('this is an action');
+            console.error('action not defined', this._name);
         }
     }, {
         key: "sendAction",
