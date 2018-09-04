@@ -1,14 +1,14 @@
 import Marker from './marker';
+import { Event } from './Event';
 
 
+var debug = require('debug')('crate:marker-manager')
 
-export class MarkerEvent {
+export class MarkerEvent extends Event {
   constructor(opts) {
+    super(opts)
     this._markers = opts.markers
-    this._document = opts.core
-    this._editor = opts.editor
     this._communicationChannel =  this._document._behaviors_comm
-
     this._defaultOptions = {
       lifeTime: 5 * 1000,
       range: {
@@ -25,6 +25,7 @@ export class MarkerEvent {
     }, opts);
 
     if (!this._markers.hasOwnProperty(id)) {
+
       this._markers[id] = new Marker(id, options, this._editor)
 
       if (isItMe) {
@@ -56,21 +57,11 @@ export class MarkerEvent {
  * This class manages markers,pings,cursors of the different users
  */
 export class MarkerManager extends MarkerEvent {
-
-
-  constructor(core, editor) {
-
+  constructor(opts) {
     const markers = {}
-    const opts = {
-      markers,
-      core,
-      editor
-    }
-    super(opts)
-
-    this._document = core
-    this._editor = editor
-
+    opts.markers=markers
+    const name = opts.name || 'MarkerManager'
+    super({name,...opts})
     /**
      * markers contains all marks of the users: carets, avatars...
      * @type {Marker[]}
@@ -78,12 +69,9 @@ export class MarkerManager extends MarkerEvent {
 
     this._markers = markers
 
-    this._pingManager = new PingManger({ ...opts,
-      period: 5000
-    })
+    this._pingManager = new PingManger({ ...opts})
 
-    this._caretManger = new CaretManger({ ...opts
-    })
+    this._caretManger = new CaretManger({ ...opts})
 
 
   }
@@ -103,7 +91,10 @@ export class MarkerManager extends MarkerEvent {
 
 class PingManger extends MarkerEvent {
   constructor(opts) {
-    super(opts)
+
+    const name = opts.name || 'Ping'
+    super({name,...opts})
+
     /**
      * startimer A timer used for sending pings
      * @type {Timer}
@@ -115,9 +106,7 @@ class PingManger extends MarkerEvent {
      */
     this.startPing(opts.period)
 
-    this._document.on('Mping', (origin, pseudo) => {
-      this.atPing(origin, pseudo)
-    })
+    
   }
 
 
@@ -131,11 +120,7 @@ class PingManger extends MarkerEvent {
     this._startTimer = setInterval(() => {
       const id=this._document.uid
       const pseudo = this.getMarker(id).pseudoName
-      this._communicationChannel.sendBroadcast({
-          type: 'Mping',
-          origin: id,
-          pseudo: pseudo
-      });
+      this.broadcast({id,pseudo});
 
     }, interval)
   }
@@ -150,16 +135,14 @@ class PingManger extends MarkerEvent {
   }
 
   /**
-   * atPing at the reception of ping
+   * receive at the reception of ping
    * @param  {[type]} origin [description]
    * @param  {[type]} pseudo [description]
    * @return {[type]}        [description]
    */
-  atPing(msg) {
-    const id = msg.origin
-    const pseudo = msg.pseudo
- 
-  
+  receive({id,pseudo} ) {
+    debug('Ping Received',id,pseudo)
+
     if (this.getMarker(id)) {
       this.getMarker(id)
         .update(null, false) // to keep avatar
@@ -176,16 +159,13 @@ class PingManger extends MarkerEvent {
 
 class CaretManger extends MarkerEvent {
   constructor(opts) {
-    super(opts)
-    this._document = opts.core
+    const name = opts.name || 'Caret'
+    super({name,...opts})
+  
     this._defaultOptions = {
       lifeTime: 5 * 1000,
       cursor: true
     }
-
-    this._document.on('MCaretMovedOperation', (range, origin) => {
-      this.remoteCaretMoved(range, origin)
-    })
   }
 
   /**
@@ -194,25 +174,26 @@ class CaretManger extends MarkerEvent {
    * @return {[type]}       [description]
    */
   caretMoved(range) {
-    this._communicationChannel.sendBroadcast(new MCaretMovedOperation(range, this._document.uid));
+    this.broadcast({range, id: this._document.uid});
     return range;
   };
 
-
-
   /**
-   * remoteCaretMoved At the reception of CARET position
+   *  At the reception of CARET position
    * @param  {[type]} range  [description]
-   * @param  {[type]} origin [description]
+   * @param  {[type]} id [description]
    * @return {[type]}        [description]
    */
-  remoteCaretMoved(range, origin) {
-    if (!origin) return
+  receive(msg) {
+    
+    const {range,id}= msg
+   
+    if (!id) return
 
-    if (this.getMarker(origin)) {
-      this.getMarker(origin).update(range, true) // to keep avatar
+    if (this.getMarker(id)) {
+      this.getMarker(id).update(range, true) // to keep avatar
     } else {
-      this.addMarker(origin, false, {
+      this.addMarker(id, false, {
         range
       })
     }
@@ -220,14 +201,3 @@ class CaretManger extends MarkerEvent {
 
 }
 
-
-/*!
- * \brief object that represents the result of a caretMoved Operation
- * \param range the selection range
- * \param origin the origin of the selection
- */
-export function MCaretMovedOperation(range, origin){
-  this.type = "MCaretMovedOperation";
-  this.range = range;
-  this.origin = origin;
-};

@@ -12,6 +12,8 @@ import {
   QuillManager
 } from "./QuillManger"
 
+import {TextManager} from "./text-manager"
+
 var debug = require('debug')('crate:view:editor')
 
 
@@ -35,17 +37,12 @@ export class EditorController extends EventEmitter {
      * @type {[doc]}
      */
     this.model = model
-
-    this.markerManager = new MarkerManager(this.model, this)
-
-
-
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
      * @type {Quill}
      */
-    this.viewEditor = {};
+    //this.viewEditor = {};
 
     this._editorContainerID = editorContainerID
 
@@ -66,12 +63,15 @@ export class EditorController extends EventEmitter {
    */
   loadDocument(sessionID) {
     const itIsMe = true
-    this.markerManager.addMarker(this.model.uid, itIsMe)
-    this._comments = new Comments(this.model.uid, this._editorContainerID, this.markerManager)
+   
+    this._comments = new Comments(this)
     this.createViewDocument()
 
-
-
+    const defaultOpts= {document:this.model,editor:this}
+    this.markerManager = new MarkerManager({period:5000,...defaultOpts})
+    this.textManager= new TextManager({AntiEntropyPeriod:5000,...defaultOpts}) 
+    this.markerManager.addMarker(this.model.uid, itIsMe)
+    
 
     if (store.get("CRATE2-" + sessionID)) {
       var doc = store.get("CRATE2-" + sessionID)
@@ -85,8 +85,7 @@ export class EditorController extends EventEmitter {
       jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
     })
 
-    this._comments.addAuthorInformation()
-    this._comments.UpdateComments()
+    this._comments.init(this).addAuthorInformation().UpdateComments()
 
   }
 
@@ -121,18 +120,18 @@ export class EditorController extends EventEmitter {
     })
 
     // Remote events
-    this.model.core.on('remoteInsert', (element, indexp) => {
+    this.textManager._insertManager.on('remoteInsert', (element, indexp) => {
       this.remoteInsert(element, indexp)
       this.emit('thereAreChanges')
     })
 
-    this.model.core.on('remoteRemove', (index) => {
+    this.textManager._removeManager.on('remoteRemove', (index) => {
       this.remoteRemove(index)
       this.emit('thereAreChanges')
     })
 
     //At the reception of Title changed operation 
-    this.model.on('changeTitle', (title) => {
+    this.textManager._titleManager.on('changeTitle', (title) => {
       jQuery(`#${this._editorContainerID} #title`).text(title)
       this.emit('thereAreChanges')
     })
@@ -146,12 +145,8 @@ export class EditorController extends EventEmitter {
    * @return {[type]}             [description]
    */
   createViewDocument() {
-
-    const quillManager = new QuillManager(this._editorContainerID, this._comments)
-    const quill = quillManager.getQuill()
-
-    this._comments.viewEditor = quill
-    this.viewEditor = quill
+    this._quillManager = new QuillManager(this._editorContainerID, this._comments)
+    this.viewEditor = this._quillManager.getQuill()
   }
 
 
@@ -222,16 +217,17 @@ export class EditorController extends EventEmitter {
         } else {
           oper = operation[i]
           value = v
-
         }
       }
+
+
 
       // Change the style = remove the word and insert again with attribues,  
 
       // In the case of changing the style, delta will contain "retain" (the start postion) with attributes 
 
       var isItInsertWithAtt = false // to know if we have to update comments or not, if its delete because of changing style, no update comments is needed
-
+      
       retain = this.sendIt(text, att, 0, value, oper, retain, isItInsertWithAtt)
     })
   }
@@ -279,50 +275,23 @@ export class EditorController extends EventEmitter {
 
         // this is a formula
         if (value.formula != undefined) {
-
-          att = this.viewEditor.getFormat(retain, 1)
-          this.model.core.insert({
-            type: 'formula',
-            text: value,
-            att: att
-          }, retain)
+          this.insert('formula',value,retain)
         } else
 
         {
-
           // this is a video
           if (value.video != undefined) {
-
-            att = this.viewEditor.getFormat(retain, 1)
-            this.model.core.insert({
-              type: 'video',
-              text: value,
-              att: att
-            }, retain)
-
-
+              this.insert('video',value,retain)
           } else {
             // It is an image
             if (value.image != undefined) {
-
-              att = this.viewEditor.getFormat(retain, 1)
-
-              this.model.core.insert({
-                type: 'image',
-                text: value,
-                att: att
-              }, retain)
-
+              this.insert('image',value,retain)
             } else { // text
 
               for (var i = retain; i < (retain + text.length); ++i) {
-                att = this.viewEditor.getFormat(i, 1)
                 debug("Local insert : ", text[i - retain], i)
-                this.model.core.insert({
-                  type: 'char',
-                  text: text[i - retain],
-                  att: att
-                }, i)
+
+                this.insert('char',text[i - retain],i)
               }
               retain = retain + text.length
             }
@@ -343,13 +312,24 @@ export class EditorController extends EventEmitter {
         // Delete caracter by caracter
 
         for (var i = start; i < (start + length); ++i) {
-          this.model.core.remove(start)
-
+          this.textManager._removeManager.remove(start)
         }
         break
     }
     return retain
   }
+
+  insert(type,content,position) {
+    const att = this.viewEditor.getFormat(position, 1)
+    const packet = {
+      type: type,
+      text: content,
+      att: att
+    }
+    this.textManager._insertManager.insert({packet, position})
+  }
+
+
 
   /**
    * remoteInsert At the reception of insert operation
@@ -471,9 +451,9 @@ export class EditorController extends EventEmitter {
     if (jQuery(`#${this._editorContainerID} #title`).text() == "") {
       jQuery(`#${this._editorContainerID} #title`).text('Untitled document')
     }
-    this.model.name = jQuery(`#${this._editorContainerID} #title`).text()
+    
     //TODO: Optimize change only if the text is changed from last state 
-    this.model.core.sendChangeTitle(jQuery(`#${this._editorContainerID} #title`).text())
+    this.textManager._titleManager.sendChangeTitle(jQuery(`#${this._editorContainerID} #title`).text())
   }
 
 }

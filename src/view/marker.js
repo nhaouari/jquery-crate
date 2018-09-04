@@ -21,6 +21,18 @@ export default class Marker {
   constructor(origin, options, editor) {
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
 
+
+    if (origin===undefined) {
+      console.error("origin not defined",origin);
+    }
+    if (editor===undefined) {
+      console.error("editor not defined",editor);
+    }
+
+    if(Object.keys(editor).length === 0 && editor.constructor === Object) { console.error("editor is empty",editor); }
+
+
+
     if (options == null) {
       var options = {
         lifeTime: -1,

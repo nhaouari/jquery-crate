@@ -26,6 +26,9 @@ module.exports = {
                   ["babel-plugin-transform-builtin-extend", {
                       "globals": ["Map"]
                   }],
+                  ["transform-es2015-parameters"],
+                  ["transform-object-rest-spread"],
+                  ["transform-es2015-destructuring"],
                   ["syntax-dynamic-import"],
                   ["transform-class-properties"]
               ]

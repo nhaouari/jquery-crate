@@ -9,25 +9,29 @@ export class Comments {
 	 * @return {[type]}                   [description]
 	 */
 
-	constructor(authorId, editorContainerID, markerManger) {
+	constructor() {
 		// Selectors
-		this._authorId = authorId
-		this._editorContainerID = editorContainerID
-		this._viewEditor = {}
-		this._markerManager = markerManger
-
 		this._commentCallback = {}
-		this.setSelectors()
-
 		this.commentAddClick = this.commentAddClick.bind(this)
 		this.commentsClick = this.commentsClick.bind(this)
 	}
 
+	init(editor){
+		this._editor = editor
+		this._authorId = this._editor.model.uid
+		this._editorContainerID = this._editor._editorContainerID
+		this._viewEditor = this._editor.viewEditor
+		this._markerManager=this._editor.markerManager
+
+		this.setSelectors()
+		return this
+	}
 	addAuthorInformation() {
 		const commentOpt = this._viewEditor.options.modules.comment
 		commentOpt.commentAuthorId = this._authorId
 		commentOpt.commentAddOn = this._markerManager.getMarker(this._authorId).animal
 		commentOpt.color = this._markerManager.getMarker(this._authorId).colorRGB
+		return this
 	}
 
 	setSelectors() {
@@ -47,6 +51,7 @@ export class Comments {
 	}
 
 	commentAddClick(cb, self) {
+		console.log('commentAddClick is clicked');
 		this._commentCallback = cb.bind(self);
 		this._inputCommentModel.modal('show');
 	}

@@ -62,7 +62,6 @@ export default class session extends EventEmitter {
     //@todo: make these options global
     this._defaultOptions = { ...options}
     this._options = { ...options}
-    
     this.openDocument();
   }
 /**
@@ -260,11 +259,13 @@ async setOptions() {
       rps: {
         type: "spray-wrtc",
         options: {
+          a:1,
+          b:5,
           protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
           webrtc:  this._options.webRTCOptions,
-          timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-          pendingTimeout: 30 * 1000,
-          delta: 30 * 1000, // spray-wrtc shuffle interval
+          timeout: 120 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          pendingTimeout: 120 * 1000,
+          delta: 120 * 1000, // spray-wrtc shuffle interval
           signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
         }
       }

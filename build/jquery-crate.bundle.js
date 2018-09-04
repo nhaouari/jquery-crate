@@ -35818,13 +35818,21 @@ var Neighborhood = function () {
        * @returns {promise} Resolved when the message is sent, reject
        * otherwise. Note that loss of messages is not handled by default.
        */
-    value: function _send(protocolId, peerId, message) {
+    value: function _send(protocolId, peerIdp, message) {
       var _this4 = this;
 
       var retry = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
       return new Promise(function (resolve, reject) {
         // #1 get the proper entry in the tables
+        var peerId = peerIdp;
+        /* if(peerId===message.from)
+           {
+             peerId=message.to;
+             console.log("Fix works")
+           }
+         */
+
         var entry = null;
         if (_this4.living.contains(peerId)) {
           entry = _this4.living.get(peerId);
@@ -35833,6 +35841,7 @@ var Neighborhood = function () {
         };
         if (entry === null) {
           // console.log(protocolId, peerId, message, retry, this.living.store.size, this.dying.size)
+          //debugger
           reject(new Error('peer not found: ' + peerId));
         }
         // #2 define the recursive sending function
@@ -47594,10 +47603,10 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var MUnicast =
 /**
- * @param {string} protocolId The identifier of the unicast protocol.
- * @param {string} eventName The name of the event to trigger.
- * @param {object[]} [args] The arguments of the event.
- */
+   * @param {string} protocolId The identifier of the unicast protocol.
+   * @param {string} eventName The name of the event to trigger.
+   * @param {object[]} [args] The arguments of the event.
+   */
 function MUnicast(protocolId, eventName, args) {
   _classCallCheck(this, MUnicast);
 
@@ -47633,7 +47642,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var debug = __webpack_require__(/*! debug */ "./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/debug/src/browser.js")('unicast-definition');
+var debug = __webpack_require__(/*! debug */ "./node_modules/tman-wrtc/node_modules/debug/src/browser.js")('unicast-definition');
 var EventEmitter = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 var merge = __webpack_require__(/*! lodash.merge */ "./node_modules/lodash.merge/index.js");
 
@@ -47648,9 +47657,9 @@ var MUnicast = __webpack_require__(/*! ./messages/municast.js */ "./node_modules
  */
 
 var Unicast = function (_EventEmitter) {
-    _inherits(Unicast, _EventEmitter);
+  _inherits(Unicast, _EventEmitter);
 
-    /**
+  /**
      * @param {IPSP} psp The peer-sampling protocol.
      * @param {object} [options] The options of this unicast.
      * @param {string} [options.pid = 'default-unicast'] The name of this
@@ -47658,34 +47667,34 @@ var Unicast = function (_EventEmitter) {
      * @param {number} [option.retry = 0] The number of attempt to send a
      * message.
      */
-    function Unicast(psp) {
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  function Unicast(psp) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-        _classCallCheck(this, Unicast);
+    _classCallCheck(this, Unicast);
 
-        // #0 default options
-        var _this = _possibleConstructorReturn(this, (Unicast.__proto__ || Object.getPrototypeOf(Unicast)).call(this));
+    // #0 default options
+    var _this = _possibleConstructorReturn(this, (Unicast.__proto__ || Object.getPrototypeOf(Unicast)).call(this));
 
-        _this.options = merge({ retry: 0, pid: 'default-unicast' }, options);
-        // #1 create the table of registered protocols
-        _this.psp = psp;
-        // #2 overload the receipt of messages from the peer-sampling protocol
-        var __receive = psp._receive;
-        psp._receive = function (peerId, message) {
-            try {
-                __receive.call(psp, peerId, message);
-            } catch (e) {
-                if (message.type && message.type === 'MUnicast' && message.pid === _this.options.pid) {
-                    _this._emit.apply(_this, [message.event].concat(_toConsumableArray(message.args)));
-                } else {
-                    throw e;
-                };
-            };
+    _this.options = merge({ retry: 0, pid: 'default-unicast' }, options);
+    // #1 create the table of registered protocols
+    _this.psp = psp;
+    // #2 overload the receipt of messages from the peer-sampling protocol
+    var __receive = psp._receive;
+    psp._receive = function (peerId, message) {
+      try {
+        __receive.call(psp, peerId, message);
+      } catch (e) {
+        if (message.type && message.type === 'MUnicast' && message.pid === _this.options.pid) {
+          _this._emit.apply(_this, [message.event].concat(_toConsumableArray(message.args)));
+        } else {
+          throw e;
         };
+      };
+    };
 
-        // #3 replace the basic behavior of eventemitter.emit
-        _this._emit = _this.emit;
-        /**
+    // #3 replace the basic behavior of eventemitter.emit
+    _this._emit = _this.emit;
+    /**
          * Send a message using the emit function.
          * @param {string} event The event name.
          * @param {string} peerId The identifier of the peer to send the event
@@ -47694,593 +47703,37 @@ var Unicast = function (_EventEmitter) {
          * @returns {Promise} Resolved if the message seems to have been sent,
          * rejected otherwise (e.g. timeout, unkown peers).
          */
-        _this.emit = function (event, peerId) {
-            for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-                args[_key - 2] = arguments[_key];
-            }
+    _this.emit = function (event, peerId) {
+      for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+        args[_key - 2] = arguments[_key];
+      }
 
-            return psp.send(peerId, new MUnicast(_this.options.pid, event, args), _this.options.retry);
-        };
+      return psp.send(peerId, new MUnicast(_this.options.pid, event, args), _this.options.retry);
+    };
 
-        debug('just initialized on top of %s@%s.', _this.psp.PID, _this.psp.PEER);
-        return _this;
+    debug('just initialized on top of %s@%s.', _this.psp.PID, _this.psp.PEER);
+    return _this;
+  }
+
+  _createClass(Unicast, [{
+    key: 'destroy',
+
+
+    /**
+       * Destroy all listeners and remove the send capabilities
+       */
+    value: function destroy() {
+      this.removeAllListener();
+      this.emit = this._emit; // retrieve basic behavior
     }
+  }]);
 
-    _createClass(Unicast, [{
-        key: 'destroy',
-
-
-        /**
-         * Destroy all listeners and remove the send capabilities
-         */
-        value: function destroy() {
-            this.removeAllListener();
-            this.emit = this._emit; // retrieve basic behavior
-        }
-    }]);
-
-    return Unicast;
+  return Unicast;
 }(EventEmitter);
 
 ;
 
 module.exports = Unicast;
-
-/***/ }),
-
-/***/ "./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/debug/src/browser.js":
-/*!**************************************************************************************************!*\
-  !*** ./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/debug/src/browser.js ***!
-  \**************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-/**
- * This is the web browser implementation of `debug()`.
- *
- * Expose `debug()` as the module.
- */
-
-exports = module.exports = __webpack_require__(/*! ./debug */ "./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/debug/src/debug.js");
-exports.log = log;
-exports.formatArgs = formatArgs;
-exports.save = save;
-exports.load = load;
-exports.useColors = useColors;
-exports.storage = 'undefined' != typeof chrome && 'undefined' != typeof chrome.storage ? chrome.storage.local : localstorage();
-
-/**
- * Colors.
- */
-
-exports.colors = ['lightseagreen', 'forestgreen', 'goldenrod', 'dodgerblue', 'darkorchid', 'crimson'];
-
-/**
- * Currently only WebKit-based Web Inspectors, Firefox >= v31,
- * and the Firebug extension (any Firefox version) are known
- * to support "%c" CSS customizations.
- *
- * TODO: add a `localStorage` variable to explicitly enable/disable colors
- */
-
-function useColors() {
-  // NB: In an Electron preload script, document will be defined but not fully
-  // initialized. Since we know we're in Chrome, we'll just detect this case
-  // explicitly
-  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
-    return true;
-  }
-
-  // is webkit? http://stackoverflow.com/a/16459606/376773
-  // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-  return typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance ||
-  // is firebug? http://stackoverflow.com/a/398120/376773
-  typeof window !== 'undefined' && window.console && (window.console.firebug || window.console.exception && window.console.table) ||
-  // is firefox >= v31?
-  // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31 ||
-  // double check webkit in userAgent just in case we are in a worker
-  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
-}
-
-/**
- * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
- */
-
-exports.formatters.j = function (v) {
-  try {
-    return JSON.stringify(v);
-  } catch (err) {
-    return '[UnexpectedJSONParseError]: ' + err.message;
-  }
-};
-
-/**
- * Colorize log arguments if enabled.
- *
- * @api public
- */
-
-function formatArgs(args) {
-  var useColors = this.useColors;
-
-  args[0] = (useColors ? '%c' : '') + this.namespace + (useColors ? ' %c' : ' ') + args[0] + (useColors ? '%c ' : ' ') + '+' + exports.humanize(this.diff);
-
-  if (!useColors) return;
-
-  var c = 'color: ' + this.color;
-  args.splice(1, 0, c, 'color: inherit');
-
-  // the final "%c" is somewhat tricky, because there could be other
-  // arguments passed either before or after the %c, so we need to
-  // figure out the correct index to insert the CSS into
-  var index = 0;
-  var lastC = 0;
-  args[0].replace(/%[a-zA-Z%]/g, function (match) {
-    if ('%%' === match) return;
-    index++;
-    if ('%c' === match) {
-      // we only are interested in the *last* %c
-      // (the user may have provided their own)
-      lastC = index;
-    }
-  });
-
-  args.splice(lastC, 0, c);
-}
-
-/**
- * Invokes `console.log()` when available.
- * No-op when `console.log` is not a "function".
- *
- * @api public
- */
-
-function log() {
-  // this hackery is required for IE8/9, where
-  // the `console.log` function doesn't have 'apply'
-  return 'object' === (typeof console === 'undefined' ? 'undefined' : _typeof(console)) && console.log && Function.prototype.apply.call(console.log, console, arguments);
-}
-
-/**
- * Save `namespaces`.
- *
- * @param {String} namespaces
- * @api private
- */
-
-function save(namespaces) {
-  try {
-    if (null == namespaces) {
-      exports.storage.removeItem('debug');
-    } else {
-      exports.storage.debug = namespaces;
-    }
-  } catch (e) {}
-}
-
-/**
- * Load `namespaces`.
- *
- * @return {String} returns the previously persisted debug modes
- * @api private
- */
-
-function load() {
-  var r;
-  try {
-    r = exports.storage.debug;
-  } catch (e) {}
-
-  // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
-  if (!r && typeof process !== 'undefined' && 'env' in process) {
-    r = process.env.DEBUG;
-  }
-
-  return r;
-}
-
-/**
- * Enable namespaces listed in `localStorage.debug` initially.
- */
-
-exports.enable(load());
-
-/**
- * Localstorage attempts to return the localstorage.
- *
- * This is necessary because safari throws
- * when a user disables cookies/localstorage
- * and you attempt to access it.
- *
- * @return {LocalStorage}
- * @api private
- */
-
-function localstorage() {
-  try {
-    return window.localStorage;
-  } catch (e) {}
-}
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../../../node-libs-browser/node_modules/process/browser.js */ "./node_modules/node-libs-browser/node_modules/process/browser.js")))
-
-/***/ }),
-
-/***/ "./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/debug/src/debug.js":
-/*!************************************************************************************************!*\
-  !*** ./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/debug/src/debug.js ***!
-  \************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * This is the common logic for both the Node.js and web browser
- * implementations of `debug()`.
- *
- * Expose `debug()` as the module.
- */
-
-exports = module.exports = createDebug.debug = createDebug['default'] = createDebug;
-exports.coerce = coerce;
-exports.disable = disable;
-exports.enable = enable;
-exports.enabled = enabled;
-exports.humanize = __webpack_require__(/*! ms */ "./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/ms/index.js");
-
-/**
- * The currently active debug mode names, and names to skip.
- */
-
-exports.names = [];
-exports.skips = [];
-
-/**
- * Map of special "%n" handling functions, for the debug "format" argument.
- *
- * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
- */
-
-exports.formatters = {};
-
-/**
- * Previous log timestamp.
- */
-
-var prevTime;
-
-/**
- * Select a color.
- * @param {String} namespace
- * @return {Number}
- * @api private
- */
-
-function selectColor(namespace) {
-  var hash = 0,
-      i;
-
-  for (i in namespace) {
-    hash = (hash << 5) - hash + namespace.charCodeAt(i);
-    hash |= 0; // Convert to 32bit integer
-  }
-
-  return exports.colors[Math.abs(hash) % exports.colors.length];
-}
-
-/**
- * Create a debugger with the given `namespace`.
- *
- * @param {String} namespace
- * @return {Function}
- * @api public
- */
-
-function createDebug(namespace) {
-
-  function debug() {
-    // disabled?
-    if (!debug.enabled) return;
-
-    var self = debug;
-
-    // set `diff` timestamp
-    var curr = +new Date();
-    var ms = curr - (prevTime || curr);
-    self.diff = ms;
-    self.prev = prevTime;
-    self.curr = curr;
-    prevTime = curr;
-
-    // turn the `arguments` into a proper Array
-    var args = new Array(arguments.length);
-    for (var i = 0; i < args.length; i++) {
-      args[i] = arguments[i];
-    }
-
-    args[0] = exports.coerce(args[0]);
-
-    if ('string' !== typeof args[0]) {
-      // anything else let's inspect with %O
-      args.unshift('%O');
-    }
-
-    // apply any `formatters` transformations
-    var index = 0;
-    args[0] = args[0].replace(/%([a-zA-Z%])/g, function (match, format) {
-      // if we encounter an escaped % then don't increase the array index
-      if (match === '%%') return match;
-      index++;
-      var formatter = exports.formatters[format];
-      if ('function' === typeof formatter) {
-        var val = args[index];
-        match = formatter.call(self, val);
-
-        // now we need to remove `args[index]` since it's inlined in the `format`
-        args.splice(index, 1);
-        index--;
-      }
-      return match;
-    });
-
-    // apply env-specific formatting (colors, etc.)
-    exports.formatArgs.call(self, args);
-
-    var logFn = debug.log || exports.log || console.log.bind(console);
-    logFn.apply(self, args);
-  }
-
-  debug.namespace = namespace;
-  debug.enabled = exports.enabled(namespace);
-  debug.useColors = exports.useColors();
-  debug.color = selectColor(namespace);
-
-  // env-specific initialization logic for debug instances
-  if ('function' === typeof exports.init) {
-    exports.init(debug);
-  }
-
-  return debug;
-}
-
-/**
- * Enables a debug mode by namespaces. This can include modes
- * separated by a colon and wildcards.
- *
- * @param {String} namespaces
- * @api public
- */
-
-function enable(namespaces) {
-  exports.save(namespaces);
-
-  exports.names = [];
-  exports.skips = [];
-
-  var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
-  var len = split.length;
-
-  for (var i = 0; i < len; i++) {
-    if (!split[i]) continue; // ignore empty strings
-    namespaces = split[i].replace(/\*/g, '.*?');
-    if (namespaces[0] === '-') {
-      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
-    } else {
-      exports.names.push(new RegExp('^' + namespaces + '$'));
-    }
-  }
-}
-
-/**
- * Disable debug output.
- *
- * @api public
- */
-
-function disable() {
-  exports.enable('');
-}
-
-/**
- * Returns true if the given mode name is enabled, false otherwise.
- *
- * @param {String} name
- * @return {Boolean}
- * @api public
- */
-
-function enabled(name) {
-  var i, len;
-  for (i = 0, len = exports.skips.length; i < len; i++) {
-    if (exports.skips[i].test(name)) {
-      return false;
-    }
-  }
-  for (i = 0, len = exports.names.length; i < len; i++) {
-    if (exports.names[i].test(name)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Coerce `val`.
- *
- * @param {Mixed} val
- * @return {Mixed}
- * @api private
- */
-
-function coerce(val) {
-  if (val instanceof Error) return val.stack || val.message;
-  return val;
-}
-
-/***/ }),
-
-/***/ "./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/ms/index.js":
-/*!*****************************************************************************************!*\
-  !*** ./node_modules/tman-wrtc/node_modules/unicast-definition/node_modules/ms/index.js ***!
-  \*****************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-/**
- * Helpers.
- */
-
-var s = 1000;
-var m = s * 60;
-var h = m * 60;
-var d = h * 24;
-var y = d * 365.25;
-
-/**
- * Parse or format the given `val`.
- *
- * Options:
- *
- *  - `long` verbose formatting [false]
- *
- * @param {String|Number} val
- * @param {Object} [options]
- * @throws {Error} throw an error if val is not a non-empty string or a number
- * @return {String|Number}
- * @api public
- */
-
-module.exports = function (val, options) {
-  options = options || {};
-  var type = typeof val === 'undefined' ? 'undefined' : _typeof(val);
-  if (type === 'string' && val.length > 0) {
-    return parse(val);
-  } else if (type === 'number' && isNaN(val) === false) {
-    return options.long ? fmtLong(val) : fmtShort(val);
-  }
-  throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val));
-};
-
-/**
- * Parse the given `str` and return milliseconds.
- *
- * @param {String} str
- * @return {Number}
- * @api private
- */
-
-function parse(str) {
-  str = String(str);
-  if (str.length > 100) {
-    return;
-  }
-  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str);
-  if (!match) {
-    return;
-  }
-  var n = parseFloat(match[1]);
-  var type = (match[2] || 'ms').toLowerCase();
-  switch (type) {
-    case 'years':
-    case 'year':
-    case 'yrs':
-    case 'yr':
-    case 'y':
-      return n * y;
-    case 'days':
-    case 'day':
-    case 'd':
-      return n * d;
-    case 'hours':
-    case 'hour':
-    case 'hrs':
-    case 'hr':
-    case 'h':
-      return n * h;
-    case 'minutes':
-    case 'minute':
-    case 'mins':
-    case 'min':
-    case 'm':
-      return n * m;
-    case 'seconds':
-    case 'second':
-    case 'secs':
-    case 'sec':
-    case 's':
-      return n * s;
-    case 'milliseconds':
-    case 'millisecond':
-    case 'msecs':
-    case 'msec':
-    case 'ms':
-      return n;
-    default:
-      return undefined;
-  }
-}
-
-/**
- * Short format for `ms`.
- *
- * @param {Number} ms
- * @return {String}
- * @api private
- */
-
-function fmtShort(ms) {
-  if (ms >= d) {
-    return Math.round(ms / d) + 'd';
-  }
-  if (ms >= h) {
-    return Math.round(ms / h) + 'h';
-  }
-  if (ms >= m) {
-    return Math.round(ms / m) + 'm';
-  }
-  if (ms >= s) {
-    return Math.round(ms / s) + 's';
-  }
-  return ms + 'ms';
-}
-
-/**
- * Long format for `ms`.
- *
- * @param {Number} ms
- * @return {String}
- * @api private
- */
-
-function fmtLong(ms) {
-  return plural(ms, d, 'day') || plural(ms, h, 'hour') || plural(ms, m, 'minute') || plural(ms, s, 'second') || ms + ' ms';
-}
-
-/**
- * Pluralization helper.
- */
-
-function plural(ms, n, name) {
-  if (ms < n) {
-    return;
-  }
-  if (ms < n * 1.5) {
-    return Math.floor(ms / n) + ' ' + name;
-  }
-  return Math.ceil(ms / n) + ' ' + name + 's';
-}
 
 /***/ }),
 
@@ -49367,560 +48820,6 @@ View.addMoveShortcuts();
 
 /***/ }),
 
-/***/ "./src/communication/communication.js":
-/*!********************************************!*\
-  !*** ./src/communication/communication.js ***!
-  \********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
-
-var _versionVectorWithExceptions = __webpack_require__(/*! version-vector-with-exceptions */ "./node_modules/version-vector-with-exceptions/lib/vvwe.js");
-
-var _versionVectorWithExceptions2 = _interopRequireDefault(_versionVectorWithExceptions);
-
-var _LSEQTree = __webpack_require__(/*! LSEQTree */ "./node_modules/LSEQTree/lib/lseqtree.js");
-
-var _LSEQTree2 = _interopRequireDefault(_LSEQTree);
-
-var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
-
-var _messages = __webpack_require__(/*! ./messages */ "./src/communication/messages.js");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:crate-core');
-/*!
- * \brief link together all components of the model of the CRATE editor
- * \param id the unique site identifier
- * \param options the webrtc specific options 
- */
-
-var Communication = function (_EventEmitter) {
-    _inherits(Communication, _EventEmitter);
-
-    function Communication(id, options, data_comm, behaviours_comm) {
-        _classCallCheck(this, Communication);
-
-        // EventEmitter.call(this);
-
-        var _this = _possibleConstructorReturn(this, (Communication.__proto__ || Object.getPrototypeOf(Communication)).call(this));
-
-        _this.options = options;
-
-        /**
-         * this variables are used to manage the sleeping mode in nodejs, to detect if the user is no longer editing for a period of changesTimeOut. 
-         */
-        _this.setLastChangesTime();
-        _this._timer = setInterval(function () {
-            return _this.checkIfOutdated();
-        }, 1000);
-        _this._changesTimeOut = options.changesTimeOut || 10 * 1000; //default timeout is 10m
-
-        _this._communication = data_comm;
-
-        _this.No_antientropy = behaviours_comm;
-
-        _this.broadcast = _this._communication.broadcast;
-        // Default channel for antientropy operations : insert, remove, changeTitle
-
-        // No-anti-entropy channel for the operations that dose not need antientropy : ping, cartet position
-
-        // listen for incoming broadcast
-
-        _this.No_antientropy.onBroadcast(function (id, message) {
-            switch (message.type) {
-                case 'MCaretMovedOperation':
-                    _this.remoteCaretMoved(message.range, message.origin);
-                    break;
-                case 'Mping':
-                    _this.ping(message.origin, message.pseudo);
-                    break;
-            };
-        });
-
-        _this._lastSentId = null;
-        _this._communication.onBroadcast(function (id, message) {
-            switch (message.type) {
-                case 'MRemoveOperation':
-                    _this.remoteRemove(message.remove, message.origin);
-                    break;
-                case 'MInsertOperation':
-                    _this.remoteInsert(message.insert, message.origin);
-                    break;
-                case 'MTitleChanged':
-                    _this.changeTitle(message.title);
-                    break;
-
-            };
-        });
-
-        _this._communication.broadcast.startAntiEntropy(2000);
-
-        _this._communication.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {
-            var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(remoteVVwE); // cast
-            var toSearch = [];
-
-            // #1 for each entry of our VVwE, look if the remote VVwE knows less
-            for (var i = 0; i < localVVwE.vector.arr.length; ++i) {
-                var localEntry = localVVwE.vector.arr[i];
-                var index = remoteVVwE.vector.indexOf(localVVwE.vector.arr[i]);
-                var start = 1;
-                // #A check if the entry exists in the remote vvwe
-                if (index >= 0) {
-                    start = remoteVVwE.vector.arr[index].v + 1;
-                };
-                for (var j = start; j <= localEntry.v; ++j) {
-                    // #B check if not one of the local exceptions
-                    if (localEntry.x.indexOf(j) < 0) {
-                        toSearch.push({
-                            _e: localEntry.e,
-                            _c: j
-                        });
-                    };
-                };
-                // #C handle the exceptions of the remote vector
-                if (index >= 0) {
-                    for (var j = 0; j < remoteVVwE.vector.arr[index].x.length; ++j) {
-                        var except = remoteVVwE.vector.arr[index].x[j];
-                        if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
-                            toSearch.push({
-                                _e: localEntry.e,
-                                _c: except
-                            });
-                        };
-                    };
-                };
-            };
-            var elements = _this.getElements(toSearch);
-
-            // #2 send back the found elements
-
-            if (elements.length != 0) {
-                debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
-                _this._communication.broadcast.sendAntiEntropyResponse(id, localVVwE, elements);
-
-                _this.emit('sendChangeTitle');
-            }
-        });
-
-        _this.id = id;
-        _this.sequence = new _LSEQTree2.default(_this.options.editingSessionID);
-        return _this;
-    }
-
-    /**
-     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
-     */
-
-
-    _createClass(Communication, [{
-        key: "checkIfOutdated",
-        value: function checkIfOutdated() {
-            var timeNow = new Date().getTime();
-            var dff = timeNow - this._lastChanges;
-            // if  cursor  is outdated 
-            if (timeNow - this._lastChanges >= this._changesTimeOut) {
-                clearInterval(this._timer);
-                this.emit('outdated');
-                return true;
-            } else {
-                // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
-                return false;
-            }
-        }
-
-        /*!
-         * \brief create the core from an existing object
-         * \param object the object to initialize the core model of crate containing a 
-         * sequence and causality tracking metadata
-         */
-
-    }, {
-        key: "init",
-        value: function init(object) {
-            // import the sequence and version vector, yet it keeps the identifier of
-            // this instance of the core.
-
-            // this.broadcast = Object.assign(new VVwE(this.id),object.causality);
-
-            // var local = this.broadcast.causality.local;
-            this.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
-
-            // this.broadcast.causality.local = local;
-            var local = this.broadcast._causality.local;
-            // this.broadcast.causality.vector.insert(this.broadcast.causality.local);
-
-            this.No_antientropy.broadcast._causality.local.e = local.e;
-
-            this.sequence.fromJSON(object.sequence);
-            this.sequence._s = local.e;
-            this.sequence._c = local.v;
-        }
-    }, {
-        key: "insert",
-
-
-        /*!
-         * \brief local insertion of a character inside the sequence structure. It
-         * broadcasts the operation to the rest of the network.
-         * \param character the character to insert in the sequence
-         * \param index the index in the sequence to insert
-         * \return the identifier freshly allocated
-         */
-        value: function insert(character, index) {
-            var pair = this.sequence.insert(character, index);
-
-            var insertMsg = new _messages.MInsertOperation(pair, this.id);
-
-            try {
-                var test = JSON.parse(JSON.stringify(insertMsg));
-            } catch (e) {
-                console.error('The object cannot be convert to json ', e, insertMsg);
-            }
-
-            this._lastSentId = this._communication.sendBroadcast(new _messages.MInsertOperation(pair, this.id), null, this._lastSentId);
-
-            this.setLastChangesTime();
-            return pair;
-        }
-    }, {
-        key: "remove",
-
-
-        /*!
-         * \brief local deletion of a character from the sequence structure. It 
-         * broadcasts the operation to the rest of the network.
-         * \param index the index of the element to remove
-         * \return the identifier freshly removed
-         */
-        value: function remove(index) {
-            var i = this.sequence.remove(index);
-            this.sequence._c += 1;
-            this._communication.sendBroadcast(new _messages.MRemoveOperation(i, this.id));
-
-            this.setLastChangesTime();
-
-            return i;
-        }
-    }, {
-        key: "remoteInsert",
-
-
-        /*!
-         * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
-         * with the index of the element to insert, -1 if already existing.
-         * \param ei the result of the remote insert operation
-         * \param origin the origin id of the insert operation
-         */
-        value: function remoteInsert(pair, origin) {
-            var index = this.sequence.applyInsert(pair, false);
-            debug('remoteInsert', pair, ' sequence Index ', index);
-            if (index >= 0 && origin) {
-                this.emit('remoteInsert', pair.elem, index);
-                this.setLastChangesTime();
-                if (!pair.antientropy) {
-                    this.emit('remoteCaretMoved', {
-                        index: index,
-                        length: 0
-                    }, origin);
-                };
-            }
-        }
-    }, {
-        key: "remoteRemove",
-
-
-        /*!
-         * \brief removal of an element from a remote site.  It emits 'remoteRemove'
-         * with the index of the element to remove, -1 if does not exist
-         * \param id the result of the remote insert operation
-         * \param origin the origin id of the removal
-         */
-        value: function remoteRemove(id, origin) {
-            var index = this.sequence.applyRemove(id);
-            this.emit('remoteRemove', index);
-            if (index >= 0 && origin) {
-                this.emit('remoteCaretMoved', {
-                    index: index - 1,
-                    length: 0
-                }, origin);
-            };
-            this.setLastChangesTime();
-        }
-    }, {
-        key: "setLastChangesTime",
-
-
-        /**
-         * setLastChangesTime set the last time of changes
-         */
-        value: function setLastChangesTime() {
-            var d = new Date();
-            var n = d.getTime();
-            this._lastChanges = n;
-        }
-        /**
-         * [remoteCaretMoved]
-         * @param  {[type]} range  [description]
-         * @param  {[type]} origin [description]
-         * @return {[type]}        [description]
-         */
-
-    }, {
-        key: "remoteCaretMoved",
-        value: function remoteCaretMoved(range, origin) {
-            this.emit('remoteCaretMoved', range, origin);
-        }
-    }, {
-        key: "caretMoved",
-
-
-        /**
-         * [caretMoved description]
-         * @param  {[type]} range [description]
-         * @return {[type]}       [description]
-         */
-        value: function caretMoved(range) {
-            this.No_antientropy.sendBroadcast(new _messages.MCaretMovedOperation(range, this.id));
-            return range;
-        }
-    }, {
-        key: "ping",
-
-
-        /**
-         * [ping At ping recepion send ping event to be traited]
-         * @param  {[type]} origin [description]
-         * @param  {[type]} pseudo [description]
-         * @return {[type]}        [description]
-         */
-        value: function ping(origin, pseudo) {
-            this.emit('ping', origin, pseudo);
-        }
-    }, {
-        key: "sendPing",
-
-
-        /**
-         * [sendPing description]
-         * @return {[type]} [description]
-         */
-        value: function sendPing(pseudo) {
-            var pseudo = "Anonymous";
-            this.No_antientropy.sendBroadcast({
-                type: 'Mping',
-                origin: this.id,
-                pseudo: pseudo
-            });
-            return origin;
-        }
-    }, {
-        key: "changeTitle",
-
-
-        /**
-         * [changeTitle At the reception of MTitleChanged ]
-         * @param  {[type]} title [description]
-         * @return {[type]}       [description]
-         */
-
-        value: function changeTitle(title) {
-            this.emit('changeTitle', title);
-        }
-    }, {
-        key: "sendChangeTitle",
-
-
-        /**
-         * [sendChangeTitle Broadcast the new title]
-         * @param  {[type]} title [description]
-         * @return {[type]}       [description]
-         */
-        value: function sendChangeTitle(title) {
-            console.log("sendChangeTitle core title ", title);
-            this._communication.sendBroadcast({
-                type: 'MTitleChanged',
-                title: title
-            });
-        }
-    }, {
-        key: "getElements",
-
-
-        /*!
-         * \brief search a set of elements in our sequence and return them
-         * \param toSearch the array of elements {_e, _c} to search
-         * \returns an array of nodes
-         */
-        value: function getElements(toSearch) {
-            var result = [],
-                found,
-                node,
-                tempNode,
-                i = this.sequence.length,
-                j = 0;
-            // (TODO) improve research by exploiting the fact that if a node is
-            // missing, all its children are missing too.
-            // (TODO) improve the returned representation: either a tree to factorize
-            // common parts of the structure or identifiers to get the polylog size
-            // (TODO) improve the search by using the fact that toSearch is a sorted
-            // array, possibly restructure this argument to be even more efficient
-
-            while (toSearch.length > 0 && i <= this.sequence.length && i > 0) {
-                node = this.sequence._get(i);
-                tempNode = node;
-
-                while (tempNode.children.length > 0) {
-                    tempNode = tempNode.children[0];
-                };
-                j = 0;
-                found = false;
-                while (j < toSearch.length && !found) {
-                    if (tempNode.t.s === toSearch[j]._e && tempNode.t.c === toSearch[j]._c) {
-
-                        found = true;
-                        result.push(new _messages.MAEInsertOperation({
-                            elem: tempNode.e,
-                            id: node,
-                            antientropy: true // this to prevent the caret movement in the case of anti-entropy
-                        }, tempNode.t.s.split("-")[0]));
-                        toSearch.splice(j, 1);
-                    } else {
-                        ++j;
-                    };
-                };
-                --i;
-            };
-
-            return result.reverse();
-        }
-    }]);
-
-    return Communication;
-}(_events.EventEmitter);
-
-exports.default = Communication;
-
-/***/ }),
-
-/***/ "./src/communication/messages.js":
-/*!***************************************!*\
-  !*** ./src/communication/messages.js ***!
-  \***************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.MInsertOperation = MInsertOperation;
-exports.MAEInsertOperation = MAEInsertOperation;
-exports.MRemoveOperation = MRemoveOperation;
-exports.MCaretMovedOperation = MCaretMovedOperation;
-exports.MBroadcast = MBroadcast;
-exports.MAntiEntropyRequest = MAntiEntropyRequest;
-exports.MAntiEntropyResponse = MAntiEntropyResponse;
-/*!
- * \brief object that represents the result of an insert operation
- * \param insert the result of the local insert operation
- * \param origin the origin of the insertion
- */
-function MInsertOperation(insert, origin) {
-    this.type = "MInsertOperation";
-    this.insert = insert;
-    this.origin = origin;
-};
-
-function MAEInsertOperation(insert, id) {
-    this.type = "MAEInsertOperation";
-    this.payload = new MInsertOperation(insert, id);
-    this.id = { e: id };
-    this.isReady = null;
-};
-
-/*!
- * \brief object that represents the result of a delete operation
- * \param remove the result of the local delete operation
- * \param origin the origin of the removal
- */
-function MRemoveOperation(remove, origin) {
-    this.type = "MRemoveOperation";
-    this.remove = remove;
-    this.origin = origin;
-};
-
-/*!
- * \brief object that represents the result of a caretMoved Operation
- * \param range the selection range
- * \param origin the origin of the selection
- */
-function MCaretMovedOperation(range, origin) {
-    this.type = "MCaretMovedOperation";
-    this.range = range;
-    this.origin = origin;
-};
-
-/*!
- * \brief message containing data to broadcast
- * \param name the name of the protocol, default 'causal'
- * \param id the identifier of the broadcast message
- * \param isReady the identifier(s) that must exist to deliver this message
- * \param payload the broadcasted data
- */
-function MBroadcast(name, id, isReady, payload) {
-    this.protocol = name;
-    this.id = id;
-    this.isReady = isReady;
-    this.payload = payload;
-};
-
-/*!
- * \brief message that request an AntiEntropy 
- * \param causality the causality structure
- */
-function MAntiEntropyRequest(causality) {
-    this.type = 'MAntiEntropyRequest';
-    this.causality = causality;
-};
-
-/*!
- * \brief message responding to the AntiEntropy request
- * \param id the identifier of the response message
- * \param causality the causality structure
- * \param nbElements the number of element to send
- * \param element each element to send 
- */
-function MAntiEntropyResponse(id, causality, nbElements, element) {
-    this.type = 'MAntiEntropyResponse';
-    this.id = id;
-    this.causality = causality;
-    this.nbElements = nbElements;
-    this.element = element;
-    this.elements = [];
-};
-
-/***/ }),
-
 /***/ "./src/document.js":
 /*!*************************!*\
   !*** ./src/document.js ***!
@@ -49937,17 +48836,13 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _shortid = __webpack_require__(/*! shortid */ "./node_modules/shortid/index.js");
-
-var _shortid2 = _interopRequireDefault(_shortid);
-
 var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
 
-var _communication = __webpack_require__(/*! ./communication/communication.js */ "./src/communication/communication.js");
-
-var _communication2 = _interopRequireDefault(_communication);
-
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
+
+var _LSEQTree = __webpack_require__(/*! LSEQTree */ "./node_modules/LSEQTree/lib/lseqtree.js");
+
+var _LSEQTree2 = _interopRequireDefault(_LSEQTree);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -49959,6 +48854,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:crate-document');
+
 var doc = function (_EventEmitter) {
   _inherits(doc, _EventEmitter);
 
@@ -49969,6 +48866,8 @@ var doc = function (_EventEmitter) {
 
     _this._foglet = foglet;
     _this._options = options;
+
+    _this._lastChanges = new Date();
 
     _this.name = options.name;
     _this.date = new Date(); // (TODO) change
@@ -49988,59 +48887,37 @@ var doc = function (_EventEmitter) {
     key: "init",
     value: function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-        var _this2 = this;
-
-        var options, promise, _ref2, View;
+        var options, _ref2, View;
 
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
                 options = this._options;
-                promise = undefined;
 
                 if (!options.foglet) {
-                  _context.next = 8;
+                  _context.next = 6;
                   break;
                 }
 
-                _context.next = 5;
+                _context.next = 4;
                 return this._foglet.connection(options.foglet);
 
-              case 5:
-                promise = _context.sent;
-                _context.next = 12;
+              case 4:
+                _context.next = 9;
                 break;
 
-              case 8:
+              case 6:
                 this._foglet.share();
-                _context.next = 11;
+                _context.next = 9;
                 return this._foglet.connection();
 
-              case 11:
-                promise = _context.sent;
+              case 9:
 
-              case 12:
                 console.log("application connected!");
+
                 this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "anti-entropy");
                 this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "No-anti-entropy");
-
-                this.core = new _communication2.default(this.uid, {
-                  webrtc: options.webRTCOptions,
-                  signalingOptions: options.signalingOptions,
-                  editingSessionID: options.editingSessionID
-                }, this._data_comm, this._behaviors_comm);
-
-                // send actual title after anti-antropy
-                this.core.on("sendChangeTitle", function () {
-                  _this2.core.sendChangeTitle(_this2.name);
-                });
-
-                this.core.on("changeTitle", function (title) {
-                  _this2.title = title;
-                  _this2.name = title;
-                  _this2.emit("changeTitle", title);
-                });
 
                 // #1B if it is imported from an existing object, initialize it with these
                 if (options.importFromJSON) {
@@ -50048,36 +48925,40 @@ var doc = function (_EventEmitter) {
                 }
 
                 // #2 grant fast access
-
+                this.sequence = new _LSEQTree2.default(options.editingSessionID);
                 this.broadcast = this._data_comm.broadcast;
                 this.broadcastCaret = this._behaviors_comm.broadcast;
                 this.rps = this._data_comm.network.rps;
-                this.sequence = this.core.sequence;
+
                 this.causality = this.broadcast._causality;
                 this.signalingOptions = options.signalingOptions;
+                console.log('options', options);
+
+                this.routersInit();
 
                 if (!options.display) {
-                  _context.next = 31;
+                  _context.next = 28;
                   break;
                 }
 
-                _context.next = 28;
+                _context.next = 24;
                 return Promise.resolve().then(function () {
                   return __webpack_require__(/*! ./View.js */ "./src/View.js");
                 });
 
-              case 28:
+              case 24:
                 _ref2 = _context.sent;
                 View = _ref2.View;
 
                 this._view = new View(options, this, options.containerID);
+                this.emit("ViewIsReady");
 
-              case 31:
-                this.pingCommunicationInit();
+              case 28:
+
                 this._foglet.emit("connected");
                 this.emit("connected");
 
-              case 34:
+              case 30:
               case "end":
                 return _context.stop();
             }
@@ -50092,21 +48973,65 @@ var doc = function (_EventEmitter) {
       return init;
     }()
   }, {
-    key: "pingCommunicationInit",
-    value: function pingCommunicationInit() {
-      var _this3 = this;
+    key: "routersInit",
+    value: function routersInit() {
+      var _this2 = this;
 
       this._behaviors_comm.onBroadcast(function (id, message) {
-        switch (message.type) {
-          case 'MCaretMovedOperation':
-            _this3.emit('MCaretMovedOperation', message.range, message.origin);
-            break;
-          case 'Mping':
-            _this3.emit('Mping', message);
-            break;
-        };
+        _this2.emit(message.type, message);
+        debug('document', '._behaviors_comm', 'Message received', message, 'from', id);
+      });
+
+      this._data_comm.onBroadcast(function (id, message) {
+        debug('document', '._data_comm', 'Message received', message, 'from', id);
+        _this2.emit(message.type, message);
+      });
+
+      this._data_comm.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {
+        console.log('document', '.antiEntropy', 'Message received', { id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE }, 'from', id);
+        _this2.emit('antiEntropy_Event', { id: id, remoteVVwEJSON: remoteVVwE, localVVwE: localVVwE });
       });
     }
+
+    /**
+     * setLastChangesTime set the last time of changes
+     */
+
+  }, {
+    key: "setLastChangesTime",
+    value: function setLastChangesTime() {
+      var d = new Date();
+      var n = d.getTime();
+      this._lastChanges = n;
+    }
+
+    /*!
+        * \brief create the core from an existing object
+        * \param object the object to initialize the core model of crate containing a 
+        * sequence and causality tracking metadata
+        */
+    /*TODO:init(object) {
+         // import the sequence and version vector, yet it keeps the identifier of
+         // this instance of the core.
+    
+         // this.broadcast = Object.assign(new VVwE(this.id),object.causality);
+    
+         // var local = this.broadcast.causality.local;
+         this._data_comm.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
+    
+    
+         // this.broadcast.causality.local = local;
+         var local = this.broadcast._causality.local;
+         // this.broadcast.causality.vector.insert(this.broadcast.causality.local);
+    
+         this.No_antientropy.broadcast._causality.local.e = local.e;
+    
+         this.sequence.fromJSON(object.sequence);
+         this.sequence._s = local.e;
+         this.sequence._c = local.v;
+     };
+    */
+
   }]);
 
   return doc;
@@ -50226,7 +49151,6 @@ var session = function (_EventEmitter) {
 
     _this._defaultOptions = _extends({}, options);
     _this._options = _extends({}, options);
-
     _this.openDocument();
     return _this;
   }
@@ -50539,11 +49463,13 @@ var session = function (_EventEmitter) {
         rps: {
           type: "spray-wrtc",
           options: {
+            a: 1,
+            b: 5,
             protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
             webrtc: this._options.webRTCOptions,
-            timeout: 30 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-            pendingTimeout: 30 * 1000,
-            delta: 30 * 1000, // spray-wrtc shuffle interval
+            timeout: 120 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+            pendingTimeout: 120 * 1000,
+            delta: 120 * 1000, // spray-wrtc shuffle interval
             signaling: _extends({}, this._options.signalingOptions, { room: this._options.signalingOptions.session // signaling options
             }) }
         }
@@ -50777,6 +49703,115 @@ session.Marker = _marker2.default;
 
 /***/ }),
 
+/***/ "./src/view/Event.js":
+/*!***************************!*\
+  !*** ./src/view/Event.js ***!
+  \***************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.Event = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Event = exports.Event = function (_EventEmitter) {
+    _inherits(Event, _EventEmitter);
+
+    function Event(opts) {
+        _classCallCheck(this, Event);
+
+        var _this = _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).call(this));
+
+        _this._document = opts.document;
+        _this._editor = opts.editor;
+
+        _this._communicationChannel = _this._document._data_comm;
+        _this._name = opts.name;
+
+        _this._document.on(_this.getType(), function (msg) {
+            console.log("receive", _this.getType(), msg);
+            _this.receive(msg);
+        });
+
+        console.log("on \"" + _this._name + "_Action_Event\"");
+        _this._document.on(_this._name + "_Action_Event", function (msg) {
+            _this.action(msg);
+        });
+        return _this;
+    }
+
+    _createClass(Event, [{
+        key: "getEncapsulatedMessage",
+        value: function getEncapsulatedMessage(msg) {}
+    }, {
+        key: "setLastChangesTime",
+        value: function setLastChangesTime() {
+            this._document.setLastChangesTime();
+        }
+    }, {
+        key: "getType",
+        value: function getType() {
+            if (this._name) {
+                return this._name + "_Event";
+            } else {
+                console.error("Event without name");
+            }
+        }
+    }, {
+        key: "broadcast",
+        value: function broadcast(msg) {
+            var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
+            var messageId = this._communicationChannel.sendBroadcast(_extends({ type: this.getType() }, msg));
+            return messageId;
+        }
+    }, {
+        key: "receive",
+        value: function receive(msg) {
+
+            console.log("receive", msg);
+        }
+    }, {
+        key: "action",
+        value: function action(msg) {
+            console.log('this is an action');
+        }
+    }, {
+        key: "sendAction",
+        value: function sendAction(name, args) {
+            this.Event(name + "_Action", args);
+        }
+    }, {
+        key: "Event",
+        value: function Event(name, args) {
+
+            console.log('Event: ', name + "_Event", args);
+            this._document.emit(name + "_Event", args);
+        }
+    }]);
+
+    return Event;
+}(_events.EventEmitter);
+
+/***/ }),
+
 /***/ "./src/view/QuillManger.js":
 /*!*********************************!*\
   !*** ./src/view/QuillManger.js ***!
@@ -50985,47 +50020,54 @@ var Comments = exports.Comments = function () {
   * @return {[type]}                   [description]
   */
 
-	function Comments(authorId, editorContainerID, markerManger) {
+	function Comments() {
 		_classCallCheck(this, Comments);
 
 		// Selectors
-		this._authorId = authorId;
-		this._editorContainerID = editorContainerID;
-		this._viewEditor = {};
-		this._markerManager = markerManger;
-
 		this._commentCallback = {};
-		this.setSelectors();
-
 		this.commentAddClick = this.commentAddClick.bind(this);
 		this.commentsClick = this.commentsClick.bind(this);
 	}
 
 	_createClass(Comments, [{
-		key: "addAuthorInformation",
+		key: 'init',
+		value: function init(editor) {
+			this._editor = editor;
+			this._authorId = this._editor.model.uid;
+			this._editorContainerID = this._editor._editorContainerID;
+			this._viewEditor = this._editor.viewEditor;
+			this._markerManager = this._editor.markerManager;
+
+			this.setSelectors();
+			return this;
+		}
+	}, {
+		key: 'addAuthorInformation',
 		value: function addAuthorInformation() {
 			var commentOpt = this._viewEditor.options.modules.comment;
 			commentOpt.commentAuthorId = this._authorId;
 			commentOpt.commentAddOn = this._markerManager.getMarker(this._authorId).animal;
 			commentOpt.color = this._markerManager.getMarker(this._authorId).colorRGB;
+			return this;
 		}
 	}, {
-		key: "setSelectors",
+		key: 'setSelectors',
 		value: function setSelectors() {
-			this._inputCommentModel = $("#" + this._editorContainerID + " #inputCommentModal");
-			this._comments = $("#" + this._editorContainerID + " #comments");
-			this._ql_editor = $("#" + this._editorContainerID + " .ql-editor");
-			this._editor = $("#" + this._editorContainerID + " .editor");
-			this._commentInput = $("#" + this._editorContainerID + " #commentInput");
+			this._inputCommentModel = $('#' + this._editorContainerID + ' #inputCommentModal');
+			this._comments = $('#' + this._editorContainerID + ' #comments');
+			this._ql_editor = $('#' + this._editorContainerID + ' .ql-editor');
+			this._editor = $('#' + this._editorContainerID + ' .editor');
+			this._commentInput = $('#' + this._editorContainerID + ' #commentInput');
 		}
 	}, {
-		key: "commentAddClick",
+		key: 'commentAddClick',
 		value: function commentAddClick(cb, self) {
+			console.log('commentAddClick is clicked');
 			this._commentCallback = cb.bind(self);
 			this._inputCommentModel.modal('show');
 		}
 	}, {
-		key: "getCurrentTimestamp",
+		key: 'getCurrentTimestamp',
 		value: function getCurrentTimestamp() {
 			return new Promise(function (resolve, reject) {
 				var currentTimestamp = Math.round(new Date().getTime() / 1000); // call from server
@@ -51033,7 +50075,7 @@ var Comments = exports.Comments = function () {
 			});
 		}
 	}, {
-		key: "commentsClick",
+		key: 'commentsClick',
 		value: function commentsClick() {
 			if (this._comments.is(":visible")) {
 
@@ -51056,7 +50098,7 @@ var Comments = exports.Comments = function () {
 			}
 		}
 	}, {
-		key: "addCommentToList",
+		key: 'addCommentToList',
 		value: function () {
 			var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(comment, authorId) {
 				var marker, date, currentTimestamp, divId, opts, cmtBox;
@@ -51080,7 +50122,7 @@ var Comments = exports.Comments = function () {
 									pseudoName: marker.pseudoName,
 									colorRGB: marker.colorRGB,
 									comment: comment,
-									iconURL: "./icons/" + marker.animal + ".png"
+									iconURL: './icons/' + marker.animal + '.png'
 								};
 								cmtBox = this.getCommentBoxDiv(opts);
 
@@ -51088,7 +50130,7 @@ var Comments = exports.Comments = function () {
 								this.addFocusEffects(divId);
 
 							case 10:
-							case "end":
+							case 'end':
 								return _context.stop();
 						}
 					}
@@ -51102,14 +50144,14 @@ var Comments = exports.Comments = function () {
 			return addCommentToList;
 		}()
 	}, {
-		key: "getCommentBoxDiv",
+		key: 'getCommentBoxDiv',
 		value: function getCommentBoxDiv(opts) {
 
-			var cmtbox = $("<div class='comment-box " + opts.id + " row' id='comment-box-" + opts.id + "' tabindex=\"1\" title='" + opts.date + "'>\n      <div class='comment-head row'>\n        <div id=\"" + opts.id + "\"style=\"background-color:" + opts.colorRGB + ";width: 40px;\" ><img class=\"imageuser\" src=\"" + opts.iconURL + "\" alt=\"" + opts.pseudoName + "\"></div>\n    \n        <div class='comment-details'>\n          <div class='comment-author'>" + opts.pseudoName + "</div>\n        </div>\n      </div>\n      <div class='comment-body row' >" + opts.comment + "</div>\n  \n    </div>");
+			var cmtbox = $('<div class=\'comment-box ' + opts.id + ' row\' id=\'comment-box-' + opts.id + '\' tabindex="1" title=\'' + opts.date + '\'>\n      <div class=\'comment-head row\'>\n        <div id="' + opts.id + '"style="background-color:' + opts.colorRGB + ';width: 40px;" ><img class="imageuser" src="' + opts.iconURL + '" alt="' + opts.pseudoName + '"></div>\n    \n        <div class=\'comment-details\'>\n          <div class=\'comment-author\'>' + opts.pseudoName + '</div>\n        </div>\n      </div>\n      <div class=\'comment-body row\' >' + opts.comment + '</div>\n  \n    </div>');
 			return cmtbox;
 		}
 	}, {
-		key: "addFocusEffects",
+		key: 'addFocusEffects',
 		value: function addFocusEffects(divId) {
 			var _this = this;
 
@@ -51122,7 +50164,7 @@ var Comments = exports.Comments = function () {
 			});
 		}
 	}, {
-		key: "saveComment",
+		key: 'saveComment',
 		value: function () {
 			var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
 				var comment;
@@ -51138,7 +50180,7 @@ var Comments = exports.Comments = function () {
 								this._commentCallback(comment);
 
 							case 4:
-							case "end":
+							case 'end':
 								return _context2.stop();
 						}
 					}
@@ -51152,7 +50194,7 @@ var Comments = exports.Comments = function () {
 			return saveComment;
 		}()
 	}, {
-		key: "commentBoxFocus",
+		key: 'commentBoxFocus',
 		value: function commentBoxFocus(id, type) {
 			if (type !== 'out') {
 				$('.ql-comments #' + id).addClass('commentFocus');
@@ -51168,7 +50210,7 @@ var Comments = exports.Comments = function () {
    */
 
 	}, {
-		key: "UpdateComments",
+		key: 'UpdateComments',
 		value: function UpdateComments() {
 			var _this2 = this;
 
@@ -51183,12 +50225,12 @@ var Comments = exports.Comments = function () {
 			});
 		}
 	}, {
-		key: "clearComments",
+		key: 'clearComments',
 		value: function clearComments() {
-			jQuery("#" + this._editorContainerID + " #comments").empty();
+			jQuery('#' + this._editorContainerID + ' #comments').empty();
 		}
 	}, {
-		key: "viewEditor",
+		key: 'viewEditor',
 		get: function get() {
 			return this._viewEditor;
 		},
@@ -51217,6 +50259,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.EditorController = undefined;
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _marker = __webpack_require__(/*! ../view/marker */ "./src/view/marker.js");
@@ -51230,6 +50274,8 @@ var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js
 var _makerManager = __webpack_require__(/*! ./maker-manager */ "./src/view/maker-manager.js");
 
 var _QuillManger = __webpack_require__(/*! ./QuillManger */ "./src/view/QuillManger.js");
+
+var _textManager = __webpack_require__(/*! ./text-manager */ "./src/view/text-manager.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -51266,15 +50312,12 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     var _this = _possibleConstructorReturn(this, (EditorController.__proto__ || Object.getPrototypeOf(EditorController)).call(this));
 
     _this.model = model;
-
-    _this.markerManager = new _makerManager.MarkerManager(_this.model, _this);
-
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
      * @type {Quill}
      */
-    _this.viewEditor = {};
+    //this.viewEditor = {};
 
     _this._editorContainerID = editorContainerID;
 
@@ -51299,9 +50342,14 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var _this2 = this;
 
       var itIsMe = true;
-      this.markerManager.addMarker(this.model.uid, itIsMe);
-      this._comments = new _comments.Comments(this.model.uid, this._editorContainerID, this.markerManager);
+
+      this._comments = new _comments.Comments(this);
       this.createViewDocument();
+
+      var defaultOpts = { document: this.model, editor: this };
+      this.markerManager = new _makerManager.MarkerManager(_extends({ period: 5000 }, defaultOpts));
+      this.textManager = new _textManager.TextManager(_extends({ AntiEntropyPeriod: 5000 }, defaultOpts));
+      this.markerManager.addMarker(this.model.uid, itIsMe);
 
       if (store.get("CRATE2-" + sessionID)) {
         var doc = store.get("CRATE2-" + sessionID);
@@ -51315,8 +50363,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
       });
 
-      this._comments.addAuthorInformation();
-      this._comments.UpdateComments();
+      this._comments.init(this).addAuthorInformation().UpdateComments();
     }
 
     /**
@@ -51351,18 +50398,18 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       });
 
       // Remote events
-      this.model.core.on('remoteInsert', function (element, indexp) {
+      this.textManager._insertManager.on('remoteInsert', function (element, indexp) {
         _this3.remoteInsert(element, indexp);
         _this3.emit('thereAreChanges');
       });
 
-      this.model.core.on('remoteRemove', function (index) {
+      this.textManager._removeManager.on('remoteRemove', function (index) {
         _this3.remoteRemove(index);
         _this3.emit('thereAreChanges');
       });
 
       //At the reception of Title changed operation 
-      this.model.on('changeTitle', function (title) {
+      this.textManager._titleManager.on('changeTitle', function (title) {
         jQuery("#" + _this3._editorContainerID + " #title").text(title);
         _this3.emit('thereAreChanges');
       });
@@ -51377,12 +50424,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "createViewDocument",
     value: function createViewDocument() {
-
-      var quillManager = new _QuillManger.QuillManager(this._editorContainerID, this._comments);
-      var quill = quillManager.getQuill();
-
-      this._comments.viewEditor = quill;
-      this.viewEditor = quill;
+      this._quillManager = new _QuillManger.QuillManager(this._editorContainerID, this._comments);
+      this.viewEditor = this._quillManager.getQuill();
     }
 
     /**
@@ -51517,46 +50560,22 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
           // this is a formula
           if (value.formula != undefined) {
-
-            att = this.viewEditor.getFormat(retain, 1);
-            this.model.core.insert({
-              type: 'formula',
-              text: value,
-              att: att
-            }, retain);
+            this.insert('formula', value, retain);
           } else {
-
             // this is a video
             if (value.video != undefined) {
-
-              att = this.viewEditor.getFormat(retain, 1);
-              this.model.core.insert({
-                type: 'video',
-                text: value,
-                att: att
-              }, retain);
+              this.insert('video', value, retain);
             } else {
               // It is an image
               if (value.image != undefined) {
-
-                att = this.viewEditor.getFormat(retain, 1);
-
-                this.model.core.insert({
-                  type: 'image',
-                  text: value,
-                  att: att
-                }, retain);
+                this.insert('image', value, retain);
               } else {
                 // text
 
                 for (var i = retain; i < retain + text.length; ++i) {
-                  att = this.viewEditor.getFormat(i, 1);
                   debug("Local insert : ", text[i - retain], i);
-                  this.model.core.insert({
-                    type: 'char',
-                    text: text[i - retain],
-                    att: att
-                  }, i);
+
+                  this.insert('char', text[i - retain], i);
                 }
                 retain = retain + text.length;
               }
@@ -51577,11 +50596,22 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
           // Delete caracter by caracter
 
           for (var i = start; i < start + length; ++i) {
-            this.model.core.remove(start);
+            this.textManager._removeManager.remove(start);
           }
           break;
       }
       return retain;
+    }
+  }, {
+    key: "insert",
+    value: function insert(type, content, position) {
+      var att = this.viewEditor.getFormat(position, 1);
+      var packet = {
+        type: type,
+        text: content,
+        att: att
+      };
+      this.textManager._insertManager.insert({ packet: packet, position: position });
     }
 
     /**
@@ -51702,9 +50732,9 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       if (jQuery("#" + this._editorContainerID + " #title").text() == "") {
         jQuery("#" + this._editorContainerID + " #title").text('Untitled document');
       }
-      this.model.name = jQuery("#" + this._editorContainerID + " #title").text();
+
       //TODO: Optimize change only if the text is changed from last state 
-      this.model.core.sendChangeTitle(jQuery("#" + this._editorContainerID + " #title").text());
+      this.textManager._titleManager.sendChangeTitle(jQuery("#" + this._editorContainerID + " #title").text());
     }
   }]);
 
@@ -51900,30 +50930,33 @@ var _extends = Object.assign || function (target) { for (var i = 1; i < argument
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-exports.MCaretMovedOperation = MCaretMovedOperation;
-
 var _marker = __webpack_require__(/*! ./marker */ "./src/view/marker.js");
 
 var _marker2 = _interopRequireDefault(_marker);
 
+var _Event2 = __webpack_require__(/*! ./Event */ "./src/view/Event.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:marker-manager');
 
-var MarkerEvent = exports.MarkerEvent = function () {
+var MarkerEvent = exports.MarkerEvent = function (_Event) {
+  _inherits(MarkerEvent, _Event);
+
   function MarkerEvent(opts) {
     _classCallCheck(this, MarkerEvent);
 
-    this._markers = opts.markers;
-    this._document = opts.core;
-    this._editor = opts.editor;
-    this._communicationChannel = this._document._behaviors_comm;
+    var _this = _possibleConstructorReturn(this, (MarkerEvent.__proto__ || Object.getPrototypeOf(MarkerEvent)).call(this, opts));
 
-    this._defaultOptions = {
+    _this._markers = opts.markers;
+    _this._communicationChannel = _this._document._behaviors_comm;
+    _this._defaultOptions = {
       lifeTime: 5 * 1000,
       range: {
         index: 0,
@@ -51931,6 +50964,7 @@ var MarkerEvent = exports.MarkerEvent = function () {
       },
       cursor: false
     };
+    return _this;
   }
 
   _createClass(MarkerEvent, [{
@@ -51944,6 +50978,7 @@ var MarkerEvent = exports.MarkerEvent = function () {
       }), opts);
 
       if (!this._markers.hasOwnProperty(id)) {
+
         this._markers[id] = new _marker2.default(id, options, this._editor);
 
         if (isItMe) {
@@ -51970,7 +51005,7 @@ var MarkerEvent = exports.MarkerEvent = function () {
   }]);
 
   return MarkerEvent;
-}();
+}(_Event2.Event);
 
 /**
  * This class manages markers,pings,cursors of the different users
@@ -51980,35 +51015,27 @@ var MarkerEvent = exports.MarkerEvent = function () {
 var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
   _inherits(MarkerManager, _MarkerEvent);
 
-  function MarkerManager(core, editor) {
+  function MarkerManager(opts) {
     _classCallCheck(this, MarkerManager);
 
     var markers = {};
-    var opts = {
-      markers: markers,
-      core: core,
-      editor: editor
-    };
-
-    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, opts));
-
-    _this._document = core;
-    _this._editor = editor;
+    opts.markers = markers;
+    var name = opts.name || 'MarkerManager';
 
     /**
      * markers contains all marks of the users: carets, avatars...
      * @type {Marker[]}
      */
 
-    _this._markers = markers;
+    var _this2 = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, _extends({ name: name }, opts)));
 
-    _this._pingManager = new PingManger(_extends({}, opts, {
-      period: 5000
-    }));
+    _this2._markers = markers;
 
-    _this._caretManger = new CaretManger(_extends({}, opts));
+    _this2._pingManager = new PingManger(_extends({}, opts));
 
-    return _this;
+    _this2._caretManger = new CaretManger(_extends({}, opts));
+
+    return _this2;
   }
 
   /**
@@ -52033,23 +51060,22 @@ var PingManger = function (_MarkerEvent2) {
   function PingManger(opts) {
     _classCallCheck(this, PingManger);
 
+    var name = opts.name || 'Ping';
+
     /**
      * startimer A timer used for sending pings
      * @type {Timer}
      */
-    var _this2 = _possibleConstructorReturn(this, (PingManger.__proto__ || Object.getPrototypeOf(PingManger)).call(this, opts));
+    var _this3 = _possibleConstructorReturn(this, (PingManger.__proto__ || Object.getPrototypeOf(PingManger)).call(this, _extends({ name: name }, opts)));
 
-    _this2._startTimer = {};
+    _this3._startTimer = {};
 
     /**
      * @todo: make ping interval as option
      */
-    _this2.startPing(opts.period);
+    _this3.startPing(opts.period);
 
-    _this2._document.on('Mping', function (origin, pseudo) {
-      _this2.atPing(origin, pseudo);
-    });
-    return _this2;
+    return _this3;
   }
 
   /**
@@ -52063,16 +51089,12 @@ var PingManger = function (_MarkerEvent2) {
   _createClass(PingManger, [{
     key: 'startPing',
     value: function startPing(interval) {
-      var _this3 = this;
+      var _this4 = this;
 
       this._startTimer = setInterval(function () {
-        var id = _this3._document.uid;
-        var pseudo = _this3.getMarker(id).pseudoName;
-        _this3._communicationChannel.sendBroadcast({
-          type: 'Mping',
-          origin: id,
-          pseudo: pseudo
-        });
+        var id = _this4._document.uid;
+        var pseudo = _this4.getMarker(id).pseudoName;
+        _this4.broadcast({ id: id, pseudo: pseudo });
       }, interval);
     }
 
@@ -52089,17 +51111,19 @@ var PingManger = function (_MarkerEvent2) {
     }
 
     /**
-     * atPing at the reception of ping
+     * receive at the reception of ping
      * @param  {[type]} origin [description]
      * @param  {[type]} pseudo [description]
      * @return {[type]}        [description]
      */
 
   }, {
-    key: 'atPing',
-    value: function atPing(msg) {
-      var id = msg.origin;
-      var pseudo = msg.pseudo;
+    key: 'receive',
+    value: function receive(_ref) {
+      var id = _ref.id,
+          pseudo = _ref.pseudo;
+
+      debug('Ping Received', id, pseudo);
 
       if (this.getMarker(id)) {
         this.getMarker(id).update(null, false) // to keep avatar
@@ -52120,18 +51144,15 @@ var CaretManger = function (_MarkerEvent3) {
   function CaretManger(opts) {
     _classCallCheck(this, CaretManger);
 
-    var _this4 = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, opts));
+    var name = opts.name || 'Caret';
 
-    _this4._document = opts.core;
-    _this4._defaultOptions = {
+    var _this5 = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, _extends({ name: name }, opts)));
+
+    _this5._defaultOptions = {
       lifeTime: 5 * 1000,
       cursor: true
     };
-
-    _this4._document.on('MCaretMovedOperation', function (range, origin) {
-      _this4.remoteCaretMoved(range, origin);
-    });
-    return _this4;
+    return _this5;
   }
 
   /**
@@ -52144,26 +51165,30 @@ var CaretManger = function (_MarkerEvent3) {
   _createClass(CaretManger, [{
     key: 'caretMoved',
     value: function caretMoved(range) {
-      this._communicationChannel.sendBroadcast(new MCaretMovedOperation(range, this._document.uid));
+      this.broadcast({ range: range, id: this._document.uid });
       return range;
     }
   }, {
-    key: 'remoteCaretMoved',
+    key: 'receive',
 
 
     /**
-     * remoteCaretMoved At the reception of CARET position
+     *  At the reception of CARET position
      * @param  {[type]} range  [description]
-     * @param  {[type]} origin [description]
+     * @param  {[type]} id [description]
      * @return {[type]}        [description]
      */
-    value: function remoteCaretMoved(range, origin) {
-      if (!origin) return;
+    value: function receive(msg) {
+      var range = msg.range,
+          id = msg.id;
 
-      if (this.getMarker(origin)) {
-        this.getMarker(origin).update(range, true); // to keep avatar
+
+      if (!id) return;
+
+      if (this.getMarker(id)) {
+        this.getMarker(id).update(range, true); // to keep avatar
       } else {
-        this.addMarker(origin, false, {
+        this.addMarker(id, false, {
           range: range
         });
       }
@@ -52172,19 +51197,6 @@ var CaretManger = function (_MarkerEvent3) {
 
   return CaretManger;
 }(MarkerEvent);
-
-/*!
- * \brief object that represents the result of a caretMoved Operation
- * \param range the selection range
- * \param origin the origin of the selection
- */
-
-
-function MCaretMovedOperation(range, origin) {
-  this.type = "MCaretMovedOperation";
-  this.range = range;
-  this.origin = origin;
-};
 
 /***/ }),
 
@@ -52236,6 +51248,18 @@ var Marker = function () {
     _classCallCheck(this, Marker);
 
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
+
+
+    if (origin === undefined) {
+      console.error("origin not defined", origin);
+    }
+    if (editor === undefined) {
+      console.error("editor not defined", editor);
+    }
+
+    if (Object.keys(editor).length === 0 && editor.constructor === Object) {
+      console.error("editor is empty", editor);
+    }
 
     if (options == null) {
       var options = {
@@ -52660,6 +51684,461 @@ var StatesHeader = exports.StatesHeader = function () {
 
     return StatesHeader;
 }();
+
+/***/ }),
+
+/***/ "./src/view/text-manager.js":
+/*!**********************************!*\
+  !*** ./src/view/text-manager.js ***!
+  \**********************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.TitleManager = exports.AntiEntropyManager = exports.RemoveManager = exports.InsertManager = exports.TextManager = exports.TextEvent = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _Event2 = __webpack_require__(/*! ./Event */ "./src/view/Event.js");
+
+var _versionVectorWithExceptions = __webpack_require__(/*! version-vector-with-exceptions */ "./node_modules/version-vector-with-exceptions/lib/vvwe.js");
+
+var _versionVectorWithExceptions2 = _interopRequireDefault(_versionVectorWithExceptions);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:text-manager');
+
+var TextEvent = exports.TextEvent = function (_Event) {
+    _inherits(TextEvent, _Event);
+
+    function TextEvent(opts) {
+        _classCallCheck(this, TextEvent);
+
+        var _this = _possibleConstructorReturn(this, (TextEvent.__proto__ || Object.getPrototypeOf(TextEvent)).call(this, opts));
+
+        _this._communicationChannel = _this._document._data_comm;
+        _this._sequence = _this._document.sequence;
+
+        return _this;
+    }
+
+    return TextEvent;
+}(_Event2.Event);
+
+var TextManager = exports.TextManager = function (_TextEvent) {
+    _inherits(TextManager, _TextEvent);
+
+    function TextManager(opts) {
+        _classCallCheck(this, TextManager);
+
+        var name = opts.name || 'TextManager';
+
+        var _this2 = _possibleConstructorReturn(this, (TextManager.__proto__ || Object.getPrototypeOf(TextManager)).call(this, _extends({ name: name }, opts)));
+
+        _this2._insertManager = new InsertManager(_extends({ TextManager: _this2 }, opts));
+        _this2._removeManager = new RemoveManager(_extends({ TextManager: _this2 }, opts));
+        _this2._titleManager = new TitleManager(_extends({ TextManager: _this2 }, opts));
+        _this2._antiEntropyManager = new AntiEntropyManager(_extends({ TextManager: _this2 }, opts));
+        _this2._antiEntropyManager.start();
+
+        _this2.on('sendChangeTitle', function () {
+            _this2._titleManager.sendChangeTitle();
+        });
+
+        _this2.on('setLastChangesTime', function () {
+            _this2._titleManager.sendChangeTitle();
+        });
+
+        return _this2;
+    }
+
+    return TextManager;
+}(TextEvent);
+
+var InsertManager = exports.InsertManager = function (_TextEvent2) {
+    _inherits(InsertManager, _TextEvent2);
+
+    function InsertManager(opts) {
+        _classCallCheck(this, InsertManager);
+
+        var name = opts.name || 'Insert';
+
+        var _this3 = _possibleConstructorReturn(this, (InsertManager.__proto__ || Object.getPrototypeOf(InsertManager)).call(this, _extends({ name: name }, opts)));
+
+        _this3._lastSentId = null;
+        _this3._textManager = opts.TextManager;
+        _this3.action = _this3.insert;
+        return _this3;
+    }
+
+    /*!
+     * \brief local insertion of a character inside the sequence structure. It
+     * broadcasts the operation to the rest of the network.
+     * \param character the character to insert in the sequence
+     * \param index the index in the sequence to insert
+     * \return the identifier freshly allocated
+     */
+
+
+    _createClass(InsertManager, [{
+        key: 'insert',
+        value: function insert(_ref) {
+            var packet = _ref.packet,
+                position = _ref.position;
+
+            var pair = this._sequence.insert(packet, position);
+            debug('local Insert', packet, ' Index ', position, 'pair', pair);
+
+            if (this.isItConvertibleToJSON(pair)) {
+                this._lastSentId = this.broadcast({
+                    id: this._document.uid,
+                    pair: pair
+                }, this._lastSentId);
+                this.setLastChangesTime();
+            }
+            return pair;
+        }
+    }, {
+        key: 'receive',
+
+
+        /*!
+         * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
+         * with the index of the element to insert, -1 if already existing.
+         * \param ei the result of the remote insert operation
+         * \param origin the origin id of the insert operation
+         */
+        value: function receive(_ref2) {
+            var id = _ref2.id,
+                pair = _ref2.pair;
+
+            var index = this._sequence.applyInsert(pair, false);
+            debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
+
+            if (index >= 0) {
+                this.emit('remoteInsert', pair.elem, index);
+                this.setLastChangesTime();
+                var range = {
+                    index: index,
+                    length: 0
+                };
+                var msg = {
+                    range: range,
+                    id: id
+                };
+                this.Event('Caret', msg);
+            };
+        }
+
+        /**
+         * Validate that the message is convertable to JSON
+         * @param {*} msg 
+         */
+
+    }, {
+        key: 'isItConvertibleToJSON',
+        value: function isItConvertibleToJSON(msg) {
+            try {
+                var test = JSON.parse(JSON.stringify(msg));
+                return true;
+            } catch (e) {
+                console.error('The object cannot be convert to json ', e, insertMsg);
+                return false;
+            }
+        }
+    }]);
+
+    return InsertManager;
+}(TextEvent);
+
+var RemoveManager = exports.RemoveManager = function (_TextEvent3) {
+    _inherits(RemoveManager, _TextEvent3);
+
+    function RemoveManager(opts) {
+        _classCallCheck(this, RemoveManager);
+
+        var name = opts.name || 'Remove';
+
+        var _this4 = _possibleConstructorReturn(this, (RemoveManager.__proto__ || Object.getPrototypeOf(RemoveManager)).call(this, _extends({ name: name }, opts)));
+
+        _this4._lastSentId = null;
+        _this4._textManager = opts.TextManager;
+        _this4.action = _this4.remove;
+        return _this4;
+    }
+
+    /*!
+     * \brief local deletion of a character from the sequence structure. It 
+     * broadcasts the operation to the rest of the network.
+     * \param index the index of the element to remove
+     * \return the identifier freshly removed
+     */
+
+
+    _createClass(RemoveManager, [{
+        key: 'remove',
+        value: function remove(index) {
+            var reference = this._sequence.remove(index);
+            this._sequence._c += 1;
+            this._lastSentId = this.broadcast({
+                id: this._document.uid,
+                reference: reference
+            }, this._lastSentId);
+
+            //TODO:  this.setLastChangesTime()
+
+            return reference;
+        }
+    }, {
+        key: 'receive',
+
+
+        /*!
+         * \brief removal of an element from a remote site.  It emits 'remoteRemove'
+         * with the index of the element to remove, -1 if does not exist
+         * \param id the result of the remote insert operation
+         * \param origin the origin id of the removal
+         */
+        value: function receive(_ref3) {
+            var id = _ref3.id,
+                reference = _ref3.reference;
+
+
+            var index = this._sequence.applyRemove(reference);
+            this.emit('remoteRemove', index);
+
+            if (index >= 0) {
+                var range = {
+                    index: index - 1,
+                    length: 0
+                };
+                var msg = {
+                    range: range,
+                    id: id
+                };
+                this.Event('Caret', msg);
+            };
+
+            this.setLastChangesTime();
+        }
+    }]);
+
+    return RemoveManager;
+}(TextEvent);
+
+var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent4) {
+    _inherits(AntiEntropyManager, _TextEvent4);
+
+    function AntiEntropyManager(opts) {
+        _classCallCheck(this, AntiEntropyManager);
+
+        var name = opts.name || 'antiEntropy';
+
+        var _this5 = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ name: name }, opts)));
+
+        _this5._antiEntropyPeriod = opts.AntiEntropyPeriod;
+        _this5._textManager = opts.TextManager;
+        return _this5;
+    }
+
+    _createClass(AntiEntropyManager, [{
+        key: 'start',
+        value: function start() {
+            debug('AntiEntropyManager', 'start', 'Period', this._antiEntropyPeriod, this);
+            this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
+        }
+    }, {
+        key: 'receive',
+        value: function receive(_ref4) {
+            var id = _ref4.id,
+                remoteVVwEJSON = _ref4.remoteVVwEJSON,
+                localVVwE = _ref4.localVVwE;
+
+            debug('AntiEntropyManager', 'Antientrpu received', 'Period', this._antiEntropyPeriod, id, remoteVVwEJSON, localVVwE);
+
+            var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(remoteVVwEJSON); // cast
+            var toSearch = [];
+
+            // #1 for each entry of our VVwE, look if the remote VVwE knows less
+            for (var i = 0; i < localVVwE.vector.arr.length; ++i) {
+                var localEntry = localVVwE.vector.arr[i];
+                var index = remoteVVwE.vector.indexOf(localVVwE.vector.arr[i]);
+                var start = 1;
+                // #A check if the entry exists in the remote vvwe
+                if (index >= 0) {
+                    start = remoteVVwE.vector.arr[index].v + 1;
+                };
+
+                for (var j = start; j <= localEntry.v; ++j) {
+                    // #B check if not one of the local exceptions
+                    if (localEntry.x.indexOf(j) < 0) {
+                        toSearch.push({
+                            _e: localEntry.e,
+                            _c: j
+                        });
+                    };
+                };
+                // #C handle the exceptions of the remote vector
+                if (index >= 0) {
+                    for (var j = 0; j < remoteVVwE.vector.arr[index].x.length; ++j) {
+                        var except = remoteVVwE.vector.arr[index].x[j];
+                        if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
+                            toSearch.push({
+                                _e: localEntry.e,
+                                _c: except
+                            });
+                        };
+                    };
+                };
+            };
+
+            var elements = this.getElements(toSearch);
+
+            // #2 send back the found elements
+
+            if (elements.length != 0) {
+                debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
+                this._communicationChannel.broadcast.sendAntiEntropyResponse(id, localVVwE, elements);
+
+                console.log("sendAction", 'Title', this._document.name);
+                this.sendAction('Title', this._document.name);
+            }
+        }
+
+        /*!
+         * \brief search a set of elements in our sequence and return them
+         * \param toSearch the array of elements {_e, _c} to search
+         * \returns an array of nodes
+         */
+
+    }, {
+        key: 'getElements',
+        value: function getElements(toSearch) {
+            var result = [],
+                found = void 0,
+                node = void 0,
+                tempNode = void 0,
+                i = this._sequence.length,
+                j = 0;
+            // (TODO) improve research by exploiting the fact that if a node is
+            // missing, all its children are missing too.
+            // (TODO) improve the returned representation: either a tree to factorize
+            // common parts of the structure or identifiers to get the polylog size
+            // (TODO) improve the search by using the fact that toSearch is a sorted
+            // array, possibly restructure this argument to be even more efficient
+
+            while (toSearch.length > 0 && i <= this._sequence.length && i > 0) {
+                node = this._sequence._get(i);
+                tempNode = node;
+
+                while (tempNode.children.length > 0) {
+                    tempNode = tempNode.children[0];
+                };
+                j = 0;
+                found = false;
+                while (j < toSearch.length && !found) {
+                    if (tempNode.t.s === toSearch[j]._e && tempNode.t.c === toSearch[j]._c) {
+
+                        found = true;
+
+                        result.push(this.MAEInsertOperation({
+                            elem: tempNode.e,
+                            id: node,
+                            antientropy: true // this to prevent the caret movement in the case of anti-entropy
+                        }, tempNode.t.s.split("-")[0]));
+
+                        toSearch.splice(j, 1);
+                    } else {
+                        ++j;
+                    };
+                };
+                --i;
+            };
+
+            return result.reverse();
+        }
+    }, {
+        key: 'MAEInsertOperation',
+        value: function MAEInsertOperation(pair, id) {
+            var packet = {
+                type: "MAEInsertOperation",
+                payload: {
+                    type: "Insert_Event",
+                    pair: pair,
+                    id: id
+                },
+                id: { e: id },
+                isReady: null
+            };
+            return packet;
+        }
+    }]);
+
+    return AntiEntropyManager;
+}(TextEvent);
+
+var TitleManager = exports.TitleManager = function (_TextEvent5) {
+    _inherits(TitleManager, _TextEvent5);
+
+    function TitleManager(opts) {
+        _classCallCheck(this, TitleManager);
+
+        var name = opts.name || 'Title';
+
+        var _this6 = _possibleConstructorReturn(this, (TitleManager.__proto__ || Object.getPrototypeOf(TitleManager)).call(this, _extends({ name: name }, opts)));
+
+        _this6._textManager = opts.TextManager;
+        _this6.action = _this6.sendChangeTitle;
+        return _this6;
+    }
+    /**
+     * [sendChangeTitle Broadcast the new title]
+     * @param  {[type]} title [description]
+     * @return {[type]}       [description]
+     */
+
+
+    _createClass(TitleManager, [{
+        key: 'sendChangeTitle',
+        value: function sendChangeTitle(title) {
+            console.log('Title sent ');
+            this._document.name = title;
+            this.broadcast({
+                id: this._document.uid,
+                title: title
+            });
+        }
+    }, {
+        key: 'receive',
+
+
+        /**
+         * [changeTitle At the reception of MTitleChanged ]
+         * @param  {[type]} title [description]
+         * @return {[type]}       [description]
+         */
+
+        value: function receive(msg) {
+            this.emit('changeTitle', msg.title);
+        }
+    }]);
+
+    return TitleManager;
+}(TextEvent);
 
 /***/ }),
 
