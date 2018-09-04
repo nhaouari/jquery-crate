@@ -49730,6 +49730,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:Event');
+
 var Event = exports.Event = function (_EventEmitter) {
     _inherits(Event, _EventEmitter);
 
@@ -49745,36 +49747,36 @@ var Event = exports.Event = function (_EventEmitter) {
         _this._name = opts.name;
 
         _this._document.on(_this.getType(), function (msg) {
-            console.log("receive", _this.getType(), msg);
+            debug("receive", _this.getType(), msg);
             _this.receive(msg);
         });
 
-        console.log("on \"" + _this._name + "_Action_Event\"");
-        _this._document.on(_this._name + "_Action_Event", function (msg) {
+        _this._document.on(_this._name + '_Action_Event', function (msg) {
+            debug('on "' + _this._name + '_Action_Event"');
             _this.action(msg);
         });
         return _this;
     }
 
     _createClass(Event, [{
-        key: "getEncapsulatedMessage",
+        key: 'getEncapsulatedMessage',
         value: function getEncapsulatedMessage(msg) {}
     }, {
-        key: "setLastChangesTime",
+        key: 'setLastChangesTime',
         value: function setLastChangesTime() {
             this._document.setLastChangesTime();
         }
     }, {
-        key: "getType",
+        key: 'getType',
         value: function getType() {
             if (this._name) {
-                return this._name + "_Event";
+                return this._name + '_Event';
             } else {
                 console.error("Event without name");
             }
         }
     }, {
-        key: "broadcast",
+        key: 'broadcast',
         value: function broadcast(msg) {
             var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
@@ -49783,27 +49785,27 @@ var Event = exports.Event = function (_EventEmitter) {
             return messageId;
         }
     }, {
-        key: "receive",
+        key: 'receive',
         value: function receive(msg) {
 
             console.log("receive", msg);
         }
     }, {
-        key: "action",
+        key: 'action',
         value: function action(msg) {
             console.error('action not defined', this._name);
         }
     }, {
-        key: "sendAction",
+        key: 'sendAction',
         value: function sendAction(name, args) {
-            this.Event(name + "_Action", args);
+            this.Event(name + '_Action', args);
         }
     }, {
-        key: "Event",
+        key: 'Event',
         value: function Event(name, args) {
 
-            console.log('Event: ', name + "_Event", args);
-            this._document.emit(name + "_Event", args);
+            console.log('Event: ', name + '_Event', args);
+            this._document.emit(name + '_Event', args);
         }
     }]);
 
@@ -50033,7 +50035,7 @@ var Comments = exports.Comments = function () {
 		key: 'init',
 		value: function init(editor) {
 			this._editor = editor;
-			this._authorId = this._editor.model.uid;
+			this._authorId = this._editor._document.uid;
 			this._editorContainerID = this._editor._editorContainerID;
 			this._viewEditor = this._editor.viewEditor;
 			this._markerManager = this._editor.markerManager;
@@ -50259,8 +50261,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.EditorController = undefined;
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _marker = __webpack_require__(/*! ../view/marker */ "./src/view/marker.js");
@@ -50299,10 +50299,10 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
   /**
    * [constructor description]
-   * @param  {[doc]} model  this is the object that contains all proprieties of a document.    
+   * @param  {[doc]} document  this is the object that contains all proprieties of a document.    
    * @param  {[string]} sessionID [description]
    */
-  function EditorController(model, sessionID, editorContainerID) {
+  function EditorController(document, sessionID, editorContainerID) {
     _classCallCheck(this, EditorController);
 
     /**
@@ -50311,21 +50311,20 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
      */
     var _this = _possibleConstructorReturn(this, (EditorController.__proto__ || Object.getPrototypeOf(EditorController)).call(this));
 
-    _this.model = model;
+    _this._document = document;
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
      * @type {Quill}
      */
-    //this.viewEditor = {};
 
     _this._editorContainerID = editorContainerID;
 
     _this._comments = {};
     _this._sessionID = sessionID;
 
-    _this.loadDocument(sessionID);
-    _this.startEventListeners();
+    _this.loadDocument();
+    _this.initDocument();
     return _this;
   }
 
@@ -50338,32 +50337,55 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
   _createClass(EditorController, [{
     key: "loadDocument",
-    value: function loadDocument(sessionID) {
-      var _this2 = this;
-
-      var itIsMe = true;
-
+    value: function loadDocument() {
       this._comments = new _comments.Comments(this);
-      this.createViewDocument();
+      this._quillManager = new _QuillManger.QuillManager(this._editorContainerID, this._comments);
+      this.viewEditor = this._quillManager.getQuill();
 
-      var defaultOpts = { document: this.model, editor: this };
-      this.markerManager = new _makerManager.MarkerManager(_extends({ period: 5000 }, defaultOpts));
-      this.textManager = new _textManager.TextManager(_extends({ AntiEntropyPeriod: 5000 }, defaultOpts));
-      this.markerManager.addMarker(this.model.uid, itIsMe);
+      var defaultOpts = { document: this._document, editor: this, PingPeriod: 5000, AntiEntropyPeriod: 5000 };
 
-      if (store.get("CRATE2-" + sessionID)) {
-        var doc = store.get("CRATE2-" + sessionID);
+      this.markerManager = new _makerManager.MarkerManager(defaultOpts);
+      this.textManager = new _textManager.TextManager(defaultOpts);
+    }
+  }, {
+    key: "initDocument",
+    value: function initDocument() {
+
+      this.markerManager.addMarker(this._document.uid, true);
+
+      this.loadLocalContent(this._sessionID);
+
+      this.makeTitleEditable();
+
+      this._comments.init(this).addAuthorInformation().UpdateComments();
+
+      this.startEventListeners();
+    }
+
+    /**
+     * load content from localStorage if it exist
+     * @param {*} sessionID 
+     */
+
+  }, {
+    key: "loadLocalContent",
+    value: function loadLocalContent() {
+      if (store.get("CRATE2-" + this._sessionID)) {
+        var doc = store.get("CRATE2-" + this._sessionID);
         this.viewEditor.setContents(doc.delta, "user");
         jQuery("#" + this._editorContainerID + " #title").text(doc.title);
         session.default.openIn(); // this is to convert the links to inside links
       }
+    }
+  }, {
+    key: "makeTitleEditable",
+    value: function makeTitleEditable() {
+      var _this2 = this;
 
       // make title editable
       jQuery("#" + this._editorContainerID + " #title").click(function () {
         jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
       });
-
-      this._comments.init(this).addAuthorInformation().UpdateComments();
     }
 
     /**
@@ -50416,19 +50438,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     }
 
     /**
-     * createViewDocument  Create quill editor options for the editor that we wan to create
-     * @param  {[type]} containerID [description]
-     * @return {[type]}             [description]
-     */
-
-  }, {
-    key: "createViewDocument",
-    value: function createViewDocument() {
-      this._quillManager = new _QuillManger.QuillManager(this._editorContainerID, this._comments);
-      this.viewEditor = this._quillManager.getQuill();
-    }
-
-    /**
      * saveDocument save the document in local storage
      * @return {[type]} [description]
      */
@@ -50442,14 +50451,14 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         date: timeNow,
         title: title,
         delta: this.viewEditor.editor.delta,
-        sequence: this.model.sequence,
-        causality: this.model.causality,
-        name: this.model.name,
-        webRTCOptions: this.model.webRTCOptions,
+        sequence: this._document.sequence,
+        causality: this._document.causality,
+        name: this._document.name,
+        webRTCOptions: this._document.webRTCOptions,
         markers: {},
-        signalingOptions: this.model.signalingOptions
+        signalingOptions: this._document.signalingOptions
       };
-      store.set("CRATE2-" + this.model.signalingOptions.session, document);
+      store.set("CRATE2-" + this._document.signalingOptions.session, document);
       alert("Document is saved successfully");
     }
 
@@ -50483,57 +50492,78 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     value: function applyChanges(delta, iniRetain) {
       var _this4 = this;
 
-      var changes = JSON.parse(JSON.stringify(delta, null, 2));
+      var start = iniRetain;
 
-      var retain = iniRetain;
+      var Operations = this.getOperations(delta);
 
-      var text = "";
-
-      changes.ops.forEach(function (op) {
-        var operation = Object.keys(op);
-        var oper = "";
-        var att = "";
-        var value = "";
-
-        // extract attributes from the operation in the case of there existance
-        for (var i = operation.length - 1; i >= 0; i--) {
-          var v = op[operation[i]];
-          if (operation[i] === "attributes") {
-            att = v;
-          } else {
-            oper = operation[i];
-            value = v;
-          }
-        }
-
-        // Change the style = remove the word and insert again with attribues,  
-
-        // In the case of changing the style, delta will contain "retain" (the start postion) with attributes 
-
-        var isItInsertWithAtt = false; // to know if we have to update comments or not, if its delete because of changing style, no update comments is needed
-
-        retain = _this4.sendIt(text, att, 0, value, oper, retain, isItInsertWithAtt);
+      Operations.map(function (operation) {
+        start = _this4.sendIt(operation, start, false);
       });
+    }
+  }, {
+    key: "getOperations",
+    value: function getOperations(changesDelta) {
+      var _this5 = this;
+
+      var operations = changesDelta.ops.map(function (op) {
+        return _this5.extractOperationInformation(op);
+      });
+
+      return operations;
+    }
+  }, {
+    key: "extractOperationInformation",
+    value: function extractOperationInformation(op) {
+      var operation = Object.keys(op);
+      var Name = "";
+      var Attributes = "";
+      var Value = "";
+
+      // extract attributes from the operation in the case of there existance
+      for (var i = operation.length - 1; i >= 0; i--) {
+        var v = op[operation[i]];
+        if (operation[i] === "attributes") {
+          Attributes = v;
+        } else {
+          Name = operation[i];
+          Value = v;
+        }
+      }
+      var Type = this.getTypeOfContent(Value);
+      console.log('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type });
+      return { Name: Name, Value: Value, Attributes: Attributes, Type: Type };
+    }
+  }, {
+    key: "getTypeOfContent",
+    value: function getTypeOfContent(value) {
+
+      if (value.formula != undefined) return 'formula';
+
+      if (value.video != undefined) return 'video';
+
+      if (value.image != undefined) return 'image';
+
+      return 'text';
     }
 
     /**
      * sendIt Send the changes character by character 
      * @param  {[type]}  text              [description]
-     * @param  {[type]}  att               [description]
+     * @param  {[type]}  operation.Attributes               [description]
      * @param  {[type]}  start             [description]
-     * @param  {[type]}  value             [description]
-     * @param  {[type]}  oper              [description]
-     * @param  {[type]}  retain            [description]
+     * @param  {[type]}  operation.Value             [description]
+     * @param  {[type]}  operation.Name              [description]
+     * @param  {[type]}  start            [description]
      * @param  {Boolean} isItInsertWithAtt [description]
      * @return {[type]}                    [description]
      */
 
   }, {
     key: "sendIt",
-    value: function sendIt(text, att, start, value, oper, retain, isItInsertWithAtt) {
-      switch (oper) {
+    value: function sendIt(operation, start, isItInsertWithAtt) {
+      switch (operation.Name) {
         case "retain":
-          if (att != "") {
+          if (operation.Attributes != "") {
             var _isItInsertWithAtt = true;
 
             // the value in this case is the end of format 
@@ -50541,66 +50571,68 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
             // insert the changed text with the new attributes
 
             // 1 delete the changed text  from retain to value
-            this.sendIt("", "", retain, value, "delete", retain, _isItInsertWithAtt);
 
-            // 2 insert with attributes
-            var Deltat = this.viewEditor.editor.delta.slice(retain, retain + value);
+            this.sendDelete(start, operation.Value, _isItInsertWithAtt);
 
-            this.applyChanges(Deltat, retain);
+            // 2 Get delta of the insert text with attributes
+            var delta = this.getDelta(start, start + operation.Value);
+            this.applyChanges(delta, start);
           } else {
-            retain += value;
+            start += operation.Value;
           }
 
           // If there is attributes than delete and then insert   
           break;
 
         case "insert":
-          text = value;
-          // Insert character by character or by object for the other formats
-
-          // this is a formula
-          if (value.formula != undefined) {
-            this.insert('formula', value, retain);
-          } else {
-            // this is a video
-            if (value.video != undefined) {
-              this.insert('video', value, retain);
-            } else {
-              // It is an image
-              if (value.image != undefined) {
-                this.insert('image', value, retain);
-              } else {
-                // text
-
-                for (var i = retain; i < retain + text.length; ++i) {
-                  debug("Local insert : ", text[i - retain], i);
-
-                  this.insert('char', text[i - retain], i);
-                }
-                retain = retain + text.length;
-              }
-            }
-          }
+          start = this.sendInsert(start, operation);
           break;
 
         case "delete":
-          var length = value;
-
-          //to ensure that the editor contains just \n without any attributes 
-          if (!isItInsertWithAtt) {
-            this._comments.UpdateComments();
-          }
-          if (start == 0) {
-            start = retain;
-          }
-          // Delete caracter by caracter
-
-          for (var i = start; i < start + length; ++i) {
-            this.textManager._removeManager.remove(start);
-          }
+          this.sendDelete(start, operation.Value, isItInsertWithAtt);
           break;
       }
-      return retain;
+      return start;
+    }
+  }, {
+    key: "sendInsert",
+    value: function sendInsert(index, Operation) {
+      if (Operation.Type === "text") {
+        this.sendCharByChar(Operation.Value, index);
+        return index + Operation.Value.length;
+      } else {
+        this.insert(Operation.Type, Operation.Value, index);
+        return index + 1;
+      }
+    }
+  }, {
+    key: "sendCharByChar",
+    value: function sendCharByChar(text, index) {
+      for (var i = index; i < index + text.length; ++i) {
+        debug('send [%]', text[i - index]);
+        this.insert('char', text[i - index], i);
+      }
+    }
+  }, {
+    key: "sendDelete",
+    value: function sendDelete(index, length, isItInsertWithAtt) {
+
+      console.log('Send delete', index, length, isItInsertWithAtt);
+      //to ensure that the editor contains just \n without any attributes 
+      if (!isItInsertWithAtt) {
+        this._comments.UpdateComments();
+      }
+
+      // Delete caracter by caracter
+
+      for (var i = index; i < index + length; ++i) {
+        this.textManager._removeManager.remove(index);
+      }
+    }
+  }, {
+    key: "getDelta",
+    value: function getDelta(index1, index2) {
+      return this.viewEditor.editor.delta.slice(index1, index2);
     }
   }, {
     key: "insert",
@@ -51070,10 +51102,11 @@ var PingManger = function (_MarkerEvent2) {
 
     _this3._startTimer = {};
 
+    _this3._pingPeriod = opts.PingPeriod;
     /**
      * @todo: make ping interval as option
      */
-    _this3.startPing(opts.period);
+    _this3.startPing(_this3._pingPeriod);
 
     return _this3;
   }

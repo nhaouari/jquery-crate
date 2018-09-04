@@ -27,68 +27,82 @@ Quill.register('modules/comment', QuillComment);
 export class EditorController extends EventEmitter {
   /**
    * [constructor description]
-   * @param  {[doc]} model  this is the object that contains all proprieties of a document.    
+   * @param  {[doc]} document  this is the object that contains all proprieties of a document.    
    * @param  {[string]} sessionID [description]
    */
-  constructor(model, sessionID, editorContainerID) {
+  constructor(document, sessionID, editorContainerID) {
     super()
     /**
      * this is the object that contains all proprieties of a document.
      * @type {[doc]}
      */
-    this.model = model
+    this._document = document
     /**
      *  ViewEditor the used editor, here it is Quill editor 
      *  @see  https://quilljs.com/
      * @type {Quill}
      */
-    //this.viewEditor = {};
-
+  
     this._editorContainerID = editorContainerID
 
     this._comments = {}
     this._sessionID = sessionID
 
-    this.loadDocument(sessionID)
-    this.startEventListeners()
+    this.loadDocument()
+    this.initDocument()
   }
-
-
-
 
   /**
    * loadDocument load the document if it exist in the local storage
    * @param {string} sessionID the session ID of the document
    * @return {[type]} [description]
    */
-  loadDocument(sessionID) {
-    const itIsMe = true
-   
+  loadDocument() {   
     this._comments = new Comments(this)
-    this.createViewDocument()
+    this._quillManager = new QuillManager(this._editorContainerID, this._comments)
+    this.viewEditor = this._quillManager.getQuill()
 
-    const defaultOpts= {document:this.model,editor:this}
-    this.markerManager = new MarkerManager({period:5000,...defaultOpts})
-    this.textManager= new TextManager({AntiEntropyPeriod:5000,...defaultOpts}) 
-    this.markerManager.addMarker(this.model.uid, itIsMe)
+    const defaultOpts= {document:this._document,editor:this,PingPeriod:5000,AntiEntropyPeriod:5000}
     
+    this.markerManager = new MarkerManager(defaultOpts)
+    this.textManager= new TextManager(defaultOpts) 
+  }
 
-    if (store.get("CRATE2-" + sessionID)) {
-      var doc = store.get("CRATE2-" + sessionID)
-      this.viewEditor.setContents(doc.delta, "user")
-      jQuery(`#${this._editorContainerID} #title`).text(doc.title)
-      session.default.openIn(); // this is to convert the links to inside links
-    }
 
-    // make title editable
-    jQuery(`#${this._editorContainerID} #title`).click(() => {
+  initDocument(){
+
+    this.markerManager.addMarker(this._document.uid, true)
+    
+    this.loadLocalContent(this._sessionID)
+
+    this.makeTitleEditable()
+    
+    this._comments.init(this).addAuthorInformation().UpdateComments()
+
+    this.startEventListeners()
+  }
+
+
+  /**
+   * load content from localStorage if it exist
+   * @param {*} sessionID 
+   */
+  loadLocalContent(){
+    if (store.get("CRATE2-" +  this._sessionID)) {
+    const doc = store.get("CRATE2-" +  this._sessionID)
+    this.viewEditor.setContents(doc.delta, "user")
+    jQuery(`#${this._editorContainerID} #title`).text(doc.title)
+    session.default.openIn(); // this is to convert the links to inside links
+  }
+  }
+
+  makeTitleEditable() {
+     // make title editable
+     jQuery(`#${this._editorContainerID} #title`).click(() => {
       jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
     })
 
-    this._comments.init(this).addAuthorInformation().UpdateComments()
-
   }
-
 
   /**
    * Start all the event listeners related to the editor
@@ -140,17 +154,6 @@ export class EditorController extends EventEmitter {
   }
 
   /**
-   * createViewDocument  Create quill editor options for the editor that we wan to create
-   * @param  {[type]} containerID [description]
-   * @return {[type]}             [description]
-   */
-  createViewDocument() {
-    this._quillManager = new QuillManager(this._editorContainerID, this._comments)
-    this.viewEditor = this._quillManager.getQuill()
-  }
-
-
-  /**
    * saveDocument save the document in local storage
    * @return {[type]} [description]
    */
@@ -161,14 +164,14 @@ export class EditorController extends EventEmitter {
       date: timeNow,
       title: title,
       delta: this.viewEditor.editor.delta,
-      sequence: this.model.sequence,
-      causality: this.model.causality,
-      name: this.model.name,
-      webRTCOptions: this.model.webRTCOptions,
+      sequence: this._document.sequence,
+      causality: this._document.causality,
+      name: this._document.name,
+      webRTCOptions: this._document.webRTCOptions,
       markers: {},
-      signalingOptions: this.model.signalingOptions
+      signalingOptions: this._document.signalingOptions
     }
-    store.set("CRATE2-" + this.model.signalingOptions.session, document)
+    store.set("CRATE2-" + this._document.signalingOptions.session, document)
     alert("Document is saved successfully")
   }
 
@@ -197,56 +200,76 @@ export class EditorController extends EventEmitter {
    */
   applyChanges(delta, iniRetain) {
 
-    let changes = JSON.parse(JSON.stringify(delta, null, 2))
+    let start = iniRetain
 
-    let retain = iniRetain
+    let Operations = this.getOperations(delta)
 
-    let text = ""
-
-    changes.ops.forEach((op) => {
-      var operation = Object.keys(op)
-      var oper = ""
-      var att = ""
-      var value = ""
-
-      // extract attributes from the operation in the case of there existance
-      for (var i = operation.length - 1; i >= 0; i--) {
-        var v = op[operation[i]]
-        if (operation[i] === "attributes") {
-          att = v
-        } else {
-          oper = operation[i]
-          value = v
-        }
-      }
-
-
-
-      // Change the style = remove the word and insert again with attribues,  
-
-      // In the case of changing the style, delta will contain "retain" (the start postion) with attributes 
-
-      var isItInsertWithAtt = false // to know if we have to update comments or not, if its delete because of changing style, no update comments is needed
-      
-      retain = this.sendIt(text, att, 0, value, oper, retain, isItInsertWithAtt)
+    Operations.map(operation=>{
+      start= this.sendIt(operation, start, false)
     })
+  
   }
+
+
+
+  getOperations(changesDelta) {
+   
+    const operations = changesDelta.ops.map(op=>this.extractOperationInformation(op) )
+  
+    return operations
+  }
+
+  extractOperationInformation(op){
+    const operation = Object.keys(op)
+    let Name = ""
+    let Attributes = ""
+    let Value = ""
+
+    // extract attributes from the operation in the case of there existance
+    for (let i = operation.length - 1; i >= 0; i--) {
+      const v = op[operation[i]]
+      if (operation[i] === "attributes") {
+        Attributes = v
+      } else {
+        Name = operation[i]
+        Value = v
+      }
+    }
+    const Type= this.getTypeOfContent(Value)
+    console.log('extractOperationInformation',{Name,Value,Attributes,Type})
+    return {Name,Value,Attributes,Type}
+  }
+
+  getTypeOfContent(value){
+ 
+      if (value.formula != undefined)
+          return 'formula'
+      
+      if (value.video != undefined)
+          return 'video'
+     
+      if (value.image != undefined)
+          return 'image'
+      
+      return 'text'
+    }
+
 
   /**
    * sendIt Send the changes character by character 
    * @param  {[type]}  text              [description]
-   * @param  {[type]}  att               [description]
+   * @param  {[type]}  operation.Attributes               [description]
    * @param  {[type]}  start             [description]
-   * @param  {[type]}  value             [description]
-   * @param  {[type]}  oper              [description]
-   * @param  {[type]}  retain            [description]
+   * @param  {[type]}  operation.Value             [description]
+   * @param  {[type]}  operation.Name              [description]
+   * @param  {[type]}  start            [description]
    * @param  {Boolean} isItInsertWithAtt [description]
    * @return {[type]}                    [description]
    */
-  sendIt(text, att, start, value, oper, retain, isItInsertWithAtt) {
-    switch (oper) {
+  sendIt(operation, start, isItInsertWithAtt) {
+    switch (operation.Name) {
       case "retain":
-        if (att != "") {
+        if (operation.Attributes != "") {
           let isItInsertWithAtt = true
 
           // the value in this case is the end of format 
@@ -254,15 +277,15 @@ export class EditorController extends EventEmitter {
           // insert the changed text with the new attributes
 
           // 1 delete the changed text  from retain to value
-          this.sendIt("", "", retain, value, "delete", retain, isItInsertWithAtt)
 
-          // 2 insert with attributes
-          var Deltat = this.viewEditor.editor.delta.slice(retain, retain + value)
-
-          this.applyChanges(Deltat, retain)
+          this.sendDelete(start,operation.Value,isItInsertWithAtt)
+      
+          // 2 Get delta of the insert text with attributes
+          const delta = this.getDelta(start, start + operation.Value)
+          this.applyChanges(delta, start)
 
         } else {
-          retain += value
+          start += operation.Value
 
         }
 
@@ -270,53 +293,49 @@ export class EditorController extends EventEmitter {
         break
 
       case "insert":
-        text = value
-        // Insert character by character or by object for the other formats
-
-        // this is a formula
-        if (value.formula != undefined) {
-          this.insert('formula',value,retain)
-        } else
-
-        {
-          // this is a video
-          if (value.video != undefined) {
-              this.insert('video',value,retain)
-          } else {
-            // It is an image
-            if (value.image != undefined) {
-              this.insert('image',value,retain)
-            } else { // text
-
-              for (var i = retain; i < (retain + text.length); ++i) {
-                debug("Local insert : ", text[i - retain], i)
-
-                this.insert('char',text[i - retain],i)
-              }
-              retain = retain + text.length
-            }
-          }
-        }
+        start= this.sendInsert(start,operation)
         break
 
       case "delete":
-        var length = value
-
-        //to ensure that the editor contains just \n without any attributes 
-        if (!isItInsertWithAtt) {
-          this._comments.UpdateComments()
-        }
-        if (start == 0) {
-          start = retain
-        }
-        // Delete caracter by caracter
-
-        for (var i = start; i < (start + length); ++i) {
-          this.textManager._removeManager.remove(start)
-        }
-        break
+        this.sendDelete(start,operation.Value,isItInsertWithAtt)
+      break
     }
-    return retain
+    return start
+  }
+
+  sendInsert(index,Operation){
+    if (Operation.Type==="text") {
+      this.sendCharByChar(Operation.Value,index)
+      return  index + Operation.Value.length
+    } else {
+      this.insert(Operation.Type,Operation.Value,index)
+      return index+1
+    }
+  
+  }
+  sendCharByChar(text,index){
+    for (let i = index; i < (index + text.length); ++i) {
+      debug('send [%]',text[i - index])
+      this.insert('char',text[i - index],i)
+    }
+  }
+  sendDelete(index,length,isItInsertWithAtt){
+
+    console.log('Send delete',index,length,isItInsertWithAtt );
+    //to ensure that the editor contains just \n without any attributes 
+    if (!isItInsertWithAtt) {
+      this._comments.UpdateComments()
+    }
+    
+    // Delete caracter by caracter
+
+    for (var i = index; i < (index + length); ++i) {
+      this.textManager._removeManager.remove(index)
+    }
+  }
+
+  getDelta(index1,index2) {
+    return this.viewEditor.editor.delta.slice(index1, index2)
   }
 
   insert(type,content,position) {

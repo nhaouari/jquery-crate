@@ -18,7 +18,7 @@ export class Comments {
 
 	init(editor){
 		this._editor = editor
-		this._authorId = this._editor.model.uid
+		this._authorId = this._editor._document.uid
 		this._editorContainerID = this._editor._editorContainerID
 		this._viewEditor = this._editor.viewEditor
 		this._markerManager=this._editor.markerManager

@@ -1,5 +1,5 @@
 import {EventEmitter} from "events"
-
+var debug = require('debug')('crate:Event')
 export class Event extends EventEmitter {
     constructor(opts) {
       super()
@@ -10,13 +10,12 @@ export class Event extends EventEmitter {
       this._name=opts.name
 
       this._document.on(this.getType(), (msg) => {
-        console.log("receive",this.getType(),msg)
+        debug("receive",this.getType(),msg)
         this.receive(msg)
       })
 
-
-      console.log(`on "${this._name}_Action_Event"`);
       this._document.on(`${this._name}_Action_Event`, (msg) => {
+        debug(`on "${this._name}_Action_Event"`);
         this.action(msg)
       })
   }

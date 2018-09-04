@@ -101,10 +101,12 @@ class PingManger extends MarkerEvent {
      */
     this._startTimer = {}
 
+
+    this._pingPeriod= opts.PingPeriod
     /**
      * @todo: make ping interval as option
      */
-    this.startPing(opts.period)
+    this.startPing(this._pingPeriod)
 
     
   }
