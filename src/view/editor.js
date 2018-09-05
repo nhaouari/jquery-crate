@@ -265,31 +265,8 @@ export class EditorController extends EventEmitter {
    */
   sendIt(operation, start, isItInsertWithAtt) {
     switch (operation.Name) {
-
       case "retain":  
-          // the value in this case is the end of format 
-
-          // insert the changed text with the new attributes
-
-          // 1 delete the changed text  from retain to value
-
-        if (operation.Attributes != "") {
-          let isItInsertWithAtt = true
-          this.sendDelete(start,operation.Value,isItInsertWithAtt)
-      
-          // 2 Get delta of the insert text with attributes
-          const delta = this.getDelta(start, start + operation.Value)
-         
-          console.log(this.getOperations(delta))
-
-          this.applyChanges(delta, start)
-
-        } else {
-          start += operation.Value
-
-        }
-
-        // If there is attributes than delete and then insert   
+        start = this.sendFormat(start,operation)   
         break
 
       case "insert":
@@ -301,6 +278,43 @@ export class EditorController extends EventEmitter {
       break
     }
     return start
+  }
+
+
+  /**
+ *   the value in this case is the end of format 
+
+  insert the changed text with the new attributes
+
+ 1 delete the changed text  from retain to value
+
+
+ If there is attributes than delete and then insert 
+ * @param {*} operation 
+ * @param {*} start 
+ */
+  sendFormat(start,operation) {
+    if (operation.Attributes != "") {
+      let isItInsertWithAtt = true
+      this.sendDelete(start,operation.Value,isItInsertWithAtt)
+      
+      // 2 Get delta of the insert text with attributes
+      const delta = this.getDelta(start, start + operation.Value)
+     
+      const operations = this.getOperations(delta) 
+      const insertOperations = operations.filter(op => op.Name==="insert");
+      let s=start
+  
+      insertOperations.map((op)=>{
+        s=this.sendInsert(s,op)
+      })
+      
+    } else {
+      start += operation.Value
+
+    } 
+    return start
+   
   }
 
   sendInsert(index,Operation){
@@ -394,12 +408,11 @@ export class EditorController extends EventEmitter {
    * @return {[type]}       [description]
    */
   remoteRemove(index) {
-
     debug("Remote remove : ", index)
     let removedIndex = index - 1
     if (removedIndex !== -1) {
       this.viewEditor.deleteText(removedIndex, 1, 'silent')
-      this._comments.UpdateComments()
+      this.updateCommentsLinks()  
     }
   }
 

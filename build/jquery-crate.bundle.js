@@ -50560,29 +50560,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     key: "sendIt",
     value: function sendIt(operation, start, isItInsertWithAtt) {
       switch (operation.Name) {
-
         case "retain":
-          // the value in this case is the end of format 
-
-          // insert the changed text with the new attributes
-
-          // 1 delete the changed text  from retain to value
-
-          if (operation.Attributes != "") {
-            var _isItInsertWithAtt = true;
-            this.sendDelete(start, operation.Value, _isItInsertWithAtt);
-
-            // 2 Get delta of the insert text with attributes
-            var delta = this.getDelta(start, start + operation.Value);
-
-            console.log(this.getOperations(delta));
-
-            this.applyChanges(delta, start);
-          } else {
-            start += operation.Value;
-          }
-
-          // If there is attributes than delete and then insert   
+          start = this.sendFormat(start, operation);
           break;
 
         case "insert":
@@ -50592,6 +50571,43 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         case "delete":
           this.sendDelete(start, operation.Value, isItInsertWithAtt);
           break;
+      }
+      return start;
+    }
+
+    /**
+    *   the value in this case is the end of format 
+      insert the changed text with the new attributes
+     1 delete the changed text  from retain to value
+    
+    If there is attributes than delete and then insert 
+    * @param {*} operation 
+    * @param {*} start 
+    */
+
+  }, {
+    key: "sendFormat",
+    value: function sendFormat(start, operation) {
+      var _this6 = this;
+
+      if (operation.Attributes != "") {
+        var isItInsertWithAtt = true;
+        this.sendDelete(start, operation.Value, isItInsertWithAtt);
+
+        // 2 Get delta of the insert text with attributes
+        var delta = this.getDelta(start, start + operation.Value);
+
+        var operations = this.getOperations(delta);
+        var insertOperations = operations.filter(function (op) {
+          return op.Name === "insert";
+        });
+        var s = start;
+
+        insertOperations.map(function (op) {
+          s = _this6.sendInsert(s, op);
+        });
+      } else {
+        start += operation.Value;
       }
       return start;
     }
@@ -50681,12 +50697,12 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "updateCommentsLinks",
     value: function updateCommentsLinks() {
-      var _this6 = this;
+      var _this7 = this;
 
       clearTimeout(this._timeout);
       this._timeout = setTimeout(function () {
         session.default.openIn();
-        _this6._comments.UpdateComments();
+        _this7._comments.UpdateComments();
       }, 2000);
     }
     /**
@@ -50698,12 +50714,11 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "remoteRemove",
     value: function remoteRemove(index) {
-
       debug("Remote remove : ", index);
       var removedIndex = index - 1;
       if (removedIndex !== -1) {
         this.viewEditor.deleteText(removedIndex, 1, 'silent');
-        this._comments.UpdateComments();
+        this.updateCommentsLinks();
       }
     }
 
