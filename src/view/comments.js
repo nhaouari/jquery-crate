@@ -163,6 +163,8 @@ export class Comments {
 	 * UpdateComments This function to extract the comments form the editor and show them in #comments
 	 */
 	UpdateComments() {
+
+		console.log("cmments updated");
 		// clear comments 
 		this.clearComments()
 		// for each insert check att if it contains the author then insert comment 

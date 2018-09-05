@@ -185,9 +185,6 @@ export class EditorController extends EventEmitter {
    * @return {[type]}          [description]
    */
   textChange(delta, oldDelta, source) {
-
-    this.cleanQuill()
-
     this.applyChanges(delta, 0)
   }
 
@@ -268,20 +265,23 @@ export class EditorController extends EventEmitter {
    */
   sendIt(operation, start, isItInsertWithAtt) {
     switch (operation.Name) {
-      case "retain":
-        if (operation.Attributes != "") {
-          let isItInsertWithAtt = true
 
+      case "retain":  
           // the value in this case is the end of format 
 
           // insert the changed text with the new attributes
 
           // 1 delete the changed text  from retain to value
 
+        if (operation.Attributes != "") {
+          let isItInsertWithAtt = true
           this.sendDelete(start,operation.Value,isItInsertWithAtt)
       
           // 2 Get delta of the insert text with attributes
           const delta = this.getDelta(start, start + operation.Value)
+         
+          console.log(this.getOperations(delta))
+
           this.applyChanges(delta, start)
 
         } else {
@@ -339,12 +339,8 @@ export class EditorController extends EventEmitter {
   }
 
   insert(type,content,position) {
-    const att = this.viewEditor.getFormat(position, 1)
-    const packet = {
-      type: type,
-      text: content,
-      att: att
-    }
+    const attributes = this.viewEditor.getFormat(position, 1)
+    const packet = {type,content,attributes}
     this.textManager._insertManager.insert({packet, position})
   }
 
@@ -362,51 +358,36 @@ export class EditorController extends EventEmitter {
     debug("Remote Insert : ", element, index)
 
     if (index !== -1) {
-      switch (element.type) {
-        case "formula":
-          this.viewEditor.insertEmbed(index, 'formula', element.text.formula, 'silent')
 
-          break
-        case "image":
-          this.viewEditor.insertEmbed(index, 'image', element.text.image, 'silent')
+        if(element.type==="char") {
+          this.viewEditor.insertText(index, element.content, element.attributes, 'silent')
 
-          break
-        case "video":
-          this.viewEditor.insertEmbed(index, 'video', element.text.video, 'silent')
-
-          break
-        case "char":
-          this.viewEditor.insertText(index, element.text, element.att, 'silent')
-
-          if (element.text != "\n") {
+          if (element.content != "\n") {
             this.viewEditor.removeFormat(index, 1, 'silent')
           }
-          break
-      }
-      if (element.att) {
+        } else {
+          this.viewEditor.insertEmbed(index, element.type, element.content[element.type], 'silent')
+        }
+
+        if (element.attributes) {
         if (element.text != "\n") {
-          this.viewEditor.formatLine(index, element.att, 'silent')
-          this.viewEditor.formatText(index, 1, element.att, 'silent')
+          this.viewEditor.formatLine(index, element.attributes, 'silent')
+          this.viewEditor.formatText(index, 1, element.attributes, 'silent')
         }
-
-        if (element.att.commentAuthor) {
-          this._comments.UpdateComments()
-        }
-
-        if (element.att.link) {
-          session.default.openIn()
-        }
-
-
-
+        this.updateCommentsLinks()
       }
 
 
     }
-    session.default.openIn()
-    this.cleanQuill()
   }
 
+  updateCommentsLinks(){
+    clearTimeout(this._timeout)
+    this._timeout = setTimeout(()=>{ 
+      session.default.openIn()
+      this._comments.UpdateComments()
+    }, 2000);
+  }
   /**
    * remoteRemove At the reception of remove operation
    * @param  {[type]} index [description]
@@ -420,44 +401,6 @@ export class EditorController extends EventEmitter {
       this.viewEditor.deleteText(removedIndex, 1, 'silent')
       this._comments.UpdateComments()
     }
-    this.cleanQuill()
-  }
-
-
-
-  /**
-   * cleanQuill description
-   * @return {[type]} [description]
-   */
-  cleanQuill() {
-
-    /*
-           delta = quill.editor.delta
-           console.log('before clean')
-           console.dir(delta)
-           
-           lastOperation=delta.ops.length-1
-           if (delta.ops[lastOperation].insert=='\n' && lastOperation != 0) {
-
-            attributes= delta.ops[lastOperation].attributes
-            delete delta.ops[lastOperation]  
-
-            //delta.ops.splice(length-1,1)
-
-           if(lastOperation-1 != 0 && delta.ops[lastOperation-1]) {
-              delta.ops[lastOperation-1].attributes=attributes
-            }
-
-            }
-
-           /*if (delta.ops[0].insert=='\n' &&  quill.getLength() <=2) {
-            delta.ops[0].attributes={}
-            }
-
-           console.log('after clean')
-           console.dir(delta)
-             
-          //quill.setContents(delta,'silent')*/
   }
 
 

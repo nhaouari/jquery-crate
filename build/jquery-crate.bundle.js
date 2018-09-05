@@ -50216,6 +50216,7 @@ var Comments = exports.Comments = function () {
 		value: function UpdateComments() {
 			var _this2 = this;
 
+			console.log("cmments updated");
 			// clear comments 
 			this.clearComments();
 			// for each insert check att if it contains the author then insert comment 
@@ -50474,9 +50475,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "textChange",
     value: function textChange(delta, oldDelta, source) {
-
-      this.cleanQuill();
-
       this.applyChanges(delta, 0);
     }
 
@@ -50562,20 +50560,23 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     key: "sendIt",
     value: function sendIt(operation, start, isItInsertWithAtt) {
       switch (operation.Name) {
+
         case "retain":
+          // the value in this case is the end of format 
+
+          // insert the changed text with the new attributes
+
+          // 1 delete the changed text  from retain to value
+
           if (operation.Attributes != "") {
             var _isItInsertWithAtt = true;
-
-            // the value in this case is the end of format 
-
-            // insert the changed text with the new attributes
-
-            // 1 delete the changed text  from retain to value
-
             this.sendDelete(start, operation.Value, _isItInsertWithAtt);
 
             // 2 Get delta of the insert text with attributes
             var delta = this.getDelta(start, start + operation.Value);
+
+            console.log(this.getOperations(delta));
+
             this.applyChanges(delta, start);
           } else {
             start += operation.Value;
@@ -50637,12 +50638,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "insert",
     value: function insert(type, content, position) {
-      var att = this.viewEditor.getFormat(position, 1);
-      var packet = {
-        type: type,
-        text: content,
-        att: att
-      };
+      var attributes = this.viewEditor.getFormat(position, 1);
+      var packet = { type: type, content: content, attributes: attributes };
       this.textManager._insertManager.insert({ packet: packet, position: position });
     }
 
@@ -50661,46 +50658,37 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       debug("Remote Insert : ", element, index);
 
       if (index !== -1) {
-        switch (element.type) {
-          case "formula":
-            this.viewEditor.insertEmbed(index, 'formula', element.text.formula, 'silent');
 
-            break;
-          case "image":
-            this.viewEditor.insertEmbed(index, 'image', element.text.image, 'silent');
+        if (element.type === "char") {
+          this.viewEditor.insertText(index, element.content, element.attributes, 'silent');
 
-            break;
-          case "video":
-            this.viewEditor.insertEmbed(index, 'video', element.text.video, 'silent');
-
-            break;
-          case "char":
-            this.viewEditor.insertText(index, element.text, element.att, 'silent');
-
-            if (element.text != "\n") {
-              this.viewEditor.removeFormat(index, 1, 'silent');
-            }
-            break;
+          if (element.content != "\n") {
+            this.viewEditor.removeFormat(index, 1, 'silent');
+          }
+        } else {
+          this.viewEditor.insertEmbed(index, element.type, element.content[element.type], 'silent');
         }
-        if (element.att) {
+
+        if (element.attributes) {
           if (element.text != "\n") {
-            this.viewEditor.formatLine(index, element.att, 'silent');
-            this.viewEditor.formatText(index, 1, element.att, 'silent');
+            this.viewEditor.formatLine(index, element.attributes, 'silent');
+            this.viewEditor.formatText(index, 1, element.attributes, 'silent');
           }
-
-          if (element.att.commentAuthor) {
-            this._comments.UpdateComments();
-          }
-
-          if (element.att.link) {
-            session.default.openIn();
-          }
+          this.updateCommentsLinks();
         }
       }
-      session.default.openIn();
-      this.cleanQuill();
     }
+  }, {
+    key: "updateCommentsLinks",
+    value: function updateCommentsLinks() {
+      var _this6 = this;
 
+      clearTimeout(this._timeout);
+      this._timeout = setTimeout(function () {
+        session.default.openIn();
+        _this6._comments.UpdateComments();
+      }, 2000);
+    }
     /**
      * remoteRemove At the reception of remove operation
      * @param  {[type]} index [description]
@@ -50717,40 +50705,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         this.viewEditor.deleteText(removedIndex, 1, 'silent');
         this._comments.UpdateComments();
       }
-      this.cleanQuill();
     }
-
-    /**
-     * cleanQuill description
-     * @return {[type]} [description]
-     */
-
-  }, {
-    key: "cleanQuill",
-    value: function cleanQuill() {}
-
-    /*
-           delta = quill.editor.delta
-           console.log('before clean')
-           console.dir(delta)
-           
-           lastOperation=delta.ops.length-1
-           if (delta.ops[lastOperation].insert=='\n' && lastOperation != 0) {
-              attributes= delta.ops[lastOperation].attributes
-            delete delta.ops[lastOperation]  
-              //delta.ops.splice(length-1,1)
-             if(lastOperation-1 != 0 && delta.ops[lastOperation-1]) {
-              delta.ops[lastOperation-1].attributes=attributes
-            }
-              }
-             /*if (delta.ops[0].insert=='\n' &&  quill.getLength() <=2) {
-            delta.ops[0].attributes={}
-            }
-             console.log('after clean')
-           console.dir(delta)
-             
-          //quill.setContents(delta,'silent')*/
-
 
     /**
      * changeTitle For any change in title, broadcast the new title
