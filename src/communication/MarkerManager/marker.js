@@ -1,6 +1,6 @@
-import animals from "animals";
-import hash from "string-hash";
-
+import animals from "animals"
+import hash from "string-hash"
+var debug = require('debug')('CRATE:Communication:MarkerManager:Marker')
 
 /**
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.

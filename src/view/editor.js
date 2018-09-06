@@ -1,4 +1,3 @@
-import Marker from "../view/marker"
 import {
   Comments
 } from "../view/comments"
@@ -7,12 +6,12 @@ import {
 } from "events"
 import {
   MarkerManager
-} from "./maker-manager"
+} from "../communication/MarkerManager/MarkerManager"
 import {
   QuillManager
 } from "./QuillManger"
 
-import {TextManager} from "./text-manager"
+import {TextManager} from "../communication/TextManager/TextManager"
 
 var debug = require('debug')('crate:view:editor')
 

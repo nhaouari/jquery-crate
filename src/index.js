@@ -8,7 +8,7 @@ import store from "store"
 import {
   EventEmitter
 } from "events"
-import Marker from "./view/marker"
+import Marker from "./communication/MarkerManager/marker"
 import fetch from 'node-fetch'
 
 

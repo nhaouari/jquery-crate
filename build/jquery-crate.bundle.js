@@ -48826,6 +48826,1470 @@ View.addMoveShortcuts();
 
 /***/ }),
 
+/***/ "./src/communication/Event.js":
+/*!************************************!*\
+  !*** ./src/communication/Event.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.Event = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:Event');
+
+var Event = exports.Event = function (_EventEmitter) {
+    _inherits(Event, _EventEmitter);
+
+    function Event(opts) {
+        _classCallCheck(this, Event);
+
+        var _this = _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).call(this));
+
+        _this._document = opts.document;
+        _this._editor = opts.editor;
+
+        _this._communicationChannel = _this._document._data_comm;
+        _this._name = opts.name;
+
+        _this._document.on(_this.getType(), function (msg) {
+            debug("receive", _this.getType(), msg);
+            _this.receive(msg);
+        });
+
+        _this._document.on(_this._name + '_Action_Event', function (msg) {
+            debug('on "' + _this._name + '_Action_Event"');
+            _this.action(msg);
+        });
+        return _this;
+    }
+
+    _createClass(Event, [{
+        key: 'getEncapsulatedMessage',
+        value: function getEncapsulatedMessage(msg) {}
+    }, {
+        key: 'setLastChangesTime',
+        value: function setLastChangesTime() {
+            this._document.setLastChangesTime();
+        }
+    }, {
+        key: 'getType',
+        value: function getType() {
+            if (this._name) {
+                return this._name + '_Event';
+            } else {
+                console.error("Event without name");
+            }
+        }
+    }, {
+        key: 'broadcast',
+        value: function broadcast(msg) {
+            var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
+            var messageId = this._communicationChannel.sendBroadcast(_extends({ type: this.getType() }, msg));
+            return messageId;
+        }
+    }, {
+        key: 'receive',
+        value: function receive(msg) {
+
+            console.log("receive", msg);
+        }
+    }, {
+        key: 'action',
+        value: function action(msg) {
+            console.error('action not defined', this._name);
+        }
+    }, {
+        key: 'sendAction',
+        value: function sendAction(name, args) {
+            this.Event(name + '_Action', args);
+        }
+    }, {
+        key: 'Event',
+        value: function Event(name, args) {
+
+            console.log('Event: ', name + '_Event', args);
+            this._document.emit(name + '_Event', args);
+        }
+    }]);
+
+    return Event;
+}(_events.EventEmitter);
+
+/***/ }),
+
+/***/ "./src/communication/MarkerManager/CaretManager.js":
+/*!*********************************************************!*\
+  !*** ./src/communication/MarkerManager/CaretManager.js ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.CaretManger = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _MarkerEvent2 = __webpack_require__(/*! ./MarkerEvent */ "./src/communication/MarkerManager/MarkerEvent.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:CaretManger');
+
+var CaretManger = exports.CaretManger = function (_MarkerEvent) {
+  _inherits(CaretManger, _MarkerEvent);
+
+  function CaretManger(opts) {
+    _classCallCheck(this, CaretManger);
+
+    var name = opts.name || 'Caret';
+
+    var _this = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, _extends({ name: name }, opts)));
+
+    _this._defaultOptions = {
+      lifeTime: 5 * 1000,
+      cursor: true
+    };
+    return _this;
+  }
+
+  /**
+   * [caretMoved description]
+   * @param  {[type]} range [description]
+   * @return {[type]}       [description]
+   */
+
+
+  _createClass(CaretManger, [{
+    key: 'caretMoved',
+    value: function caretMoved(range) {
+      this.broadcast({ range: range, id: this._document.uid });
+      return range;
+    }
+  }, {
+    key: 'receive',
+
+
+    /**
+     *  At the reception of CARET position
+     * @param  {[type]} range  [description]
+     * @param  {[type]} id [description]
+     * @return {[type]}        [description]
+     */
+    value: function receive(msg) {
+      var range = msg.range,
+          id = msg.id;
+
+
+      if (!id) return;
+
+      if (this.getMarker(id)) {
+        this.getMarker(id).update(range, true); // to keep avatar
+      } else {
+        this.addMarker(id, false, {
+          range: range
+        });
+      }
+    }
+  }]);
+
+  return CaretManger;
+}(_MarkerEvent2.MarkerEvent);
+
+/***/ }),
+
+/***/ "./src/communication/MarkerManager/MarkerEvent.js":
+/*!********************************************************!*\
+  !*** ./src/communication/MarkerManager/MarkerEvent.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MarkerEvent = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _marker = __webpack_require__(/*! ./marker */ "./src/communication/MarkerManager/marker.js");
+
+var _marker2 = _interopRequireDefault(_marker);
+
+var _Event2 = __webpack_require__(/*! ./../Event */ "./src/communication/Event.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:MarkerEvent');
+
+var MarkerEvent = exports.MarkerEvent = function (_Event) {
+  _inherits(MarkerEvent, _Event);
+
+  function MarkerEvent(opts) {
+    _classCallCheck(this, MarkerEvent);
+
+    var _this = _possibleConstructorReturn(this, (MarkerEvent.__proto__ || Object.getPrototypeOf(MarkerEvent)).call(this, opts));
+
+    _this._markers = opts.markers;
+    _this._communicationChannel = _this._document._behaviors_comm;
+    _this._defaultOptions = {
+      lifeTime: 5 * 1000,
+      range: {
+        index: 0,
+        length: 0
+      },
+      cursor: false
+    };
+    return _this;
+  }
+
+  _createClass(MarkerEvent, [{
+    key: 'addMarker',
+    value: function addMarker(id) {
+      var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      var options = Object.assign(_extends({}, this._defaultOptions, {
+        isItMe: isItMe
+      }), opts);
+
+      if (!this._markers.hasOwnProperty(id)) {
+
+        this._markers[id] = new _marker2.default(id, options, this._editor);
+
+        if (isItMe) {
+          if (store.get('myId')) {
+            this._markers[id].setPseudo(store.get('myId').pseudo);
+          } else {
+            store.set('myId', {
+              id: id,
+              pseudo: this._markers[id].pseudoName
+            });
+          }
+        }
+      }
+      return this._markers[id];
+    }
+  }, {
+    key: 'getMarker',
+    value: function getMarker(id) {
+      return this._markers[id];
+    }
+  }, {
+    key: 'removeMarker',
+    value: function removeMarker() {}
+  }]);
+
+  return MarkerEvent;
+}(_Event2.Event);
+
+/***/ }),
+
+/***/ "./src/communication/MarkerManager/MarkerManager.js":
+/*!**********************************************************!*\
+  !*** ./src/communication/MarkerManager/MarkerManager.js ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MarkerManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _PingManager = __webpack_require__(/*! ./PingManager */ "./src/communication/MarkerManager/PingManager.js");
+
+var _CaretManager = __webpack_require__(/*! ./CaretManager */ "./src/communication/MarkerManager/CaretManager.js");
+
+var _MarkerEvent2 = __webpack_require__(/*! ./MarkerEvent */ "./src/communication/MarkerManager/MarkerEvent.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:MarkerManager');
+/**
+ * This class manages markers,pings,cursors of the different users
+ */
+
+var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
+  _inherits(MarkerManager, _MarkerEvent);
+
+  function MarkerManager(opts) {
+    _classCallCheck(this, MarkerManager);
+
+    var markers = {};
+    opts.markers = markers;
+    var name = opts.name || 'MarkerManager';
+
+    /**
+     * markers contains all marks of the users: carets, avatars...
+     * @type {Marker[]}
+     */
+
+    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, _extends({ name: name }, opts)));
+
+    _this._markers = markers;
+
+    _this._pingManager = new _PingManager.PingManger(_extends({}, opts));
+
+    _this._caretManger = new _CaretManager.CaretManger(_extends({}, opts));
+
+    return _this;
+  }
+
+  /**
+   * Set the current caret position
+   * @param {*} range the current caret position 
+   */
+
+
+  _createClass(MarkerManager, [{
+    key: 'caretMoved',
+    value: function caretMoved(range) {
+      this._caretManger.caretMoved(range);
+    }
+  }]);
+
+  return MarkerManager;
+}(_MarkerEvent2.MarkerEvent);
+
+/***/ }),
+
+/***/ "./src/communication/MarkerManager/PingManager.js":
+/*!********************************************************!*\
+  !*** ./src/communication/MarkerManager/PingManager.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.PingManger = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _MarkerEvent2 = __webpack_require__(/*! ./MarkerEvent */ "./src/communication/MarkerManager/MarkerEvent.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:PingManger');
+
+var PingManger = exports.PingManger = function (_MarkerEvent) {
+  _inherits(PingManger, _MarkerEvent);
+
+  function PingManger(opts) {
+    _classCallCheck(this, PingManger);
+
+    var name = opts.name || 'Ping';
+
+    /**
+     * startimer A timer used for sending pings
+     * @type {Timer}
+     */
+    var _this = _possibleConstructorReturn(this, (PingManger.__proto__ || Object.getPrototypeOf(PingManger)).call(this, _extends({ name: name }, opts)));
+
+    _this._startTimer = {};
+
+    _this._pingPeriod = opts.PingPeriod;
+    /**
+     * @todo: make ping interval as option
+     */
+    _this.startPing(_this._pingPeriod);
+
+    return _this;
+  }
+
+  /**
+   * startPing send periodically ping
+   * @param  {[type]} interval [description]
+   * @return {[type]}          [description]
+   * @todo TODO: Make interval as global parameter
+   */
+
+
+  _createClass(PingManger, [{
+    key: 'startPing',
+    value: function startPing(interval) {
+      var _this2 = this;
+
+      this._startTimer = setInterval(function () {
+        var id = _this2._document.uid;
+        var pseudo = _this2.getMarker(id).pseudoName;
+        _this2.broadcast({ id: id, pseudo: pseudo });
+      }, interval);
+    }
+
+    /**
+     * stopPing stopPing
+     * @todo  implement this function
+     * @return {[type]} [description]
+     */
+
+  }, {
+    key: 'stopPing',
+    value: function stopPing() {
+      clearInterval(this._startTimer);
+    }
+
+    /**
+     * receive at the reception of ping
+     * @param  {[type]} origin [description]
+     * @param  {[type]} pseudo [description]
+     * @return {[type]}        [description]
+     */
+
+  }, {
+    key: 'receive',
+    value: function receive(_ref) {
+      var id = _ref.id,
+          pseudo = _ref.pseudo;
+
+      debug('Ping Received', id, pseudo);
+
+      if (this.getMarker(id)) {
+        this.getMarker(id).update(null, false) // to keep avatar
+        .setPseudo(pseudo);
+      } else {
+        // to create the avatar
+        this.addMarker(id, false).setPseudo(pseudo);
+      }
+    }
+  }]);
+
+  return PingManger;
+}(_MarkerEvent2.MarkerEvent);
+
+/***/ }),
+
+/***/ "./src/communication/MarkerManager/marker.js":
+/*!***************************************************!*\
+  !*** ./src/communication/MarkerManager/marker.js ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _animals = __webpack_require__(/*! animals */ "./node_modules/animals/index.js");
+
+var _animals2 = _interopRequireDefault(_animals);
+
+var _stringHash = __webpack_require__(/*! string-hash */ "./node_modules/string-hash/index.js");
+
+var _stringHash2 = _interopRequireDefault(_stringHash);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:Marker');
+
+/**
+ * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
+ */
+
+var Marker = function () {
+  /**
+   * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
+   * @param {[string]}  origin the id of the the user
+   * @param {Number}  lifeTime After this time, if no ping or Caret position is received => 
+   * remove caret and avatar. if lifetime is -1 we didn't add the avatar
+   * @param {[{index: index,length: 0}]}  range  range stars from index with the specified length
+   * @param {[cursor module]}  cursorsp the used cursor module for quilljs
+   * @param {[Boolean]}  cursor  create the caret or not. If it is from ping, it will be false else true
+   * @param {Boolean} isItME  is it my caret ? true or false to disable the time if it is true
+   */
+
+  function Marker(origin, options, editor) {
+    _classCallCheck(this, Marker);
+
+    //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
+
+
+    if (origin === undefined) {
+      console.error("origin not defined", origin);
+    }
+    if (editor === undefined) {
+      console.error("editor not defined", editor);
+    }
+
+    if (Object.keys(editor).length === 0 && editor.constructor === Object) {
+      console.error("editor is empty", editor);
+    }
+
+    if (options == null) {
+      var options = {
+        lifeTime: -1,
+        range: {},
+        cursor: false,
+        isItME: false
+      };
+    }
+    /**
+     *  origin the id of the the user
+     * @type {[type]}
+     */
+
+    this.options = options;
+    this.origin = origin;
+
+    /**
+     * lifeTime After this time, if no ping or Caret position is received => 
+     * remove caret and avatar. if lifetime is -1 we don't add the avatar
+     * @type {[type]}
+     */
+    this.lifeTime = options.lifeTime;
+
+    /**
+     * used to store last update time to detected outdated users
+     * @type {Date}
+     */
+    this.time = new Date().getTime();
+
+    /**
+     * color rgb(r,g,b)
+     * @type {String}
+     */
+    this.colorRGB = this.constructor.getColor(this.origin, 'rgb');
+
+    /**
+     *  color rgba(r,g,b,0.5)
+     * @type {String}
+     */
+    this.colorRGBLight = this.constructor.getColor(this.origin, 'rgba');
+
+    /**
+     * auto generated pseudo name (from animals list)
+     * @type {[type]}
+     */
+    this.animal = this.constructor.getPseudoname(this.origin, null);
+
+    /**
+     * Anonymous + auto generated pseudo name
+     * @type {String}
+     */
+    this.pseudoName = this.constructor.getPseudoname(this.origin);
+
+    /**
+     * add or not the avatar 
+     * @type {Boolean}
+     */
+    this.avatarAdd = false;
+
+    /**
+     * true for an editor, false if it is from a ping
+     * @type {[type]}
+     */
+    this.cursor = options.cursor;
+
+    this._editor = editor;
+
+    if (editor) {
+      this._editorContainerID = editor._editorContainerID;
+    }
+
+    if (this.lifeTime != -1) {
+      // -1 => created without timer avatar cursor 
+      if (options.isItMe) {
+        this.addAvatar();
+      } else if (this.cursor) {
+        this.addCursor(options.range);
+      }
+    }
+  }
+
+  /**
+   * capitalize uppercase the first letter
+   * @param  {[string]} s [string]
+   * @return {[string]}   [String the first letter is in uppercase]
+   */
+
+
+  _createClass(Marker, [{
+    key: "update",
+
+    /**
+     * update the time to keep the avatar and cursor if it exist
+     * @param  {[{index: index,length: 0}]} range  [description]
+     * @param  {[boolean]} cursor [if it is true add update the caret position]
+     */
+    value: function update(range, cursor) {
+      this.time = new Date().getTime();
+      var editor = $("#" + this._editorContainerID);
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+
+      if (!avatar.length && editor.length) {
+        this.addAvatar();
+      }
+
+      if (this.avatarAdd) {
+        avatar.attr('data-toggle', 'tooltip');
+        avatar.attr('title', this.pseudoName);
+      }
+      if (this.cursor == true && cursor == true) {
+        // in the case of update, make sure that ping updates don't change the range
+
+        this._editor.viewEditor.getModule('cursors').moveCursor(this.origin, range);
+      } else if (cursor == true) {
+        this.cursor = cursor;
+        this.addCursor(range);
+      }
+      return this;
+    }
+  }, {
+    key: "checkIfOutdated",
+
+
+    /**
+     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
+     */
+    value: function checkIfOutdated() {
+      var timeNow = new Date().getTime();
+      var dff = timeNow - this.time;
+      // if  cursor  is outdated 
+      if (timeNow - this.time >= this.lifeTime) {
+        // Remve cursor and avatar
+        if (this.cursor) {
+          this._editor.viewEditor.getModule('cursors').removeCursor(this.origin);
+          this.cursor = false;
+        }
+        this.removeAvatar();
+        return true;
+      } else {
+        // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
+        return false;
+      }
+    }
+
+    /*
+     * addAvatar addAvatar of the user to the editor with corresponding divID
+     * @param {String} divID [the id of the div where the avatars are placed]
+     */
+
+  }, {
+    key: "addAvatar",
+    value: function addAvatar() {
+      var _this = this;
+
+      var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "#users";
+
+
+      jQuery("#" + this._editorContainerID + " " + divID).append(this.getAvatar());
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      avatar.attr('data-toggle', 'tooltip');
+      avatar.attr('title', this.pseudoName);
+      this.avatarAdd = true;
+
+      if (!this.options.isItMe) {
+        /**
+         * a timer that is used to check if the user is Outdated
+         * @return {[type]}   [description]
+         */
+
+        this.timer = setInterval(function () {
+          return _this.checkIfOutdated();
+        }, 1000);
+      }
+      return this;
+    }
+  }, {
+    key: "getAvatar",
+
+
+    /**
+     * getAvatar return a div that contains this user id
+     * @return {[type]} [description]
+     */
+    value: function getAvatar() {
+      return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="./icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
+    }
+  }, {
+    key: "removeAvatar",
+
+
+    /**
+     * removeAvatar remove the avatar of the user from the interface
+     * @return {[type]} [description]
+     */
+    value: function removeAvatar() {
+
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      avatar.remove();
+      this.avatarAdd = false;
+      clearInterval(this.timer);
+      return this;
+    }
+  }, {
+    key: "setPseudo",
+
+
+    /**
+     * setPseudo set pseudo  for the user
+     * @param {[type]} Pseudo [description]
+     */
+
+    value: function setPseudo(Pseudo) {
+      this.pseudoName = Pseudo;
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      if (avatar.length) {
+        avatar.attr('title', this.pseudoName);
+      }
+      return this;
+    }
+  }, {
+    key: "addCursor",
+
+
+    /**
+     * addCursor add the cursor to the editor
+     * @param {[{index: index,length: 0}]} range [description]
+     */
+    value: function addCursor(range) {
+      this.cursor = true;
+      this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
+      return this;
+    }
+  }], [{
+    key: "capitalize",
+    value: function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+  }, {
+    key: "getColor",
+
+
+    /**
+     * getColor for a specific id, get a unique color
+     * @param  {[string]} str [the id of the user]
+     * @return {[(r,g,b))]}     [the corresponding rgb color]
+     */
+    value: function getColor(str) {
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'rgb';
+
+      var h1 = (0, _stringHash2.default)(str) % 206;
+      var h2 = h1 * 7 % 206;
+      var h3 = h1 * 11 % 206;
+      var color = Math.floor(h1 + 50) + ", " + Math.floor(h2 + 50) + ", " + Math.floor(h3 + 50);
+      if (format === 'rgb') {
+        return 'rgb(' + color + ')';
+      }
+
+      if (format === 'rgba') {
+        return 'rgba(' + color + ')';
+      }
+
+      return color;
+    }
+  }, {
+    key: "getPseudoname",
+    value: function getPseudoname(id) {
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'Anonymous';
+
+
+      if (format === 'Anonymous') {
+        return 'Anonymous ' + this.capitalize(_animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length]);
+      }
+      return _animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length];
+    }
+  }, {
+    key: "getAvatar",
+
+
+    /**
+     * getAvatar return the div that contains this user id
+     * @return {[type]} [description]
+     */
+    value: function getAvatar(id) {
+      return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
+    }
+  }]);
+
+  return Marker;
+}();
+
+exports.default = Marker;
+
+/***/ }),
+
+/***/ "./src/communication/TextManager/AntiEntropyManager.js":
+/*!*************************************************************!*\
+  !*** ./src/communication/TextManager/AntiEntropyManager.js ***!
+  \*************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.AntiEntropyManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _versionVectorWithExceptions = __webpack_require__(/*! version-vector-with-exceptions */ "./node_modules/version-vector-with-exceptions/lib/vvwe.js");
+
+var _versionVectorWithExceptions2 = _interopRequireDefault(_versionVectorWithExceptions);
+
+var _TextEvent2 = __webpack_require__(/*! ./TextEvent */ "./src/communication/TextManager/TextEvent.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:TextManager:AntiEntropyManager');
+
+var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
+    _inherits(AntiEntropyManager, _TextEvent);
+
+    function AntiEntropyManager(opts) {
+        _classCallCheck(this, AntiEntropyManager);
+
+        var name = opts.name || 'antiEntropy';
+
+        var _this = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ name: name }, opts)));
+
+        _this._antiEntropyPeriod = opts.AntiEntropyPeriod;
+        _this._textManager = opts.TextManager;
+        return _this;
+    }
+
+    _createClass(AntiEntropyManager, [{
+        key: 'start',
+        value: function start() {
+            debug('AntiEntropyManager', 'start', 'Period', this._antiEntropyPeriod, this);
+            this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
+        }
+    }, {
+        key: 'receive',
+        value: function receive(_ref) {
+            var id = _ref.id,
+                remoteVVwEJSON = _ref.remoteVVwEJSON,
+                localVVwE = _ref.localVVwE;
+
+            debug('AntiEntropyManager', 'Antientrpu received', 'Period', this._antiEntropyPeriod, id, remoteVVwEJSON, localVVwE);
+
+            var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(remoteVVwEJSON); // cast
+            var toSearch = [];
+
+            // #1 for each entry of our VVwE, look if the remote VVwE knows less
+            for (var i = 0; i < localVVwE.vector.arr.length; ++i) {
+                var localEntry = localVVwE.vector.arr[i];
+                var index = remoteVVwE.vector.indexOf(localVVwE.vector.arr[i]);
+                var start = 1;
+                // #A check if the entry exists in the remote vvwe
+                if (index >= 0) {
+                    start = remoteVVwE.vector.arr[index].v + 1;
+                };
+
+                for (var j = start; j <= localEntry.v; ++j) {
+                    // #B check if not one of the local exceptions
+                    if (localEntry.x.indexOf(j) < 0) {
+                        toSearch.push({
+                            _e: localEntry.e,
+                            _c: j
+                        });
+                    };
+                };
+                // #C handle the exceptions of the remote vector
+                if (index >= 0) {
+                    for (var j = 0; j < remoteVVwE.vector.arr[index].x.length; ++j) {
+                        var except = remoteVVwE.vector.arr[index].x[j];
+                        if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
+                            toSearch.push({
+                                _e: localEntry.e,
+                                _c: except
+                            });
+                        };
+                    };
+                };
+            };
+
+            var elements = this.getElements(toSearch);
+
+            // #2 send back the found elements
+
+            if (elements.length != 0) {
+                debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
+                this._communicationChannel.broadcast.sendAntiEntropyResponse(id, localVVwE, elements);
+
+                console.log("sendAction", 'Title', this._document.name);
+                this.sendAction('Title', this._document.name);
+            }
+        }
+
+        /*!
+         * \brief search a set of elements in our sequence and return them
+         * \param toSearch the array of elements {_e, _c} to search
+         * \returns an array of nodes
+         */
+
+    }, {
+        key: 'getElements',
+        value: function getElements(toSearch) {
+            var result = [],
+                found = void 0,
+                node = void 0,
+                tempNode = void 0,
+                i = this._sequence.length,
+                j = 0;
+            // (TODO) improve research by exploiting the fact that if a node is
+            // missing, all its children are missing too.
+            // (TODO) improve the returned representation: either a tree to factorize
+            // common parts of the structure or identifiers to get the polylog size
+            // (TODO) improve the search by using the fact that toSearch is a sorted
+            // array, possibly restructure this argument to be even more efficient
+
+            while (toSearch.length > 0 && i <= this._sequence.length && i > 0) {
+                node = this._sequence._get(i);
+                tempNode = node;
+
+                while (tempNode.children.length > 0) {
+                    tempNode = tempNode.children[0];
+                };
+                j = 0;
+                found = false;
+                while (j < toSearch.length && !found) {
+                    if (tempNode.t.s === toSearch[j]._e && tempNode.t.c === toSearch[j]._c) {
+
+                        found = true;
+
+                        result.push(this.MAEInsertOperation({
+                            elem: tempNode.e,
+                            id: node,
+                            antientropy: true // this to prevent the caret movement in the case of anti-entropy
+                        }, tempNode.t.s.split("-")[0]));
+
+                        toSearch.splice(j, 1);
+                    } else {
+                        ++j;
+                    };
+                };
+                --i;
+            };
+
+            return result.reverse();
+        }
+    }, {
+        key: 'MAEInsertOperation',
+        value: function MAEInsertOperation(pair, id) {
+            var packet = {
+                type: "MAEInsertOperation",
+                payload: {
+                    type: "Insert_Event",
+                    pair: pair,
+                    id: id
+                },
+                id: { e: id },
+                isReady: null
+            };
+            return packet;
+        }
+    }]);
+
+    return AntiEntropyManager;
+}(_TextEvent2.TextEvent);
+
+/***/ }),
+
+/***/ "./src/communication/TextManager/InsertManager.js":
+/*!********************************************************!*\
+  !*** ./src/communication/TextManager/InsertManager.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.InsertManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _TextEvent2 = __webpack_require__(/*! ./TextEvent */ "./src/communication/TextManager/TextEvent.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:TextManager:InsertManager');
+
+var InsertManager = exports.InsertManager = function (_TextEvent) {
+    _inherits(InsertManager, _TextEvent);
+
+    function InsertManager(opts) {
+        _classCallCheck(this, InsertManager);
+
+        var name = opts.name || 'Insert';
+
+        var _this = _possibleConstructorReturn(this, (InsertManager.__proto__ || Object.getPrototypeOf(InsertManager)).call(this, _extends({ name: name }, opts)));
+
+        _this._lastSentId = null;
+        _this._textManager = opts.TextManager;
+        _this.action = _this.insert;
+        return _this;
+    }
+
+    /*!
+     * \brief local insertion of a character inside the sequence structure. It
+     * broadcasts the operation to the rest of the network.
+     * \param character the character to insert in the sequence
+     * \param index the index in the sequence to insert
+     * \return the identifier freshly allocated
+     */
+
+
+    _createClass(InsertManager, [{
+        key: 'insert',
+        value: function insert(_ref) {
+            var packet = _ref.packet,
+                position = _ref.position;
+
+            var pair = this._sequence.insert(packet, position);
+            debug('local Insert', packet, ' Index ', position, 'pair', pair);
+
+            if (this.isItConvertibleToJSON(pair)) {
+                this._lastSentId = this.broadcast({
+                    id: this._document.uid,
+                    pair: pair
+                }, this._lastSentId);
+                this.setLastChangesTime();
+            }
+            return pair;
+        }
+    }, {
+        key: 'receive',
+
+
+        /*!
+         * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
+         * with the index of the element to insert, -1 if already existing.
+         * \param ei the result of the remote insert operation
+         * \param origin the origin id of the insert operation
+         */
+        value: function receive(_ref2) {
+            var id = _ref2.id,
+                pair = _ref2.pair;
+
+            var index = this._sequence.applyInsert(pair, false);
+            debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
+
+            if (index >= 0) {
+                this.emit('remoteInsert', pair.elem, index);
+                this.setLastChangesTime();
+                var range = {
+                    index: index,
+                    length: 0
+                };
+                var msg = {
+                    range: range,
+                    id: id
+                };
+                this.Event('Caret', msg);
+            };
+        }
+
+        /**
+         * Validate that the message is convertable to JSON
+         * @param {*} msg 
+         */
+
+    }, {
+        key: 'isItConvertibleToJSON',
+        value: function isItConvertibleToJSON(msg) {
+            try {
+                var test = JSON.parse(JSON.stringify(msg));
+                return true;
+            } catch (e) {
+                console.error('The object cannot be convert to json ', e, insertMsg);
+                return false;
+            }
+        }
+    }]);
+
+    return InsertManager;
+}(_TextEvent2.TextEvent);
+
+/***/ }),
+
+/***/ "./src/communication/TextManager/RemoveManager.js":
+/*!********************************************************!*\
+  !*** ./src/communication/TextManager/RemoveManager.js ***!
+  \********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.RemoveManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _TextEvent2 = __webpack_require__(/*! ./TextEvent */ "./src/communication/TextManager/TextEvent.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:TextManager:RemoveManager');
+
+var RemoveManager = exports.RemoveManager = function (_TextEvent) {
+    _inherits(RemoveManager, _TextEvent);
+
+    function RemoveManager(opts) {
+        _classCallCheck(this, RemoveManager);
+
+        var name = opts.name || 'Remove';
+
+        var _this = _possibleConstructorReturn(this, (RemoveManager.__proto__ || Object.getPrototypeOf(RemoveManager)).call(this, _extends({ name: name }, opts)));
+
+        _this._lastSentId = null;
+        _this._textManager = opts.TextManager;
+        _this.action = _this.remove;
+        return _this;
+    }
+
+    /*!
+     * \brief local deletion of a character from the sequence structure. It 
+     * broadcasts the operation to the rest of the network.
+     * \param index the index of the element to remove
+     * \return the identifier freshly removed
+     */
+
+
+    _createClass(RemoveManager, [{
+        key: 'remove',
+        value: function remove(index) {
+            var reference = this._sequence.remove(index);
+            this._sequence._c += 1;
+            this._lastSentId = this.broadcast({
+                id: this._document.uid,
+                reference: reference
+            }, this._lastSentId);
+
+            //TODO:  this.setLastChangesTime()
+
+            return reference;
+        }
+    }, {
+        key: 'receive',
+
+
+        /*!
+         * \brief removal of an element from a remote site.  It emits 'remoteRemove'
+         * with the index of the element to remove, -1 if does not exist
+         * \param id the result of the remote insert operation
+         * \param origin the origin id of the removal
+         */
+        value: function receive(_ref) {
+            var id = _ref.id,
+                reference = _ref.reference;
+
+
+            var index = this._sequence.applyRemove(reference);
+            this.emit('remoteRemove', index);
+
+            if (index >= 0) {
+                var range = {
+                    index: index - 1,
+                    length: 0
+                };
+                var msg = {
+                    range: range,
+                    id: id
+                };
+                this.Event('Caret', msg);
+            };
+
+            this.setLastChangesTime();
+        }
+    }]);
+
+    return RemoveManager;
+}(_TextEvent2.TextEvent);
+
+/***/ }),
+
+/***/ "./src/communication/TextManager/TextEvent.js":
+/*!****************************************************!*\
+  !*** ./src/communication/TextManager/TextEvent.js ***!
+  \****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.TextEvent = undefined;
+
+var _Event2 = __webpack_require__(/*! ./../Event */ "./src/communication/Event.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:TextManager:TextEvent');
+
+var TextEvent = exports.TextEvent = function (_Event) {
+    _inherits(TextEvent, _Event);
+
+    function TextEvent(opts) {
+        _classCallCheck(this, TextEvent);
+
+        var _this = _possibleConstructorReturn(this, (TextEvent.__proto__ || Object.getPrototypeOf(TextEvent)).call(this, opts));
+
+        _this._communicationChannel = _this._document._data_comm;
+        _this._sequence = _this._document.sequence;
+        return _this;
+    }
+
+    return TextEvent;
+}(_Event2.Event);
+
+/***/ }),
+
+/***/ "./src/communication/TextManager/TextManager.js":
+/*!******************************************************!*\
+  !*** ./src/communication/TextManager/TextManager.js ***!
+  \******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.TextManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _TextEvent2 = __webpack_require__(/*! ./TextEvent */ "./src/communication/TextManager/TextEvent.js");
+
+var _AntiEntropyManager = __webpack_require__(/*! ./AntiEntropyManager */ "./src/communication/TextManager/AntiEntropyManager.js");
+
+var _InsertManager = __webpack_require__(/*! ./InsertManager */ "./src/communication/TextManager/InsertManager.js");
+
+var _RemoveManager = __webpack_require__(/*! ./RemoveManager */ "./src/communication/TextManager/RemoveManager.js");
+
+var _TitleManager = __webpack_require__(/*! ./TitleManager */ "./src/communication/TextManager/TitleManager.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:TextManager:TextManager');
+
+var TextManager = exports.TextManager = function (_TextEvent) {
+    _inherits(TextManager, _TextEvent);
+
+    function TextManager(opts) {
+        _classCallCheck(this, TextManager);
+
+        var name = opts.name || 'TextManager';
+
+        var _this = _possibleConstructorReturn(this, (TextManager.__proto__ || Object.getPrototypeOf(TextManager)).call(this, _extends({ name: name }, opts)));
+
+        _this._insertManager = new _InsertManager.InsertManager(_extends({ TextManager: _this }, opts));
+        _this._removeManager = new _RemoveManager.RemoveManager(_extends({ TextManager: _this }, opts));
+        _this._titleManager = new _TitleManager.TitleManager(_extends({ TextManager: _this }, opts));
+        _this._antiEntropyManager = new _AntiEntropyManager.AntiEntropyManager(_extends({ TextManager: _this }, opts));
+        _this._antiEntropyManager.start();
+
+        _this.on('sendChangeTitle', function () {
+            _this._titleManager.sendChangeTitle();
+        });
+
+        _this.on('setLastChangesTime', function () {
+            _this._titleManager.sendChangeTitle();
+        });
+
+        return _this;
+    }
+
+    return TextManager;
+}(_TextEvent2.TextEvent);
+
+/***/ }),
+
+/***/ "./src/communication/TextManager/TitleManager.js":
+/*!*******************************************************!*\
+  !*** ./src/communication/TextManager/TitleManager.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.TitleManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _TextEvent2 = __webpack_require__(/*! ./TextEvent */ "./src/communication/TextManager/TextEvent.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:TextManager:TitleManager');
+
+var TitleManager = exports.TitleManager = function (_TextEvent) {
+    _inherits(TitleManager, _TextEvent);
+
+    function TitleManager(opts) {
+        _classCallCheck(this, TitleManager);
+
+        var name = opts.name || 'Title';
+
+        var _this = _possibleConstructorReturn(this, (TitleManager.__proto__ || Object.getPrototypeOf(TitleManager)).call(this, _extends({ name: name }, opts)));
+
+        _this._textManager = opts.TextManager;
+        _this.action = _this.sendChangeTitle;
+        return _this;
+    }
+    /**
+     * [sendChangeTitle Broadcast the new title]
+     * @param  {[type]} title [description]
+     * @return {[type]}       [description]
+     */
+
+
+    _createClass(TitleManager, [{
+        key: 'sendChangeTitle',
+        value: function sendChangeTitle(title) {
+            console.log('Title sent ');
+            this._document.name = title;
+            this.broadcast({
+                id: this._document.uid,
+                title: title
+            });
+        }
+    }, {
+        key: 'receive',
+
+
+        /**
+         * [changeTitle At the reception of MTitleChanged ]
+         * @param  {[type]} title [description]
+         * @return {[type]}       [description]
+         */
+
+        value: function receive(msg) {
+            this.emit('changeTitle', msg.title);
+        }
+    }]);
+
+    return TitleManager;
+}(_TextEvent2.TextEvent);
+
+/***/ }),
+
 /***/ "./src/document.js":
 /*!*************************!*\
   !*** ./src/document.js ***!
@@ -49080,7 +50544,7 @@ var _store2 = _interopRequireDefault(_store);
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
-var _marker = __webpack_require__(/*! ./view/marker */ "./src/view/marker.js");
+var _marker = __webpack_require__(/*! ./communication/MarkerManager/marker */ "./src/communication/MarkerManager/marker.js");
 
 var _marker2 = _interopRequireDefault(_marker);
 
@@ -49705,117 +51169,6 @@ session.Marker = _marker2.default;
 
 /***/ }),
 
-/***/ "./src/view/Event.js":
-/*!***************************!*\
-  !*** ./src/view/Event.js ***!
-  \***************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.Event = undefined;
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:Event');
-
-var Event = exports.Event = function (_EventEmitter) {
-    _inherits(Event, _EventEmitter);
-
-    function Event(opts) {
-        _classCallCheck(this, Event);
-
-        var _this = _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).call(this));
-
-        _this._document = opts.document;
-        _this._editor = opts.editor;
-
-        _this._communicationChannel = _this._document._data_comm;
-        _this._name = opts.name;
-
-        _this._document.on(_this.getType(), function (msg) {
-            debug("receive", _this.getType(), msg);
-            _this.receive(msg);
-        });
-
-        _this._document.on(_this._name + '_Action_Event', function (msg) {
-            debug('on "' + _this._name + '_Action_Event"');
-            _this.action(msg);
-        });
-        return _this;
-    }
-
-    _createClass(Event, [{
-        key: 'getEncapsulatedMessage',
-        value: function getEncapsulatedMessage(msg) {}
-    }, {
-        key: 'setLastChangesTime',
-        value: function setLastChangesTime() {
-            this._document.setLastChangesTime();
-        }
-    }, {
-        key: 'getType',
-        value: function getType() {
-            if (this._name) {
-                return this._name + '_Event';
-            } else {
-                console.error("Event without name");
-            }
-        }
-    }, {
-        key: 'broadcast',
-        value: function broadcast(msg) {
-            var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-            //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
-            var messageId = this._communicationChannel.sendBroadcast(_extends({ type: this.getType() }, msg));
-            return messageId;
-        }
-    }, {
-        key: 'receive',
-        value: function receive(msg) {
-
-            console.log("receive", msg);
-        }
-    }, {
-        key: 'action',
-        value: function action(msg) {
-            console.error('action not defined', this._name);
-        }
-    }, {
-        key: 'sendAction',
-        value: function sendAction(name, args) {
-            this.Event(name + '_Action', args);
-        }
-    }, {
-        key: 'Event',
-        value: function Event(name, args) {
-
-            console.log('Event: ', name + '_Event', args);
-            this._document.emit(name + '_Event', args);
-        }
-    }]);
-
-    return Event;
-}(_events.EventEmitter);
-
-/***/ }),
-
 /***/ "./src/view/QuillManger.js":
 /*!*********************************!*\
   !*** ./src/view/QuillManger.js ***!
@@ -50266,21 +51619,15 @@ exports.EditorController = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _marker = __webpack_require__(/*! ../view/marker */ "./src/view/marker.js");
-
-var _marker2 = _interopRequireDefault(_marker);
-
 var _comments = __webpack_require__(/*! ../view/comments */ "./src/view/comments.js");
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
-var _makerManager = __webpack_require__(/*! ./maker-manager */ "./src/view/maker-manager.js");
+var _MarkerManager = __webpack_require__(/*! ../communication/MarkerManager/MarkerManager */ "./src/communication/MarkerManager/MarkerManager.js");
 
 var _QuillManger = __webpack_require__(/*! ./QuillManger */ "./src/view/QuillManger.js");
 
-var _textManager = __webpack_require__(/*! ./text-manager */ "./src/view/text-manager.js");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _TextManager = __webpack_require__(/*! ../communication/TextManager/TextManager */ "./src/communication/TextManager/TextManager.js");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -50350,8 +51697,8 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     value: function initDocument() {
       var defaultOpts = { document: this._document, editor: this, PingPeriod: 5000, AntiEntropyPeriod: 5000 };
 
-      this.markerManager = new _makerManager.MarkerManager(defaultOpts);
-      this.textManager = new _textManager.TextManager(defaultOpts);
+      this.markerManager = new _MarkerManager.MarkerManager(defaultOpts);
+      this.textManager = new _TextManager.TextManager(defaultOpts);
 
       this.markerManager.addMarker(this._document.uid, true);
 
@@ -50914,651 +52261,6 @@ var LinkView = exports.LinkView = function () {
 
 /***/ }),
 
-/***/ "./src/view/maker-manager.js":
-/*!***********************************!*\
-  !*** ./src/view/maker-manager.js ***!
-  \***********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.MarkerManager = exports.MarkerEvent = undefined;
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _marker = __webpack_require__(/*! ./marker */ "./src/view/marker.js");
-
-var _marker2 = _interopRequireDefault(_marker);
-
-var _Event2 = __webpack_require__(/*! ./Event */ "./src/view/Event.js");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:marker-manager');
-
-var MarkerEvent = exports.MarkerEvent = function (_Event) {
-  _inherits(MarkerEvent, _Event);
-
-  function MarkerEvent(opts) {
-    _classCallCheck(this, MarkerEvent);
-
-    var _this = _possibleConstructorReturn(this, (MarkerEvent.__proto__ || Object.getPrototypeOf(MarkerEvent)).call(this, opts));
-
-    _this._markers = opts.markers;
-    _this._communicationChannel = _this._document._behaviors_comm;
-    _this._defaultOptions = {
-      lifeTime: 5 * 1000,
-      range: {
-        index: 0,
-        length: 0
-      },
-      cursor: false
-    };
-    return _this;
-  }
-
-  _createClass(MarkerEvent, [{
-    key: 'addMarker',
-    value: function addMarker(id) {
-      var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-
-      var options = Object.assign(_extends({}, this._defaultOptions, {
-        isItMe: isItMe
-      }), opts);
-
-      if (!this._markers.hasOwnProperty(id)) {
-
-        this._markers[id] = new _marker2.default(id, options, this._editor);
-
-        if (isItMe) {
-          if (store.get('myId')) {
-            this._markers[id].setPseudo(store.get('myId').pseudo);
-          } else {
-            store.set('myId', {
-              id: id,
-              pseudo: this._markers[id].pseudoName
-            });
-          }
-        }
-      }
-      return this._markers[id];
-    }
-  }, {
-    key: 'getMarker',
-    value: function getMarker(id) {
-      return this._markers[id];
-    }
-  }, {
-    key: 'removeMarker',
-    value: function removeMarker() {}
-  }]);
-
-  return MarkerEvent;
-}(_Event2.Event);
-
-/**
- * This class manages markers,pings,cursors of the different users
- */
-
-
-var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
-  _inherits(MarkerManager, _MarkerEvent);
-
-  function MarkerManager(opts) {
-    _classCallCheck(this, MarkerManager);
-
-    var markers = {};
-    opts.markers = markers;
-    var name = opts.name || 'MarkerManager';
-
-    /**
-     * markers contains all marks of the users: carets, avatars...
-     * @type {Marker[]}
-     */
-
-    var _this2 = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, _extends({ name: name }, opts)));
-
-    _this2._markers = markers;
-
-    _this2._pingManager = new PingManger(_extends({}, opts));
-
-    _this2._caretManger = new CaretManger(_extends({}, opts));
-
-    return _this2;
-  }
-
-  /**
-   * Set the current caret position
-   * @param {*} range the current caret position 
-   */
-
-
-  _createClass(MarkerManager, [{
-    key: 'caretMoved',
-    value: function caretMoved(range) {
-      this._caretManger.caretMoved(range);
-    }
-  }]);
-
-  return MarkerManager;
-}(MarkerEvent);
-
-var PingManger = function (_MarkerEvent2) {
-  _inherits(PingManger, _MarkerEvent2);
-
-  function PingManger(opts) {
-    _classCallCheck(this, PingManger);
-
-    var name = opts.name || 'Ping';
-
-    /**
-     * startimer A timer used for sending pings
-     * @type {Timer}
-     */
-    var _this3 = _possibleConstructorReturn(this, (PingManger.__proto__ || Object.getPrototypeOf(PingManger)).call(this, _extends({ name: name }, opts)));
-
-    _this3._startTimer = {};
-
-    _this3._pingPeriod = opts.PingPeriod;
-    /**
-     * @todo: make ping interval as option
-     */
-    _this3.startPing(_this3._pingPeriod);
-
-    return _this3;
-  }
-
-  /**
-   * startPing send periodically ping
-   * @param  {[type]} interval [description]
-   * @return {[type]}          [description]
-   * @todo TODO: Make interval as global parameter
-   */
-
-
-  _createClass(PingManger, [{
-    key: 'startPing',
-    value: function startPing(interval) {
-      var _this4 = this;
-
-      this._startTimer = setInterval(function () {
-        var id = _this4._document.uid;
-        var pseudo = _this4.getMarker(id).pseudoName;
-        _this4.broadcast({ id: id, pseudo: pseudo });
-      }, interval);
-    }
-
-    /**
-     * stopPing stopPing
-     * @todo  implement this function
-     * @return {[type]} [description]
-     */
-
-  }, {
-    key: 'stopPing',
-    value: function stopPing() {
-      clearInterval(this._startTimer);
-    }
-
-    /**
-     * receive at the reception of ping
-     * @param  {[type]} origin [description]
-     * @param  {[type]} pseudo [description]
-     * @return {[type]}        [description]
-     */
-
-  }, {
-    key: 'receive',
-    value: function receive(_ref) {
-      var id = _ref.id,
-          pseudo = _ref.pseudo;
-
-      debug('Ping Received', id, pseudo);
-
-      if (this.getMarker(id)) {
-        this.getMarker(id).update(null, false) // to keep avatar
-        .setPseudo(pseudo);
-      } else {
-        // to create the avatar
-        this.addMarker(id, false).setPseudo(pseudo);
-      }
-    }
-  }]);
-
-  return PingManger;
-}(MarkerEvent);
-
-var CaretManger = function (_MarkerEvent3) {
-  _inherits(CaretManger, _MarkerEvent3);
-
-  function CaretManger(opts) {
-    _classCallCheck(this, CaretManger);
-
-    var name = opts.name || 'Caret';
-
-    var _this5 = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, _extends({ name: name }, opts)));
-
-    _this5._defaultOptions = {
-      lifeTime: 5 * 1000,
-      cursor: true
-    };
-    return _this5;
-  }
-
-  /**
-   * [caretMoved description]
-   * @param  {[type]} range [description]
-   * @return {[type]}       [description]
-   */
-
-
-  _createClass(CaretManger, [{
-    key: 'caretMoved',
-    value: function caretMoved(range) {
-      this.broadcast({ range: range, id: this._document.uid });
-      return range;
-    }
-  }, {
-    key: 'receive',
-
-
-    /**
-     *  At the reception of CARET position
-     * @param  {[type]} range  [description]
-     * @param  {[type]} id [description]
-     * @return {[type]}        [description]
-     */
-    value: function receive(msg) {
-      var range = msg.range,
-          id = msg.id;
-
-
-      if (!id) return;
-
-      if (this.getMarker(id)) {
-        this.getMarker(id).update(range, true); // to keep avatar
-      } else {
-        this.addMarker(id, false, {
-          range: range
-        });
-      }
-    }
-  }]);
-
-  return CaretManger;
-}(MarkerEvent);
-
-/***/ }),
-
-/***/ "./src/view/marker.js":
-/*!****************************!*\
-  !*** ./src/view/marker.js ***!
-  \****************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _animals = __webpack_require__(/*! animals */ "./node_modules/animals/index.js");
-
-var _animals2 = _interopRequireDefault(_animals);
-
-var _stringHash = __webpack_require__(/*! string-hash */ "./node_modules/string-hash/index.js");
-
-var _stringHash2 = _interopRequireDefault(_stringHash);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-/**
- * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
- */
-
-var Marker = function () {
-  /**
-   * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
-   * @param {[string]}  origin the id of the the user
-   * @param {Number}  lifeTime After this time, if no ping or Caret position is received => 
-   * remove caret and avatar. if lifetime is -1 we didn't add the avatar
-   * @param {[{index: index,length: 0}]}  range  range stars from index with the specified length
-   * @param {[cursor module]}  cursorsp the used cursor module for quilljs
-   * @param {[Boolean]}  cursor  create the caret or not. If it is from ping, it will be false else true
-   * @param {Boolean} isItME  is it my caret ? true or false to disable the time if it is true
-   */
-
-  function Marker(origin, options, editor) {
-    _classCallCheck(this, Marker);
-
-    //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
-
-
-    if (origin === undefined) {
-      console.error("origin not defined", origin);
-    }
-    if (editor === undefined) {
-      console.error("editor not defined", editor);
-    }
-
-    if (Object.keys(editor).length === 0 && editor.constructor === Object) {
-      console.error("editor is empty", editor);
-    }
-
-    if (options == null) {
-      var options = {
-        lifeTime: -1,
-        range: {},
-        cursor: false,
-        isItME: false
-      };
-    }
-    /**
-     *  origin the id of the the user
-     * @type {[type]}
-     */
-
-    this.options = options;
-    this.origin = origin;
-
-    /**
-     * lifeTime After this time, if no ping or Caret position is received => 
-     * remove caret and avatar. if lifetime is -1 we don't add the avatar
-     * @type {[type]}
-     */
-    this.lifeTime = options.lifeTime;
-
-    /**
-     * used to store last update time to detected outdated users
-     * @type {Date}
-     */
-    this.time = new Date().getTime();
-
-    /**
-     * color rgb(r,g,b)
-     * @type {String}
-     */
-    this.colorRGB = this.constructor.getColor(this.origin, 'rgb');
-
-    /**
-     *  color rgba(r,g,b,0.5)
-     * @type {String}
-     */
-    this.colorRGBLight = this.constructor.getColor(this.origin, 'rgba');
-
-    /**
-     * auto generated pseudo name (from animals list)
-     * @type {[type]}
-     */
-    this.animal = this.constructor.getPseudoname(this.origin, null);
-
-    /**
-     * Anonymous + auto generated pseudo name
-     * @type {String}
-     */
-    this.pseudoName = this.constructor.getPseudoname(this.origin);
-
-    /**
-     * add or not the avatar 
-     * @type {Boolean}
-     */
-    this.avatarAdd = false;
-
-    /**
-     * true for an editor, false if it is from a ping
-     * @type {[type]}
-     */
-    this.cursor = options.cursor;
-
-    this._editor = editor;
-
-    if (editor) {
-      this._editorContainerID = editor._editorContainerID;
-    }
-
-    if (this.lifeTime != -1) {
-      // -1 => created without timer avatar cursor 
-      if (options.isItMe) {
-        this.addAvatar();
-      } else if (this.cursor) {
-        this.addCursor(options.range);
-      }
-    }
-  }
-
-  /**
-   * capitalize uppercase the first letter
-   * @param  {[string]} s [string]
-   * @return {[string]}   [String the first letter is in uppercase]
-   */
-
-
-  _createClass(Marker, [{
-    key: "update",
-
-    /**
-     * update the time to keep the avatar and cursor if it exist
-     * @param  {[{index: index,length: 0}]} range  [description]
-     * @param  {[boolean]} cursor [if it is true add update the caret position]
-     */
-    value: function update(range, cursor) {
-      this.time = new Date().getTime();
-      var editor = $("#" + this._editorContainerID);
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-
-      if (!avatar.length && editor.length) {
-        this.addAvatar();
-      }
-
-      if (this.avatarAdd) {
-        avatar.attr('data-toggle', 'tooltip');
-        avatar.attr('title', this.pseudoName);
-      }
-      if (this.cursor == true && cursor == true) {
-        // in the case of update, make sure that ping updates don't change the range
-
-        this._editor.viewEditor.getModule('cursors').moveCursor(this.origin, range);
-      } else if (cursor == true) {
-        this.cursor = cursor;
-        this.addCursor(range);
-      }
-      return this;
-    }
-  }, {
-    key: "checkIfOutdated",
-
-
-    /**
-     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
-     */
-    value: function checkIfOutdated() {
-      var timeNow = new Date().getTime();
-      var dff = timeNow - this.time;
-      // if  cursor  is outdated 
-      if (timeNow - this.time >= this.lifeTime) {
-        // Remve cursor and avatar
-        if (this.cursor) {
-          this._editor.viewEditor.getModule('cursors').removeCursor(this.origin);
-          this.cursor = false;
-        }
-        this.removeAvatar();
-        return true;
-      } else {
-        // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
-        return false;
-      }
-    }
-
-    /*
-     * addAvatar addAvatar of the user to the editor with corresponding divID
-     * @param {String} divID [the id of the div where the avatars are placed]
-     */
-
-  }, {
-    key: "addAvatar",
-    value: function addAvatar() {
-      var _this = this;
-
-      var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "#users";
-
-
-      jQuery("#" + this._editorContainerID + " " + divID).append(this.getAvatar());
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-      avatar.attr('data-toggle', 'tooltip');
-      avatar.attr('title', this.pseudoName);
-      this.avatarAdd = true;
-
-      if (!this.options.isItMe) {
-        /**
-         * a timer that is used to check if the user is Outdated
-         * @return {[type]}   [description]
-         */
-
-        this.timer = setInterval(function () {
-          return _this.checkIfOutdated();
-        }, 1000);
-      }
-      return this;
-    }
-  }, {
-    key: "getAvatar",
-
-
-    /**
-     * getAvatar return a div that contains this user id
-     * @return {[type]} [description]
-     */
-    value: function getAvatar() {
-      return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="./icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
-    }
-  }, {
-    key: "removeAvatar",
-
-
-    /**
-     * removeAvatar remove the avatar of the user from the interface
-     * @return {[type]} [description]
-     */
-    value: function removeAvatar() {
-
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-      avatar.remove();
-      this.avatarAdd = false;
-      clearInterval(this.timer);
-      return this;
-    }
-  }, {
-    key: "setPseudo",
-
-
-    /**
-     * setPseudo set pseudo  for the user
-     * @param {[type]} Pseudo [description]
-     */
-
-    value: function setPseudo(Pseudo) {
-      this.pseudoName = Pseudo;
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-      if (avatar.length) {
-        avatar.attr('title', this.pseudoName);
-      }
-      return this;
-    }
-  }, {
-    key: "addCursor",
-
-
-    /**
-     * addCursor add the cursor to the editor
-     * @param {[{index: index,length: 0}]} range [description]
-     */
-    value: function addCursor(range) {
-      this.cursor = true;
-      this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
-      return this;
-    }
-  }], [{
-    key: "capitalize",
-    value: function capitalize(s) {
-      return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-  }, {
-    key: "getColor",
-
-
-    /**
-     * getColor for a specific id, get a unique color
-     * @param  {[string]} str [the id of the user]
-     * @return {[(r,g,b))]}     [the corresponding rgb color]
-     */
-    value: function getColor(str) {
-      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'rgb';
-
-      var h1 = (0, _stringHash2.default)(str) % 206;
-      var h2 = h1 * 7 % 206;
-      var h3 = h1 * 11 % 206;
-      var color = Math.floor(h1 + 50) + ", " + Math.floor(h2 + 50) + ", " + Math.floor(h3 + 50);
-      if (format === 'rgb') {
-        return 'rgb(' + color + ')';
-      }
-
-      if (format === 'rgba') {
-        return 'rgba(' + color + ')';
-      }
-
-      return color;
-    }
-  }, {
-    key: "getPseudoname",
-    value: function getPseudoname(id) {
-      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'Anonymous';
-
-
-      if (format === 'Anonymous') {
-        return 'Anonymous ' + this.capitalize(_animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length]);
-      }
-      return _animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length];
-    }
-  }, {
-    key: "getAvatar",
-
-
-    /**
-     * getAvatar return the div that contains this user id
-     * @return {[type]} [description]
-     */
-    value: function getAvatar(id) {
-      return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
-    }
-  }]);
-
-  return Marker;
-}();
-
-exports.default = Marker;
-
-/***/ }),
-
 /***/ "./src/view/statesheader.js":
 /*!**********************************!*\
   !*** ./src/view/statesheader.js ***!
@@ -51688,461 +52390,6 @@ var StatesHeader = exports.StatesHeader = function () {
 
     return StatesHeader;
 }();
-
-/***/ }),
-
-/***/ "./src/view/text-manager.js":
-/*!**********************************!*\
-  !*** ./src/view/text-manager.js ***!
-  \**********************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-exports.TitleManager = exports.AntiEntropyManager = exports.RemoveManager = exports.InsertManager = exports.TextManager = exports.TextEvent = undefined;
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _Event2 = __webpack_require__(/*! ./Event */ "./src/view/Event.js");
-
-var _versionVectorWithExceptions = __webpack_require__(/*! version-vector-with-exceptions */ "./node_modules/version-vector-with-exceptions/lib/vvwe.js");
-
-var _versionVectorWithExceptions2 = _interopRequireDefault(_versionVectorWithExceptions);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:text-manager');
-
-var TextEvent = exports.TextEvent = function (_Event) {
-    _inherits(TextEvent, _Event);
-
-    function TextEvent(opts) {
-        _classCallCheck(this, TextEvent);
-
-        var _this = _possibleConstructorReturn(this, (TextEvent.__proto__ || Object.getPrototypeOf(TextEvent)).call(this, opts));
-
-        _this._communicationChannel = _this._document._data_comm;
-        _this._sequence = _this._document.sequence;
-
-        return _this;
-    }
-
-    return TextEvent;
-}(_Event2.Event);
-
-var TextManager = exports.TextManager = function (_TextEvent) {
-    _inherits(TextManager, _TextEvent);
-
-    function TextManager(opts) {
-        _classCallCheck(this, TextManager);
-
-        var name = opts.name || 'TextManager';
-
-        var _this2 = _possibleConstructorReturn(this, (TextManager.__proto__ || Object.getPrototypeOf(TextManager)).call(this, _extends({ name: name }, opts)));
-
-        _this2._insertManager = new InsertManager(_extends({ TextManager: _this2 }, opts));
-        _this2._removeManager = new RemoveManager(_extends({ TextManager: _this2 }, opts));
-        _this2._titleManager = new TitleManager(_extends({ TextManager: _this2 }, opts));
-        _this2._antiEntropyManager = new AntiEntropyManager(_extends({ TextManager: _this2 }, opts));
-        _this2._antiEntropyManager.start();
-
-        _this2.on('sendChangeTitle', function () {
-            _this2._titleManager.sendChangeTitle();
-        });
-
-        _this2.on('setLastChangesTime', function () {
-            _this2._titleManager.sendChangeTitle();
-        });
-
-        return _this2;
-    }
-
-    return TextManager;
-}(TextEvent);
-
-var InsertManager = exports.InsertManager = function (_TextEvent2) {
-    _inherits(InsertManager, _TextEvent2);
-
-    function InsertManager(opts) {
-        _classCallCheck(this, InsertManager);
-
-        var name = opts.name || 'Insert';
-
-        var _this3 = _possibleConstructorReturn(this, (InsertManager.__proto__ || Object.getPrototypeOf(InsertManager)).call(this, _extends({ name: name }, opts)));
-
-        _this3._lastSentId = null;
-        _this3._textManager = opts.TextManager;
-        _this3.action = _this3.insert;
-        return _this3;
-    }
-
-    /*!
-     * \brief local insertion of a character inside the sequence structure. It
-     * broadcasts the operation to the rest of the network.
-     * \param character the character to insert in the sequence
-     * \param index the index in the sequence to insert
-     * \return the identifier freshly allocated
-     */
-
-
-    _createClass(InsertManager, [{
-        key: 'insert',
-        value: function insert(_ref) {
-            var packet = _ref.packet,
-                position = _ref.position;
-
-            var pair = this._sequence.insert(packet, position);
-            debug('local Insert', packet, ' Index ', position, 'pair', pair);
-
-            if (this.isItConvertibleToJSON(pair)) {
-                this._lastSentId = this.broadcast({
-                    id: this._document.uid,
-                    pair: pair
-                }, this._lastSentId);
-                this.setLastChangesTime();
-            }
-            return pair;
-        }
-    }, {
-        key: 'receive',
-
-
-        /*!
-         * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
-         * with the index of the element to insert, -1 if already existing.
-         * \param ei the result of the remote insert operation
-         * \param origin the origin id of the insert operation
-         */
-        value: function receive(_ref2) {
-            var id = _ref2.id,
-                pair = _ref2.pair;
-
-            var index = this._sequence.applyInsert(pair, false);
-            debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
-
-            if (index >= 0) {
-                this.emit('remoteInsert', pair.elem, index);
-                this.setLastChangesTime();
-                var range = {
-                    index: index,
-                    length: 0
-                };
-                var msg = {
-                    range: range,
-                    id: id
-                };
-                this.Event('Caret', msg);
-            };
-        }
-
-        /**
-         * Validate that the message is convertable to JSON
-         * @param {*} msg 
-         */
-
-    }, {
-        key: 'isItConvertibleToJSON',
-        value: function isItConvertibleToJSON(msg) {
-            try {
-                var test = JSON.parse(JSON.stringify(msg));
-                return true;
-            } catch (e) {
-                console.error('The object cannot be convert to json ', e, insertMsg);
-                return false;
-            }
-        }
-    }]);
-
-    return InsertManager;
-}(TextEvent);
-
-var RemoveManager = exports.RemoveManager = function (_TextEvent3) {
-    _inherits(RemoveManager, _TextEvent3);
-
-    function RemoveManager(opts) {
-        _classCallCheck(this, RemoveManager);
-
-        var name = opts.name || 'Remove';
-
-        var _this4 = _possibleConstructorReturn(this, (RemoveManager.__proto__ || Object.getPrototypeOf(RemoveManager)).call(this, _extends({ name: name }, opts)));
-
-        _this4._lastSentId = null;
-        _this4._textManager = opts.TextManager;
-        _this4.action = _this4.remove;
-        return _this4;
-    }
-
-    /*!
-     * \brief local deletion of a character from the sequence structure. It 
-     * broadcasts the operation to the rest of the network.
-     * \param index the index of the element to remove
-     * \return the identifier freshly removed
-     */
-
-
-    _createClass(RemoveManager, [{
-        key: 'remove',
-        value: function remove(index) {
-            var reference = this._sequence.remove(index);
-            this._sequence._c += 1;
-            this._lastSentId = this.broadcast({
-                id: this._document.uid,
-                reference: reference
-            }, this._lastSentId);
-
-            //TODO:  this.setLastChangesTime()
-
-            return reference;
-        }
-    }, {
-        key: 'receive',
-
-
-        /*!
-         * \brief removal of an element from a remote site.  It emits 'remoteRemove'
-         * with the index of the element to remove, -1 if does not exist
-         * \param id the result of the remote insert operation
-         * \param origin the origin id of the removal
-         */
-        value: function receive(_ref3) {
-            var id = _ref3.id,
-                reference = _ref3.reference;
-
-
-            var index = this._sequence.applyRemove(reference);
-            this.emit('remoteRemove', index);
-
-            if (index >= 0) {
-                var range = {
-                    index: index - 1,
-                    length: 0
-                };
-                var msg = {
-                    range: range,
-                    id: id
-                };
-                this.Event('Caret', msg);
-            };
-
-            this.setLastChangesTime();
-        }
-    }]);
-
-    return RemoveManager;
-}(TextEvent);
-
-var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent4) {
-    _inherits(AntiEntropyManager, _TextEvent4);
-
-    function AntiEntropyManager(opts) {
-        _classCallCheck(this, AntiEntropyManager);
-
-        var name = opts.name || 'antiEntropy';
-
-        var _this5 = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ name: name }, opts)));
-
-        _this5._antiEntropyPeriod = opts.AntiEntropyPeriod;
-        _this5._textManager = opts.TextManager;
-        return _this5;
-    }
-
-    _createClass(AntiEntropyManager, [{
-        key: 'start',
-        value: function start() {
-            debug('AntiEntropyManager', 'start', 'Period', this._antiEntropyPeriod, this);
-            this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
-        }
-    }, {
-        key: 'receive',
-        value: function receive(_ref4) {
-            var id = _ref4.id,
-                remoteVVwEJSON = _ref4.remoteVVwEJSON,
-                localVVwE = _ref4.localVVwE;
-
-            debug('AntiEntropyManager', 'Antientrpu received', 'Period', this._antiEntropyPeriod, id, remoteVVwEJSON, localVVwE);
-
-            var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(remoteVVwEJSON); // cast
-            var toSearch = [];
-
-            // #1 for each entry of our VVwE, look if the remote VVwE knows less
-            for (var i = 0; i < localVVwE.vector.arr.length; ++i) {
-                var localEntry = localVVwE.vector.arr[i];
-                var index = remoteVVwE.vector.indexOf(localVVwE.vector.arr[i]);
-                var start = 1;
-                // #A check if the entry exists in the remote vvwe
-                if (index >= 0) {
-                    start = remoteVVwE.vector.arr[index].v + 1;
-                };
-
-                for (var j = start; j <= localEntry.v; ++j) {
-                    // #B check if not one of the local exceptions
-                    if (localEntry.x.indexOf(j) < 0) {
-                        toSearch.push({
-                            _e: localEntry.e,
-                            _c: j
-                        });
-                    };
-                };
-                // #C handle the exceptions of the remote vector
-                if (index >= 0) {
-                    for (var j = 0; j < remoteVVwE.vector.arr[index].x.length; ++j) {
-                        var except = remoteVVwE.vector.arr[index].x[j];
-                        if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
-                            toSearch.push({
-                                _e: localEntry.e,
-                                _c: except
-                            });
-                        };
-                    };
-                };
-            };
-
-            var elements = this.getElements(toSearch);
-
-            // #2 send back the found elements
-
-            if (elements.length != 0) {
-                debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
-                this._communicationChannel.broadcast.sendAntiEntropyResponse(id, localVVwE, elements);
-
-                console.log("sendAction", 'Title', this._document.name);
-                this.sendAction('Title', this._document.name);
-            }
-        }
-
-        /*!
-         * \brief search a set of elements in our sequence and return them
-         * \param toSearch the array of elements {_e, _c} to search
-         * \returns an array of nodes
-         */
-
-    }, {
-        key: 'getElements',
-        value: function getElements(toSearch) {
-            var result = [],
-                found = void 0,
-                node = void 0,
-                tempNode = void 0,
-                i = this._sequence.length,
-                j = 0;
-            // (TODO) improve research by exploiting the fact that if a node is
-            // missing, all its children are missing too.
-            // (TODO) improve the returned representation: either a tree to factorize
-            // common parts of the structure or identifiers to get the polylog size
-            // (TODO) improve the search by using the fact that toSearch is a sorted
-            // array, possibly restructure this argument to be even more efficient
-
-            while (toSearch.length > 0 && i <= this._sequence.length && i > 0) {
-                node = this._sequence._get(i);
-                tempNode = node;
-
-                while (tempNode.children.length > 0) {
-                    tempNode = tempNode.children[0];
-                };
-                j = 0;
-                found = false;
-                while (j < toSearch.length && !found) {
-                    if (tempNode.t.s === toSearch[j]._e && tempNode.t.c === toSearch[j]._c) {
-
-                        found = true;
-
-                        result.push(this.MAEInsertOperation({
-                            elem: tempNode.e,
-                            id: node,
-                            antientropy: true // this to prevent the caret movement in the case of anti-entropy
-                        }, tempNode.t.s.split("-")[0]));
-
-                        toSearch.splice(j, 1);
-                    } else {
-                        ++j;
-                    };
-                };
-                --i;
-            };
-
-            return result.reverse();
-        }
-    }, {
-        key: 'MAEInsertOperation',
-        value: function MAEInsertOperation(pair, id) {
-            var packet = {
-                type: "MAEInsertOperation",
-                payload: {
-                    type: "Insert_Event",
-                    pair: pair,
-                    id: id
-                },
-                id: { e: id },
-                isReady: null
-            };
-            return packet;
-        }
-    }]);
-
-    return AntiEntropyManager;
-}(TextEvent);
-
-var TitleManager = exports.TitleManager = function (_TextEvent5) {
-    _inherits(TitleManager, _TextEvent5);
-
-    function TitleManager(opts) {
-        _classCallCheck(this, TitleManager);
-
-        var name = opts.name || 'Title';
-
-        var _this6 = _possibleConstructorReturn(this, (TitleManager.__proto__ || Object.getPrototypeOf(TitleManager)).call(this, _extends({ name: name }, opts)));
-
-        _this6._textManager = opts.TextManager;
-        _this6.action = _this6.sendChangeTitle;
-        return _this6;
-    }
-    /**
-     * [sendChangeTitle Broadcast the new title]
-     * @param  {[type]} title [description]
-     * @return {[type]}       [description]
-     */
-
-
-    _createClass(TitleManager, [{
-        key: 'sendChangeTitle',
-        value: function sendChangeTitle(title) {
-            console.log('Title sent ');
-            this._document.name = title;
-            this.broadcast({
-                id: this._document.uid,
-                title: title
-            });
-        }
-    }, {
-        key: 'receive',
-
-
-        /**
-         * [changeTitle At the reception of MTitleChanged ]
-         * @param  {[type]} title [description]
-         * @return {[type]}       [description]
-         */
-
-        value: function receive(msg) {
-            this.emit('changeTitle', msg.title);
-        }
-    }]);
-
-    return TitleManager;
-}(TextEvent);
 
 /***/ }),
 
