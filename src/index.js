@@ -233,11 +233,11 @@ async setOptions() {
  */
   setSignalingOptions() {
     
-    
-    if (store.get("CRATE2-" + this._options.editingSession)) {
+    const sessionID = this._options.signalingOptions.session
+    if (store.get("CRATE2-" + sessionID)) {
         
       this._options.importFromJSON = store.get(
-          "CRATE2-" + this._options.editingSession
+          "CRATE2-" + sessionID
         );
 
         this._options.signalingOptions =  this._options.importFromJSON.signalingOptions;

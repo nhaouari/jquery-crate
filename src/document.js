@@ -49,24 +49,23 @@ export default class doc extends EventEmitter {
         "No-anti-entropy"
       );
      
-
-      // #1B if it is imported from an existing object, initialize it with these
-      if (options.importFromJSON) {
-        this.core.init(options.importFromJSON);
-      }
-
-   
-
-      // #2 grant fast access
       this.sequence = new LSEQTree(options.editingSessionID);   
+      // #1B if it is imported from an existing object, initialize it with these
+     
+      // #2 grant fast access
+     
       this.broadcast = this._data_comm.broadcast;
       this.broadcastCaret = this._behaviors_comm.broadcast;
       this.rps = this._data_comm.network.rps;
 
       this.causality = this.broadcast._causality;
       this.signalingOptions = options.signalingOptions;
-      console.log('options',options)
-     
+      
+      
+      if (options.importFromJSON) {
+        this.loadFromJSON(options.importFromJSON);
+      } 
+
       this.routersInit()
 
       if (options.display) {
@@ -119,27 +118,18 @@ this._data_comm.broadcast.on('antiEntropy', (id, remoteVVwE, localVVwE) => {
      * \param object the object to initialize the core model of crate containing a 
      * sequence and causality tracking metadata
      */
- /*TODO:init(object) {
-      // import the sequence and version vector, yet it keeps the identifier of
-      // this instance of the core.
+loadFromJSON(object) {
+      this.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
+      const local = this.broadcast._causality.local;
 
-      // this.broadcast = Object.assign(new VVwE(this.id),object.causality);
-
-      // var local = this.broadcast.causality.local;
-      this._data_comm.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
-
-
-      // this.broadcast.causality.local = local;
-      var local = this.broadcast._causality.local;
-      // this.broadcast.causality.vector.insert(this.broadcast.causality.local);
-
-      this.No_antientropy.broadcast._causality.local.e = local.e;
+      this._behaviors_comm.broadcast._causality.local.e = local.e;
 
       this.sequence.fromJSON(object.sequence);
       this.sequence._s = local.e;
       this.sequence._c = local.v;
+    
   };
-*/
+
 
 }
 

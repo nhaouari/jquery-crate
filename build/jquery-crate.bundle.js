@@ -48919,46 +48919,47 @@ var doc = function (_EventEmitter) {
                 this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "anti-entropy");
                 this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "No-anti-entropy");
 
+                this.sequence = new _LSEQTree2.default(options.editingSessionID);
                 // #1B if it is imported from an existing object, initialize it with these
-                if (options.importFromJSON) {
-                  this.core.init(options.importFromJSON);
-                }
 
                 // #2 grant fast access
-                this.sequence = new _LSEQTree2.default(options.editingSessionID);
+
                 this.broadcast = this._data_comm.broadcast;
                 this.broadcastCaret = this._behaviors_comm.broadcast;
                 this.rps = this._data_comm.network.rps;
 
                 this.causality = this.broadcast._causality;
                 this.signalingOptions = options.signalingOptions;
-                console.log('options', options);
+
+                if (options.importFromJSON) {
+                  this.loadFromJSON(options.importFromJSON);
+                }
 
                 this.routersInit();
 
                 if (!options.display) {
-                  _context.next = 28;
+                  _context.next = 27;
                   break;
                 }
 
-                _context.next = 24;
+                _context.next = 23;
                 return Promise.resolve().then(function () {
                   return __webpack_require__(/*! ./View.js */ "./src/View.js");
                 });
 
-              case 24:
+              case 23:
                 _ref2 = _context.sent;
                 View = _ref2.View;
 
                 this._view = new View(options, this, options.containerID);
                 this.emit("ViewIsReady");
 
-              case 28:
+              case 27:
 
                 this._foglet.emit("connected");
                 this.emit("connected");
 
-              case 30:
+              case 29:
               case "end":
                 return _context.stop();
             }
@@ -49010,28 +49011,19 @@ var doc = function (_EventEmitter) {
         * \param object the object to initialize the core model of crate containing a 
         * sequence and causality tracking metadata
         */
-    /*TODO:init(object) {
-         // import the sequence and version vector, yet it keeps the identifier of
-         // this instance of the core.
-    
-         // this.broadcast = Object.assign(new VVwE(this.id),object.causality);
-    
-         // var local = this.broadcast.causality.local;
-         this._data_comm.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
-    
-    
-         // this.broadcast.causality.local = local;
-         var local = this.broadcast._causality.local;
-         // this.broadcast.causality.vector.insert(this.broadcast.causality.local);
-    
-         this.No_antientropy.broadcast._causality.local.e = local.e;
-    
-         this.sequence.fromJSON(object.sequence);
-         this.sequence._s = local.e;
-         this.sequence._c = local.v;
-     };
-    */
 
+  }, {
+    key: "loadFromJSON",
+    value: function loadFromJSON(object) {
+      this.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
+      var local = this.broadcast._causality.local;
+
+      this._behaviors_comm.broadcast._causality.local.e = local.e;
+
+      this.sequence.fromJSON(object.sequence);
+      this.sequence._s = local.e;
+      this.sequence._c = local.v;
+    }
   }]);
 
   return doc;
@@ -49438,9 +49430,10 @@ var session = function (_EventEmitter) {
     key: "setSignalingOptions",
     value: function setSignalingOptions() {
 
-      if (_store2.default.get("CRATE2-" + this._options.editingSession)) {
+      var sessionID = this._options.signalingOptions.session;
+      if (_store2.default.get("CRATE2-" + sessionID)) {
 
-        this._options.importFromJSON = _store2.default.get("CRATE2-" + this._options.editingSession);
+        this._options.importFromJSON = _store2.default.get("CRATE2-" + sessionID);
 
         this._options.signalingOptions = this._options.importFromJSON.signalingOptions;
       }

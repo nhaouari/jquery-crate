@@ -333,6 +333,7 @@ export class EditorController extends EventEmitter {
       this.insert('char',text[i - index],i)
     }
   }
+  
   sendDelete(index,length,isItInsertWithAtt){
 
     console.log('Send delete',index,length,isItInsertWithAtt );
