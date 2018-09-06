@@ -48593,7 +48593,6 @@ var View = exports.View = function () {
     this.createCRATE();
 
     this._model = model;
-    this._editor = new _editor.EditorController(model, options.signalingOptions.session, this._editorContainerID);
 
     if (session.config.storageServer) {
       this._storageServerState = {};
@@ -48601,18 +48600,6 @@ var View = exports.View = function () {
       this._timerStorageServer = setInterval(function () {
         return _this.findremote();
       }, 5000);
-
-      /**
-       * if there are any changes local or remote then we have to wake up the storageServer
-       * @param  {[type]} "thereAreChanges" [description]
-       * @param  {[type]} (                 [description]
-       * @return {[type]}                   [description]
-       */
-      this._editor.on("thereAreChanges", function () {
-        if (_this._storageServerState === 2) {
-          _this.join();
-        }
-      });
     }
 
     var sessionID = this._options.signalingOptions.session;
@@ -48620,63 +48607,82 @@ var View = exports.View = function () {
     if (s._previous) {
       sessionID = s._previous._options.signalingOptions.session;
     }
-
-    session.default.focusOnSession(sessionID, this._options.signalingOptions.session, this._editor);
-
-    var sharingLinkContainer = new _link.LinkView(jQuery("#" + this._editorContainerID + " #sharinglink"));
-
-    var shareButton = jQuery("#" + this._editorContainerID + " #shareicon");
-
-    this._statesHeader = new _statesheader.StatesHeader(model, sharingLinkContainer, shareButton, this._editorContainerID);
-
-    jQuery("#" + this._editorContainerID + " #closeDocument").click(function () {
-      // Get object of the list for this session
-      var crateSession = session.default.getCrateSession(_this._options.signalingOptions.session);
-
-      if (session.headSession !== crateSession) {
-
-        // remove the crateSession for the list 
-        if (crateSession._previous) {
-          crateSession._previous._next = crateSession._next;
-        }
-
-        if (crateSession._next) {
-          crateSession._next._previous = crateSession._previous;
-        } else {
-          session.lastSession = crateSession._previous;
-        }
-
-        // remove it from the browser   
-        jQuery("#" + _this._editorContainerID).remove();
-
-        //  disconnect and remove the model
-
-        crateSession.moveToPrevious();
-        crateSession.close();
-      } else {
-        console.log('You cannot remove the first document');
-      }
-    });
+    session.default.focusOnSession(this._options.signalingOptions.session, this._options.signalingOptions.session);
+    //TODO:this.viewEditor.focus()
+    this._editor = new _editor.EditorController(this._model, this._options.signalingOptions.session, this._editorContainerID);
   }
 
   _createClass(View, [{
+    key: "init",
+    value: function init() {
+      var _this2 = this;
+
+      this._editor.initDocument();
+      /**
+      * if there are any changes local or remote then we have to wake up the storageServer
+      * @param  {[type]} "thereAreChanges" [description]
+      * @param  {[type]} (                 [description]
+      * @return {[type]}                   [description]
+      */
+      this._editor.on("thereAreChanges", function () {
+        if (_this2._storageServerState === 2) {
+          _this2.join();
+        }
+      });
+
+      jQuery("#" + this._editorContainerID + " #closeDocument").click(function () {
+        // Get object of the list for this session
+        var crateSession = session.default.getCrateSession(_this2._options.signalingOptions.session);
+
+        if (session.headSession !== crateSession) {
+
+          // remove the crateSession for the list 
+          if (crateSession._previous) {
+            crateSession._previous._next = crateSession._next;
+          }
+
+          if (crateSession._next) {
+            crateSession._next._previous = crateSession._previous;
+          } else {
+            session.lastSession = crateSession._previous;
+          }
+
+          // remove it from the browser   
+          jQuery("#" + _this2._editorContainerID).remove();
+
+          //  disconnect and remove the model
+
+          crateSession.moveToPrevious();
+          crateSession.close();
+        } else {
+          console.log('You cannot remove the first document');
+        }
+      });
+
+      var sharingLinkContainer = new _link.LinkView(jQuery("#" + this._editorContainerID + " #sharinglink"));
+
+      var shareButton = jQuery("#" + this._editorContainerID + " #shareicon");
+
+      this._statesHeader = new _statesheader.StatesHeader(this._model, sharingLinkContainer, shareButton, this._editorContainerID);
+    }
+  }, {
     key: "createCRATE",
     value: function createCRATE() {
-      var _this2 = this;
+      var _this3 = this;
 
       var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\" style=\" width: 20px;\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n         <div id=\"state\" style=\"margin-left: -50px;\" \">\n            <i class=\"fa fa-globe fa-3x ficon \"></i>\n         </div>\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
       jQuery("#" + this._editorsHolderID).append(html);
 
       jQuery("#" + this._editorContainerID + " #saveComment").click(function () {
-        _this2.saveComment();
+        _this3.saveComment();
       });
 
       jQuery("#" + this._editorContainerID + " #remotesave").click(function () {
 
-        if (jQuery("#" + _this2._editorContainerID + " #remotesave").hasClass('PIN')) {
-          _this2.kill();
+        if (jQuery("#" + _this3._editorContainerID + " #remotesave").hasClass('PIN')) {
+          _this3.kill();
         } else {
-          _this2.join();
+          _this3.join();
         }
       });
     }
@@ -48691,7 +48697,7 @@ var View = exports.View = function () {
   }, {
     key: "findremote",
     value: function findremote(firsttime) {
-      var _this3 = this;
+      var _this4 = this;
 
       var sessionID = this._options.signalingOptions.session;
       var remotesave = jQuery("#" + this._editorContainerID + " #remotesave");
@@ -48703,23 +48709,23 @@ var View = exports.View = function () {
           return resp.json();
         }) // Transform the data into json
         .then(function (data) {
-          _this3._storageServerState = data.results;
+          _this4._storageServerState = data.results;
           if (data.results == 0) {
-            _this3.unpin(remotesave);
+            _this4.unpin(remotesave);
           } else if (data.results == 1) {
             // the session is active on the server
-            _this3.pin(remotesave, "active");
+            _this4.pin(remotesave, "active");
           } else {
             if (firsttime) {
-              _this3.join();
+              _this4.join();
             } else {
-              _this3.pin(remotesave, "sleep");
+              _this4.pin(remotesave, "sleep");
             }
           }
         }).catch(function (thrownError) {
           console.log(thrownError);
-          clearInterval(_this3._timerStorageServer);
-          _this3.unpin(remotesave);
+          clearInterval(_this4._timerStorageServer);
+          _this4.unpin(remotesave);
         });
       }
     }
@@ -48744,17 +48750,17 @@ var View = exports.View = function () {
   }, {
     key: "join",
     value: function join() {
-      var _this4 = this;
+      var _this5 = this;
 
       var sessionID = this._options.signalingOptions.session;
       $.ajax({
         type: "GET",
         url: session.config.storageServer + "/join/" + sessionID,
         success: function success(data, status) {
-          _this4.findremote();
+          _this5.findremote();
         },
         error: function error() {
-          _this4.findremote();
+          _this5.findremote();
         },
         async: true
       });
@@ -48762,7 +48768,7 @@ var View = exports.View = function () {
   }, {
     key: "kill",
     value: function kill() {
-      var _this5 = this;
+      var _this6 = this;
 
       var sessionID = this._options.signalingOptions.session;
       var r = confirm("Do you want remove document from remote server!");
@@ -48771,7 +48777,7 @@ var View = exports.View = function () {
           type: "GET",
           url: session.config.storageServer + "/kill/" + sessionID,
           success: function success(data, status) {
-            _this5.findremote(sessionID);
+            _this6.findremote(sessionID);
           },
           async: false
         });
@@ -48895,24 +48901,42 @@ var doc = function (_EventEmitter) {
               case 0:
                 options = this._options;
 
-                if (!options.foglet) {
-                  _context.next = 6;
+                if (!options.display) {
+                  _context.next = 8;
                   break;
                 }
 
                 _context.next = 4;
-                return this._foglet.connection(options.foglet);
+                return Promise.resolve().then(function () {
+                  return __webpack_require__(/*! ./View.js */ "./src/View.js");
+                });
 
               case 4:
-                _context.next = 9;
+                _ref2 = _context.sent;
+                View = _ref2.View;
+
+                this._view = new View(options, this, options.containerID);
+                this.emit("ViewIsReady");
+
+              case 8:
+                if (!options.foglet) {
+                  _context.next = 13;
+                  break;
+                }
+
+                _context.next = 11;
+                return this._foglet.connection(options.foglet);
+
+              case 11:
+                _context.next = 16;
                 break;
 
-              case 6:
+              case 13:
                 this._foglet.share();
-                _context.next = 9;
+                _context.next = 16;
                 return this._foglet.connection();
 
-              case 9:
+              case 16:
 
                 console.log("application connected!");
 
@@ -48937,29 +48961,14 @@ var doc = function (_EventEmitter) {
 
                 this.routersInit();
 
-                if (!options.display) {
-                  _context.next = 27;
-                  break;
+                if (options.display) {
+                  this._view.init();
                 }
-
-                _context.next = 23;
-                return Promise.resolve().then(function () {
-                  return __webpack_require__(/*! ./View.js */ "./src/View.js");
-                });
-
-              case 23:
-                _ref2 = _context.sent;
-                View = _ref2.View;
-
-                this._view = new View(options, this, options.containerID);
-                this.emit("ViewIsReady");
-
-              case 27:
 
                 this._foglet.emit("connected");
                 this.emit("connected");
 
-              case 29:
+              case 30:
               case "end":
                 return _context.stop();
             }
@@ -50318,7 +50327,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     _this._sessionID = sessionID;
 
     _this.loadDocument();
-    _this.initDocument();
+
     return _this;
   }
 
@@ -50335,15 +50344,14 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       this._comments = new _comments.Comments(this);
       this._quillManager = new _QuillManger.QuillManager(this._editorContainerID, this._comments);
       this.viewEditor = this._quillManager.getQuill();
-
-      var defaultOpts = { document: this._document, editor: this, PingPeriod: 5000, AntiEntropyPeriod: 5000 };
-
-      this.markerManager = new _makerManager.MarkerManager(defaultOpts);
-      this.textManager = new _textManager.TextManager(defaultOpts);
     }
   }, {
     key: "initDocument",
     value: function initDocument() {
+      var defaultOpts = { document: this._document, editor: this, PingPeriod: 5000, AntiEntropyPeriod: 5000 };
+
+      this.markerManager = new _makerManager.MarkerManager(defaultOpts);
+      this.textManager = new _textManager.TextManager(defaultOpts);
 
       this.markerManager.addMarker(this._document.uid, true);
 

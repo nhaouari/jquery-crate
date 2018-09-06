@@ -49,7 +49,7 @@ export class EditorController extends EventEmitter {
     this._sessionID = sessionID
 
     this.loadDocument()
-    this.initDocument()
+ 
   }
 
   /**
@@ -61,15 +61,14 @@ export class EditorController extends EventEmitter {
     this._comments = new Comments(this)
     this._quillManager = new QuillManager(this._editorContainerID, this._comments)
     this.viewEditor = this._quillManager.getQuill()
-
-    const defaultOpts= {document:this._document,editor:this,PingPeriod:5000,AntiEntropyPeriod:5000}
-    
-    this.markerManager = new MarkerManager(defaultOpts)
-    this.textManager= new TextManager(defaultOpts) 
   }
 
 
   initDocument(){
+    const defaultOpts= {document:this._document,editor:this,PingPeriod:5000,AntiEntropyPeriod:5000}
+    
+    this.markerManager = new MarkerManager(defaultOpts)
+    this.textManager= new TextManager(defaultOpts) 
 
     this.markerManager.addMarker(this._document.uid, true)
     
@@ -333,7 +332,7 @@ export class EditorController extends EventEmitter {
       this.insert('char',text[i - index],i)
     }
   }
-  
+
   sendDelete(index,length,isItInsertWithAtt){
 
     console.log('Send delete',index,length,isItInsertWithAtt );

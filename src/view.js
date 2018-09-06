@@ -5,24 +5,34 @@ import {EditorController} from "./view/editor"
 
 export class View {
   constructor(options, model, editorsContainerID) {
-
-
     this._options = options
     this._editorsHolderID = editorsContainerID
     this._editorContainerID = `container-${this._options.signalingOptions.session}`
     this.createCRATE()
 
-    this._model = model;
-    this._editor = new EditorController(model, options.signalingOptions.session, this._editorContainerID)
-
+    this._model = model
+   
     if (session.config.storageServer) {
       this._storageServerState = {}
       this.findremote(true) // join if it is in the sleeping mode to download the last version of the document
-      this._timerStorageServer = setInterval(() => this.findremote(), 5000);
+      this._timerStorageServer = setInterval(() => this.findremote(), 5000);  
+    }
 
+    let sessionID = this._options.signalingOptions.session
+    let s = session.default.getCrateSession(sessionID)
+    if (s._previous) {
+      sessionID = s._previous._options.signalingOptions.session
+    }
+    session.default.focusOnSession( this._options.signalingOptions.session, this._options.signalingOptions.session)   
+    //TODO:this.viewEditor.focus()
+    this._editor = new EditorController(this._model, this._options.signalingOptions.session, this._editorContainerID)
+   
+  }
 
+  init(){
 
-      /**
+    this._editor.initDocument()
+        /**
        * if there are any changes local or remote then we have to wake up the storageServer
        * @param  {[type]} "thereAreChanges" [description]
        * @param  {[type]} (                 [description]
@@ -33,22 +43,8 @@ export class View {
           this.join()
         }
       })
-    }
-
-    let sessionID = this._options.signalingOptions.session
-    let s = session.default.getCrateSession(sessionID)
-    if (s._previous) {
-      sessionID = s._previous._options.signalingOptions.session
-    }
-
-    session.default.focusOnSession(sessionID, this._options.signalingOptions.session, this._editor)
-
-
-    const sharingLinkContainer = new LinkView(jQuery(`#${this._editorContainerID} #sharinglink`))
-
-    const shareButton = jQuery(`#${this._editorContainerID} #shareicon`)
-
-    this._statesHeader = new StatesHeader(model, sharingLinkContainer, shareButton, this._editorContainerID)
+     
+      
 
     jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
       // Get object of the list for this session
@@ -79,8 +75,14 @@ export class View {
       }
 
     })
+  
+    const sharingLinkContainer = new LinkView(jQuery(`#${this._editorContainerID} #sharinglink`))
 
-  }
+    const shareButton = jQuery(`#${this._editorContainerID} #shareicon`)
+
+    this._statesHeader = new StatesHeader(this._model, sharingLinkContainer, shareButton, this._editorContainerID)
+
+    }
 
   createCRATE() {
     const html = ` 
@@ -240,7 +242,7 @@ export class View {
         })
 
   }
-}
+  }
 
   pin(remotesave, type) {
     if (type === "active") {
@@ -257,7 +259,6 @@ export class View {
     remotesave.removeClass('PIN');
     remotesave.addClass('UNPIN');
   }
-
 
   join() {
     let sessionID = this._options.signalingOptions.session

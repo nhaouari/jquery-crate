@@ -27,6 +27,11 @@ export default class doc extends EventEmitter {
   async init() {
     let options = this._options
 
+    if (options.display) {
+      const {View} = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ "./View.js")
+      this._view = new View(options, this, options.containerID);
+      this.emit("ViewIsReady");
+    }
 
     if (options.foglet) {
       await this._foglet.connection(options.foglet);
@@ -68,10 +73,8 @@ export default class doc extends EventEmitter {
 
       this.routersInit()
 
-      if (options.display) {
-        const {View} = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ "./View.js")
-        this._view = new View(options, this, options.containerID);
-        this.emit("ViewIsReady");
+      if (options.display) {  
+        this._view.init()
       }
 
       this._foglet.emit("connected");
