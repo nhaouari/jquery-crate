@@ -48671,7 +48671,7 @@ var View = exports.View = function () {
 
       jQuery("#" + this._editorContainerID + " #title").focusout(function () {
         _this2.changeTitle();
-        _this2.emit('thereAreChanges');
+        //TODO: this.emit('thereAreChanges')
       });
 
       var sharingLinkContainer = new _link.LinkView(jQuery("#" + this._editorContainerID + " #sharinglink"));

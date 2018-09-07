@@ -86,7 +86,7 @@ export class View {
 
     jQuery(`#${this._editorContainerID} #title`).focusout(() => {
       this.changeTitle()
-      this.emit('thereAreChanges')
+     //TODO: this.emit('thereAreChanges')
     })
 
   
