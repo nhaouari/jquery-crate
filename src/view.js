@@ -4,13 +4,13 @@ import {EditorController} from "./view/editor"
 
 
 export class View {
-  constructor(options, model, editorsContainerID) {
+  constructor(options, document, editorsContainerID) {
     this._options = options
     this._editorsHolderID = editorsContainerID
     this._editorContainerID = `container-${this._options.signalingOptions.session}`
     this.createCRATE()
 
-    this._model = model
+    this._document = document
    
     if (session.config.storageServer) {
       this._storageServerState = {}
@@ -25,7 +25,7 @@ export class View {
     }
     session.default.focusOnSession( this._options.signalingOptions.session, this._options.signalingOptions.session)   
     //TODO:this.viewEditor.focus()
-    this._editor = new EditorController(this._model, this._options.signalingOptions.session, this._editorContainerID)
+    this._editor = new EditorController(this._document, this._options.signalingOptions.session, this._editorContainerID)
    
   }
 
@@ -44,7 +44,10 @@ export class View {
         }
       })
      
-      
+        // make title editable
+    jQuery(`#${this._editorContainerID} #title`).click(() => {
+      jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
+    })  
 
     jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
       // Get object of the list for this session
@@ -75,12 +78,23 @@ export class View {
       }
 
     })
+
+     //Menu Bar events
+    jQuery(`#${this._editorContainerID} #saveicon`).click(() => {
+      this.saveDocument()
+    })
+
+    jQuery(`#${this._editorContainerID} #title`).focusout(() => {
+      this.changeTitle()
+      this.emit('thereAreChanges')
+    })
+
   
     const sharingLinkContainer = new LinkView(jQuery(`#${this._editorContainerID} #sharinglink`))
 
     const shareButton = jQuery(`#${this._editorContainerID} #shareicon`)
 
-    this._statesHeader = new StatesHeader(this._model, sharingLinkContainer, shareButton, this._editorContainerID)
+    this._statesHeader = new StatesHeader(this._document, sharingLinkContainer, shareButton, this._editorContainerID)
 
     }
 
@@ -290,6 +304,32 @@ export class View {
 
     }
   }
+
+  
+  /**
+   * saveDocument save the document in local storage
+   * @return {[type]} [description]
+   */
+  saveDocument() {
+    if (this._document.saveDocument())
+    alert("Document is saved successfully")
+    else 
+    alert("There is a problem is saving the document")
+  }
+/**
+   * changeTitle For any change in title, broadcast the new title
+   * @return {[type]} [description]
+   */
+  changeTitle() {
+    jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'false')
+    if (jQuery(`#${this._editorContainerID} #title`).text() == "") {
+      jQuery(`#${this._editorContainerID} #title`).text('Untitled document')
+    }
+    
+    //TODO: Optimize change only if the text is changed from last state 
+    this._document._communication.textManager._titleManager.sendChangeTitle(jQuery(`#${this._editorContainerID} #title`).text())
+  }
+
 
 }
 

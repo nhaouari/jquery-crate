@@ -95,7 +95,7 @@
                      either you are connected to people, or people are connected to you. 
                      This is not great, but you <span class='alert-info'> still can edit.</span>`
 
-                 this.networkState.css("color", this.green)
+                 this.networkState.css("color", this.yellow)
                  this.networkState.attr("data-content", partiallyConnectedString)
                  break
              case "disconnected":

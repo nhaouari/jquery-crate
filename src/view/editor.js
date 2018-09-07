@@ -4,14 +4,11 @@ import {
 import {
   EventEmitter
 } from "events"
-import {
-  MarkerManager
-} from "../communication/MarkerManager/MarkerManager"
+
 import {
   QuillManager
 } from "./QuillManger"
 
-import {TextManager} from "../communication/TextManager/TextManager"
 
 var debug = require('debug')('crate:view:editor')
 
@@ -64,22 +61,20 @@ export class EditorController extends EventEmitter {
 
 
   initDocument(){
-    const defaultOpts= {document:this._document,editor:this,PingPeriod:5000,AntiEntropyPeriod:5000}
-    
-    this.markerManager = new MarkerManager(defaultOpts)
-    this.textManager= new TextManager(defaultOpts) 
-
-    this.markerManager.addMarker(this._document.uid, true)
+    this.initCommunicationModules()
     
     this.loadLocalContent(this._sessionID)
-
-    this.makeTitleEditable()
     
     this._comments.init(this).addAuthorInformation().UpdateComments()
 
     this.startEventListeners()
   }
 
+  initCommunicationModules(){
+    this.markerManager= this._document._communication.markerManager
+    this.textManager= this._document._communication.textManager
+    this.markerManager.addMarker(this._document.uid, true)   
+  }
 
   /**
    * load content from localStorage if it exist
@@ -94,30 +89,11 @@ export class EditorController extends EventEmitter {
   }
   }
 
-  makeTitleEditable() {
-     // make title editable
-     jQuery(`#${this._editorContainerID} #title`).click(() => {
-      jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
-    })
-
-  }
 
   /**
    * Start all the event listeners related to the editor
    */
   startEventListeners() {
-
-    //Menu Bar events
-    jQuery(`#${this._editorContainerID} #saveicon`).click(() => {
-      this.saveDocument()
-    })
-
-    jQuery(`#${this._editorContainerID} #title`).focusout(() => {
-      this.changeTitle()
-      this.emit('thereAreChanges')
-    })
-
-
     // Local events 
     this.viewEditor.on('selection-change', (range, oldRange, source) => {
       if (range) {
@@ -152,29 +128,6 @@ export class EditorController extends EventEmitter {
   }
 
   /**
-   * saveDocument save the document in local storage
-   * @return {[type]} [description]
-   */
-  saveDocument() {
-    var timeNow = new Date().getTime()
-    var title = jQuery(`#${this._editorContainerID} #title`).text()
-    var document = {
-      date: timeNow,
-      title: title,
-      delta: this.viewEditor.editor.delta,
-      sequence: this._document.sequence,
-      causality: this._document.causality,
-      name: this._document.name,
-      webRTCOptions: this._document.webRTCOptions,
-      markers: {},
-      signalingOptions: this._document.signalingOptions
-    }
-    store.set("CRATE2-" + this._document.signalingOptions.session, document)
-    alert("Document is saved successfully")
-  }
-
-
-  /**
    * textChange description
    * @param  {[type]} delta    [description]
    * @param  {[type]} oldDelta [description]
@@ -205,7 +158,171 @@ export class EditorController extends EventEmitter {
   
   }
 
+  /**
+   * sendIt Send the changes character by character 
+   * @param  {[type]}  text              [description]
+   * @param  {[type]}  operation.Attributes               [description]
+   * @param  {[type]}  start             [description]
+   * @param  {[type]}  operation.Value             [description]
+   * @param  {[type]}  operation.Name              [description]
+   * @param  {[type]}  start            [description]
+   * @param  {Boolean} isItInsertWithAtt [description]
+   * @return {[type]}                    [description]
+   */
+  sendIt(operation, start, isItInsertWithAtt) {
+    switch (operation.Name) {
+      case "retain":  
+        start = this.sendFormat(start,operation)   
+        break
 
+      case "insert":
+        start= this.sendInsert(start,operation)
+        break
+
+      case "delete":
+        this.sendDelete(start,operation.Value,isItInsertWithAtt)
+      break
+    }
+    return start
+  }
+
+
+/**
+ *   the value in this case is the end of format 
+
+  insert the changed text with the new attributes
+
+ 1 delete the changed text  from retain to value
+
+ If there is attributes than delete and then insert 
+ * @param {*} operation 
+ * @param {*} start 
+ */
+  sendFormat(start,operation) {
+    if (operation.Attributes != "") {
+      let isItInsertWithAtt = true
+      this.sendDelete(start,operation.Value,isItInsertWithAtt)
+      
+      // 2 Get delta of the insert text with attributes
+      const delta = this.getDelta(start, start + operation.Value)
+     
+      const operations = this.getOperations(delta) 
+      const insertOperations = operations.filter(op => op.Name==="insert");
+      let s=start
+  
+      insertOperations.map((op)=>{
+        s=this.sendInsert(s,op)
+      })
+      
+    } else {
+      start += operation.Value
+
+    } 
+    return start
+   
+  }
+
+  sendInsert(index,Operation){
+    if (Operation.Type==="text") {
+      this.sendCharByChar(Operation.Value,index)
+      return  index + Operation.Value.length
+    } else {
+      this.insert(Operation.Type,Operation.Value,index)
+      return index+1
+    }
+  
+  }
+
+  sendCharByChar(text,index){
+    for (let i = index; i < (index + text.length); ++i) {
+      debug('send [%]',text[i - index])
+      this.insert('char',text[i - index],i)
+    }
+  }
+
+  sendDelete(index,length,isItInsertWithAtt){
+
+    console.log('Send delete',index,length,isItInsertWithAtt );
+    //to ensure that the editor contains just \n without any attributes 
+    if (!isItInsertWithAtt) {
+      this._comments.UpdateComments()
+    }
+    
+    // Delete caracter by caracter
+
+    for (var i = index; i < (index + length); ++i) {
+      this.textManager._removeManager.remove(index)
+    }
+  }
+
+
+  insert(type,content,position) {
+    const attributes = this.viewEditor.getFormat(position, 1)
+    const packet = {type,content,attributes}
+    this.textManager._insertManager.insert({packet, position})
+  }
+
+  /**
+   * remoteInsert At the reception of insert operation
+   * @param  {[type]} element [description]
+   * @param  {[type]} indexp  [description]
+   * @return {[type]}         [description]
+   */
+  remoteInsert(element, indexp) {
+    var index = indexp - 1
+
+    debug("Remote Insert : ", element, index)
+
+    if (index !== -1) {
+
+        if(element.type==="char") {
+          this.viewEditor.insertText(index, element.content, element.attributes, 'silent')
+
+          if (element.content != "\n") {
+            this.viewEditor.removeFormat(index, 1, 'silent')
+          }
+        } else {
+          this.viewEditor.insertEmbed(index, element.type, element.content[element.type], 'silent')
+        }
+
+        if (element.attributes) {
+        if (element.text != "\n") {
+          this.viewEditor.formatLine(index, element.attributes, 'silent')
+          this.viewEditor.formatText(index, 1, element.attributes, 'silent')
+        }
+        this.updateCommentsLinks()
+      }
+
+
+    }
+  }
+
+  /**
+   * remoteRemove At the reception of remove operation
+   * @param  {[type]} index [description]
+   * @return {[type]}       [description]
+   */
+  remoteRemove(index) {
+    debug("Remote remove : ", index)
+    let removedIndex = index - 1
+    if (removedIndex !== -1) {
+      this.viewEditor.deleteText(removedIndex, 1, 'silent')
+      this.updateCommentsLinks()  
+    }
+  }
+
+
+  getDelta(start,end) {
+    return this.viewEditor.editor.delta.slice(start, end)
+  }
+
+  updateCommentsLinks(){
+    clearTimeout(this._timeout)
+    this._timeout = setTimeout(()=>{ 
+      session.default.openIn()
+      this._comments.UpdateComments()
+    }, 2000);
+  }
 
   getOperations(changesDelta) {
    
@@ -249,185 +366,5 @@ export class EditorController extends EventEmitter {
       return 'text'
     }
 
-
-  /**
-   * sendIt Send the changes character by character 
-   * @param  {[type]}  text              [description]
-   * @param  {[type]}  operation.Attributes               [description]
-   * @param  {[type]}  start             [description]
-   * @param  {[type]}  operation.Value             [description]
-   * @param  {[type]}  operation.Name              [description]
-   * @param  {[type]}  start            [description]
-   * @param  {Boolean} isItInsertWithAtt [description]
-   * @return {[type]}                    [description]
-   */
-  sendIt(operation, start, isItInsertWithAtt) {
-    switch (operation.Name) {
-      case "retain":  
-        start = this.sendFormat(start,operation)   
-        break
-
-      case "insert":
-        start= this.sendInsert(start,operation)
-        break
-
-      case "delete":
-        this.sendDelete(start,operation.Value,isItInsertWithAtt)
-      break
-    }
-    return start
-  }
-
-
-  /**
- *   the value in this case is the end of format 
-
-  insert the changed text with the new attributes
-
- 1 delete the changed text  from retain to value
-
-
- If there is attributes than delete and then insert 
- * @param {*} operation 
- * @param {*} start 
- */
-  sendFormat(start,operation) {
-    if (operation.Attributes != "") {
-      let isItInsertWithAtt = true
-      this.sendDelete(start,operation.Value,isItInsertWithAtt)
-      
-      // 2 Get delta of the insert text with attributes
-      const delta = this.getDelta(start, start + operation.Value)
-     
-      const operations = this.getOperations(delta) 
-      const insertOperations = operations.filter(op => op.Name==="insert");
-      let s=start
-  
-      insertOperations.map((op)=>{
-        s=this.sendInsert(s,op)
-      })
-      
-    } else {
-      start += operation.Value
-
-    } 
-    return start
-   
-  }
-
-  sendInsert(index,Operation){
-    if (Operation.Type==="text") {
-      this.sendCharByChar(Operation.Value,index)
-      return  index + Operation.Value.length
-    } else {
-      this.insert(Operation.Type,Operation.Value,index)
-      return index+1
-    }
-  
-  }
-  sendCharByChar(text,index){
-    for (let i = index; i < (index + text.length); ++i) {
-      debug('send [%]',text[i - index])
-      this.insert('char',text[i - index],i)
-    }
-  }
-
-  sendDelete(index,length,isItInsertWithAtt){
-
-    console.log('Send delete',index,length,isItInsertWithAtt );
-    //to ensure that the editor contains just \n without any attributes 
-    if (!isItInsertWithAtt) {
-      this._comments.UpdateComments()
-    }
-    
-    // Delete caracter by caracter
-
-    for (var i = index; i < (index + length); ++i) {
-      this.textManager._removeManager.remove(index)
-    }
-  }
-
-  getDelta(index1,index2) {
-    return this.viewEditor.editor.delta.slice(index1, index2)
-  }
-
-  insert(type,content,position) {
-    const attributes = this.viewEditor.getFormat(position, 1)
-    const packet = {type,content,attributes}
-    this.textManager._insertManager.insert({packet, position})
-  }
-
-
-
-  /**
-   * remoteInsert At the reception of insert operation
-   * @param  {[type]} element [description]
-   * @param  {[type]} indexp  [description]
-   * @return {[type]}         [description]
-   */
-  remoteInsert(element, indexp) {
-    var index = indexp - 1
-
-    debug("Remote Insert : ", element, index)
-
-    if (index !== -1) {
-
-        if(element.type==="char") {
-          this.viewEditor.insertText(index, element.content, element.attributes, 'silent')
-
-          if (element.content != "\n") {
-            this.viewEditor.removeFormat(index, 1, 'silent')
-          }
-        } else {
-          this.viewEditor.insertEmbed(index, element.type, element.content[element.type], 'silent')
-        }
-
-        if (element.attributes) {
-        if (element.text != "\n") {
-          this.viewEditor.formatLine(index, element.attributes, 'silent')
-          this.viewEditor.formatText(index, 1, element.attributes, 'silent')
-        }
-        this.updateCommentsLinks()
-      }
-
-
-    }
-  }
-
-  updateCommentsLinks(){
-    clearTimeout(this._timeout)
-    this._timeout = setTimeout(()=>{ 
-      session.default.openIn()
-      this._comments.UpdateComments()
-    }, 2000);
-  }
-  /**
-   * remoteRemove At the reception of remove operation
-   * @param  {[type]} index [description]
-   * @return {[type]}       [description]
-   */
-  remoteRemove(index) {
-    debug("Remote remove : ", index)
-    let removedIndex = index - 1
-    if (removedIndex !== -1) {
-      this.viewEditor.deleteText(removedIndex, 1, 'silent')
-      this.updateCommentsLinks()  
-    }
-  }
-
-
-  /**
-   * changeTitle For any change in title, broadcast the new title
-   * @return {[type]} [description]
-   */
-  changeTitle() {
-    jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'false')
-    if (jQuery(`#${this._editorContainerID} #title`).text() == "") {
-      jQuery(`#${this._editorContainerID} #title`).text('Untitled document')
-    }
-    
-    //TODO: Optimize change only if the text is changed from last state 
-    this.textManager._titleManager.sendChangeTitle(jQuery(`#${this._editorContainerID} #title`).text())
-  }
-
+ 
 }

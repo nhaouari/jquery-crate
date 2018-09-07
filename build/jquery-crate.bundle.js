@@ -48582,7 +48582,7 @@ var _editor = __webpack_require__(/*! ./view/editor */ "./src/view/editor.js");
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var View = exports.View = function () {
-  function View(options, model, editorsContainerID) {
+  function View(options, document, editorsContainerID) {
     var _this = this;
 
     _classCallCheck(this, View);
@@ -48592,7 +48592,7 @@ var View = exports.View = function () {
     this._editorContainerID = "container-" + this._options.signalingOptions.session;
     this.createCRATE();
 
-    this._model = model;
+    this._document = document;
 
     if (session.config.storageServer) {
       this._storageServerState = {};
@@ -48609,7 +48609,7 @@ var View = exports.View = function () {
     }
     session.default.focusOnSession(this._options.signalingOptions.session, this._options.signalingOptions.session);
     //TODO:this.viewEditor.focus()
-    this._editor = new _editor.EditorController(this._model, this._options.signalingOptions.session, this._editorContainerID);
+    this._editor = new _editor.EditorController(this._document, this._options.signalingOptions.session, this._editorContainerID);
   }
 
   _createClass(View, [{
@@ -48628,6 +48628,11 @@ var View = exports.View = function () {
         if (_this2._storageServerState === 2) {
           _this2.join();
         }
+      });
+
+      // make title editable
+      jQuery("#" + this._editorContainerID + " #title").click(function () {
+        jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
       });
 
       jQuery("#" + this._editorContainerID + " #closeDocument").click(function () {
@@ -48659,11 +48664,21 @@ var View = exports.View = function () {
         }
       });
 
+      //Menu Bar events
+      jQuery("#" + this._editorContainerID + " #saveicon").click(function () {
+        _this2.saveDocument();
+      });
+
+      jQuery("#" + this._editorContainerID + " #title").focusout(function () {
+        _this2.changeTitle();
+        _this2.emit('thereAreChanges');
+      });
+
       var sharingLinkContainer = new _link.LinkView(jQuery("#" + this._editorContainerID + " #sharinglink"));
 
       var shareButton = jQuery("#" + this._editorContainerID + " #shareicon");
 
-      this._statesHeader = new _statesheader.StatesHeader(this._model, sharingLinkContainer, shareButton, this._editorContainerID);
+      this._statesHeader = new _statesheader.StatesHeader(this._document, sharingLinkContainer, shareButton, this._editorContainerID);
     }
   }, {
     key: "createCRATE",
@@ -48783,6 +48798,33 @@ var View = exports.View = function () {
         });
       }
     }
+
+    /**
+     * saveDocument save the document in local storage
+     * @return {[type]} [description]
+     */
+
+  }, {
+    key: "saveDocument",
+    value: function saveDocument() {
+      if (this._document.saveDocument()) alert("Document is saved successfully");else alert("There is a problem is saving the document");
+    }
+    /**
+       * changeTitle For any change in title, broadcast the new title
+       * @return {[type]} [description]
+       */
+
+  }, {
+    key: "changeTitle",
+    value: function changeTitle() {
+      jQuery("#" + this._editorContainerID + " #title").attr('contenteditable', 'false');
+      if (jQuery("#" + this._editorContainerID + " #title").text() == "") {
+        jQuery("#" + this._editorContainerID + " #title").text('Untitled document');
+      }
+
+      //TODO: Optimize change only if the text is changed from last state 
+      this._document._communication.textManager._titleManager.sendChangeTitle(jQuery("#" + this._editorContainerID + " #title").text());
+    }
   }], [{
     key: "addMoveShortcuts",
     value: function addMoveShortcuts() {
@@ -48823,6 +48865,53 @@ var View = exports.View = function () {
 }();
 
 View.addMoveShortcuts();
+
+/***/ }),
+
+/***/ "./src/communication/Communication.js":
+/*!********************************************!*\
+  !*** ./src/communication/Communication.js ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+exports.Communication = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _MarkerManager = __webpack_require__(/*! ./MarkerManager/MarkerManager */ "./src/communication/MarkerManager/MarkerManager.js");
+
+var _TextManager = __webpack_require__(/*! ./TextManager/TextManager */ "./src/communication/TextManager/TextManager.js");
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Communication = exports.Communication = function () {
+    function Communication(opts) {
+        _classCallCheck(this, Communication);
+
+        this._document = opts.document;
+        this._options = opts;
+    }
+
+    _createClass(Communication, [{
+        key: "init",
+        value: function init() {
+            var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+            this._options = Object.assign(this._options, opts);
+            this.markerManager = new _MarkerManager.MarkerManager(this._options);
+            this.textManager = new _TextManager.TextManager(this._options);
+        }
+    }]);
+
+    return Communication;
+}();
 
 /***/ }),
 
@@ -50314,6 +50403,8 @@ var _LSEQTree = __webpack_require__(/*! LSEQTree */ "./node_modules/LSEQTree/lib
 
 var _LSEQTree2 = _interopRequireDefault(_LSEQTree);
 
+var _Communication = __webpack_require__(/*! ./communication/Communication */ "./src/communication/Communication.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
@@ -50404,12 +50495,13 @@ var doc = function (_EventEmitter) {
 
                 console.log("application connected!");
 
-                this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "anti-entropy");
-                this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "No-anti-entropy");
+                this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "_data_comm");
+                this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "_behaviors_comm");
 
                 this.sequence = new _LSEQTree2.default(options.editingSessionID);
                 // #1B if it is imported from an existing object, initialize it with these
 
+                this.loadCommunicationModules();
                 // #2 grant fast access
 
                 this.broadcast = this._data_comm.broadcast;
@@ -50432,7 +50524,7 @@ var doc = function (_EventEmitter) {
                 this._foglet.emit("connected");
                 this.emit("connected");
 
-              case 30:
+              case 31:
               case "end":
                 return _context.stop();
             }
@@ -50452,8 +50544,8 @@ var doc = function (_EventEmitter) {
       var _this2 = this;
 
       this._behaviors_comm.onBroadcast(function (id, message) {
-        _this2.emit(message.type, message);
         debug('document', '._behaviors_comm', 'Message received', message, 'from', id);
+        _this2.emit(message.type, message);
       });
 
       this._data_comm.onBroadcast(function (id, message) {
@@ -50462,17 +50554,20 @@ var doc = function (_EventEmitter) {
       });
 
       this._data_comm.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {
-        console.log('document', '.antiEntropy', 'Message received', { id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE }, 'from', id);
-        _this2.emit('antiEntropy_Event', { id: id, remoteVVwEJSON: remoteVVwE, localVVwE: localVVwE });
+        debug('antiEntropy', { id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE });
+        _this2.emit('antiEntropy_Event', {
+          id: id,
+          remoteVVwEJSON: remoteVVwE,
+          localVVwE: localVVwE
+        });
       });
     }
-
-    /**
-     * setLastChangesTime set the last time of changes
-     */
-
   }, {
     key: "setLastChangesTime",
+    /**
+    0 * setLastChangesTime set the last time of changes
+    */
+
     value: function setLastChangesTime() {
       var d = new Date();
       var n = d.getTime();
@@ -50480,10 +50575,10 @@ var doc = function (_EventEmitter) {
     }
 
     /*!
-        * \brief create the core from an existing object
-        * \param object the object to initialize the core model of crate containing a 
-        * sequence and causality tracking metadata
-        */
+     * \brief create the core from an existing object
+     * \param object the object to initialize the core model of crate containing a 
+     * sequence and causality tracking metadata
+     */
 
   }, {
     key: "loadFromJSON",
@@ -50496,6 +50591,50 @@ var doc = function (_EventEmitter) {
       this.sequence.fromJSON(object.sequence);
       this.sequence._s = local.e;
       this.sequence._c = local.v;
+    }
+  }, {
+    key: "loadCommunicationModules",
+    value: function loadCommunicationModules() {
+      var defaultOpts = {
+        document: this,
+        editor: this._view._editor,
+        PingPeriod: 5000,
+        AntiEntropyPeriod: 5000
+      };
+      this._communication = new _Communication.Communication(defaultOpts);
+      this._communication.init();
+
+      this._communication.markerManager.addMarker(this.uid, true);
+    }
+
+    /**
+     * saveDocument save the document in local storage
+     * @return {[type]} [description]
+     */
+
+  }, {
+    key: "saveDocument",
+    value: function saveDocument() {
+      try {
+        var timeNow = new Date().getTime();
+        var title = jQuery("#" + this._editorContainerID + " #title").text();
+        var document = {
+          date: timeNow,
+          title: title,
+          delta: this.viewEditor.editor.delta,
+          sequence: this.sequence,
+          causality: this.causality,
+          name: this.name,
+          webRTCOptions: this.webRTCOptions,
+          markers: {},
+          signalingOptions: this.signalingOptions
+        };
+        store.set("CRATE2-" + this.signalingOptions.session, document);
+        return true;
+      } catch (error) {
+        console.error(error);
+        return false;
+      }
     }
   }]);
 
@@ -51623,11 +51762,7 @@ var _comments = __webpack_require__(/*! ../view/comments */ "./src/view/comments
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
-var _MarkerManager = __webpack_require__(/*! ../communication/MarkerManager/MarkerManager */ "./src/communication/MarkerManager/MarkerManager.js");
-
 var _QuillManger = __webpack_require__(/*! ./QuillManger */ "./src/view/QuillManger.js");
-
-var _TextManager = __webpack_require__(/*! ../communication/TextManager/TextManager */ "./src/communication/TextManager/TextManager.js");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -51695,20 +51830,20 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "initDocument",
     value: function initDocument() {
-      var defaultOpts = { document: this._document, editor: this, PingPeriod: 5000, AntiEntropyPeriod: 5000 };
-
-      this.markerManager = new _MarkerManager.MarkerManager(defaultOpts);
-      this.textManager = new _TextManager.TextManager(defaultOpts);
-
-      this.markerManager.addMarker(this._document.uid, true);
+      this.initCommunicationModules();
 
       this.loadLocalContent(this._sessionID);
-
-      this.makeTitleEditable();
 
       this._comments.init(this).addAuthorInformation().UpdateComments();
 
       this.startEventListeners();
+    }
+  }, {
+    key: "initCommunicationModules",
+    value: function initCommunicationModules() {
+      this.markerManager = this._document._communication.markerManager;
+      this.textManager = this._document._communication.textManager;
+      this.markerManager.addMarker(this._document.uid, true);
     }
 
     /**
@@ -51726,16 +51861,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         session.default.openIn(); // this is to convert the links to inside links
       }
     }
-  }, {
-    key: "makeTitleEditable",
-    value: function makeTitleEditable() {
-      var _this2 = this;
-
-      // make title editable
-      jQuery("#" + this._editorContainerID + " #title").click(function () {
-        jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
-      });
-    }
 
     /**
      * Start all the event listeners related to the editor
@@ -51744,71 +51869,36 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "startEventListeners",
     value: function startEventListeners() {
-      var _this3 = this;
-
-      //Menu Bar events
-      jQuery("#" + this._editorContainerID + " #saveicon").click(function () {
-        _this3.saveDocument();
-      });
-
-      jQuery("#" + this._editorContainerID + " #title").focusout(function () {
-        _this3.changeTitle();
-        _this3.emit('thereAreChanges');
-      });
+      var _this2 = this;
 
       // Local events 
       this.viewEditor.on('selection-change', function (range, oldRange, source) {
         if (range) {
-          _this3.markerManager.caretMoved(range);
+          _this2.markerManager.caretMoved(range);
         }
       });
 
       this.viewEditor.on('text-change', function (delta, oldDelta, source) {
-        _this3.textChange(delta, oldDelta, source);
-        _this3.emit('thereAreChanges');
+        _this2.textChange(delta, oldDelta, source);
+        _this2.emit('thereAreChanges');
       });
 
       // Remote events
       this.textManager._insertManager.on('remoteInsert', function (element, indexp) {
-        _this3.remoteInsert(element, indexp);
-        _this3.emit('thereAreChanges');
+        _this2.remoteInsert(element, indexp);
+        _this2.emit('thereAreChanges');
       });
 
       this.textManager._removeManager.on('remoteRemove', function (index) {
-        _this3.remoteRemove(index);
-        _this3.emit('thereAreChanges');
+        _this2.remoteRemove(index);
+        _this2.emit('thereAreChanges');
       });
 
       //At the reception of Title changed operation 
       this.textManager._titleManager.on('changeTitle', function (title) {
-        jQuery("#" + _this3._editorContainerID + " #title").text(title);
-        _this3.emit('thereAreChanges');
+        jQuery("#" + _this2._editorContainerID + " #title").text(title);
+        _this2.emit('thereAreChanges');
       });
-    }
-
-    /**
-     * saveDocument save the document in local storage
-     * @return {[type]} [description]
-     */
-
-  }, {
-    key: "saveDocument",
-    value: function saveDocument() {
-      var timeNow = new Date().getTime();
-      var title = jQuery("#" + this._editorContainerID + " #title").text();
-      var document = {
-        date: timeNow,
-        title: title,
-        delta: this.viewEditor.editor.delta,
-        sequence: this._document.sequence,
-        causality: this._document.causality,
-        name: this._document.name,
-        webRTCOptions: this._document.webRTCOptions,
-        markers: {},
-        signalingOptions: this._document.signalingOptions
-      };
-      store.set("CRATE2-" + this._document.signalingOptions.session, document);
-      alert("Document is saved successfully");
     }
 
     /**
@@ -51836,60 +51926,15 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "applyChanges",
     value: function applyChanges(delta, iniRetain) {
-      var _this4 = this;
+      var _this3 = this;
 
       var start = iniRetain;
 
       var Operations = this.getOperations(delta);
 
       Operations.map(function (operation) {
-        start = _this4.sendIt(operation, start, false);
+        start = _this3.sendIt(operation, start, false);
       });
-    }
-  }, {
-    key: "getOperations",
-    value: function getOperations(changesDelta) {
-      var _this5 = this;
-
-      var operations = changesDelta.ops.map(function (op) {
-        return _this5.extractOperationInformation(op);
-      });
-
-      return operations;
-    }
-  }, {
-    key: "extractOperationInformation",
-    value: function extractOperationInformation(op) {
-      var operation = Object.keys(op);
-      var Name = "";
-      var Attributes = "";
-      var Value = "";
-
-      // extract attributes from the operation in the case of there existance
-      for (var i = operation.length - 1; i >= 0; i--) {
-        var v = op[operation[i]];
-        if (operation[i] === "attributes") {
-          Attributes = v;
-        } else {
-          Name = operation[i];
-          Value = v;
-        }
-      }
-      var Type = this.getTypeOfContent(Value);
-      console.log('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type });
-      return { Name: Name, Value: Value, Attributes: Attributes, Type: Type };
-    }
-  }, {
-    key: "getTypeOfContent",
-    value: function getTypeOfContent(value) {
-
-      if (value.formula != undefined) return 'formula';
-
-      if (value.video != undefined) return 'video';
-
-      if (value.image != undefined) return 'image';
-
-      return 'text';
     }
 
     /**
@@ -51924,19 +51969,21 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     }
 
     /**
-    *   the value in this case is the end of format 
+     *   the value in this case is the end of format 
+    
       insert the changed text with the new attributes
+    
      1 delete the changed text  from retain to value
     
-    If there is attributes than delete and then insert 
-    * @param {*} operation 
-    * @param {*} start 
-    */
+     If there is attributes than delete and then insert 
+     * @param {*} operation 
+     * @param {*} start 
+     */
 
   }, {
     key: "sendFormat",
     value: function sendFormat(start, operation) {
-      var _this6 = this;
+      var _this4 = this;
 
       if (operation.Attributes != "") {
         var isItInsertWithAtt = true;
@@ -51952,7 +51999,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         var s = start;
 
         insertOperations.map(function (op) {
-          s = _this6.sendInsert(s, op);
+          s = _this4.sendInsert(s, op);
         });
       } else {
         start += operation.Value;
@@ -51993,11 +52040,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       for (var i = index; i < index + length; ++i) {
         this.textManager._removeManager.remove(index);
       }
-    }
-  }, {
-    key: "getDelta",
-    value: function getDelta(index1, index2) {
-      return this.viewEditor.editor.delta.slice(index1, index2);
     }
   }, {
     key: "insert",
@@ -52042,17 +52084,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         }
       }
     }
-  }, {
-    key: "updateCommentsLinks",
-    value: function updateCommentsLinks() {
-      var _this7 = this;
 
-      clearTimeout(this._timeout);
-      this._timeout = setTimeout(function () {
-        session.default.openIn();
-        _this7._comments.UpdateComments();
-      }, 2000);
-    }
     /**
      * remoteRemove At the reception of remove operation
      * @param  {[type]} index [description]
@@ -52069,22 +52101,66 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         this.updateCommentsLinks();
       }
     }
-
-    /**
-     * changeTitle For any change in title, broadcast the new title
-     * @return {[type]} [description]
-     */
-
   }, {
-    key: "changeTitle",
-    value: function changeTitle() {
-      jQuery("#" + this._editorContainerID + " #title").attr('contenteditable', 'false');
-      if (jQuery("#" + this._editorContainerID + " #title").text() == "") {
-        jQuery("#" + this._editorContainerID + " #title").text('Untitled document');
-      }
+    key: "getDelta",
+    value: function getDelta(start, end) {
+      return this.viewEditor.editor.delta.slice(start, end);
+    }
+  }, {
+    key: "updateCommentsLinks",
+    value: function updateCommentsLinks() {
+      var _this5 = this;
 
-      //TODO: Optimize change only if the text is changed from last state 
-      this.textManager._titleManager.sendChangeTitle(jQuery("#" + this._editorContainerID + " #title").text());
+      clearTimeout(this._timeout);
+      this._timeout = setTimeout(function () {
+        session.default.openIn();
+        _this5._comments.UpdateComments();
+      }, 2000);
+    }
+  }, {
+    key: "getOperations",
+    value: function getOperations(changesDelta) {
+      var _this6 = this;
+
+      var operations = changesDelta.ops.map(function (op) {
+        return _this6.extractOperationInformation(op);
+      });
+
+      return operations;
+    }
+  }, {
+    key: "extractOperationInformation",
+    value: function extractOperationInformation(op) {
+      var operation = Object.keys(op);
+      var Name = "";
+      var Attributes = "";
+      var Value = "";
+
+      // extract attributes from the operation in the case of there existance
+      for (var i = operation.length - 1; i >= 0; i--) {
+        var v = op[operation[i]];
+        if (operation[i] === "attributes") {
+          Attributes = v;
+        } else {
+          Name = operation[i];
+          Value = v;
+        }
+      }
+      var Type = this.getTypeOfContent(Value);
+      console.log('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type });
+      return { Name: Name, Value: Value, Attributes: Attributes, Type: Type };
+    }
+  }, {
+    key: "getTypeOfContent",
+    value: function getTypeOfContent(value) {
+
+      if (value.formula != undefined) return 'formula';
+
+      if (value.video != undefined) return 'video';
+
+      if (value.image != undefined) return 'image';
+
+      return 'text';
     }
   }]);
 
@@ -52376,7 +52452,7 @@ var StatesHeader = exports.StatesHeader = function () {
                 case "partiallyConnected":
                     var partiallyConnectedString = '<span class=\'alert-warning\'>Partially connected</span>: \n                     either you are connected to people, or people are connected to you. \n                     This is not great, but you <span class=\'alert-info\'> still can edit.</span>';
 
-                    this.networkState.css("color", this.green);
+                    this.networkState.css("color", this.yellow);
                     this.networkState.attr("data-content", partiallyConnectedString);
                     break;
                 case "disconnected":
