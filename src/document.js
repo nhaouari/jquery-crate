@@ -118,6 +118,21 @@ export default class doc extends EventEmitter {
         localVVwE
       })
     })
+
+    //TODO:consider receiving many images
+
+    let content=''
+    this._data_comm.onStreamBroadcast((id, message) => {
+      message.on('data', data => { content += data})
+      message.on('end', () => {
+        const packet= JSON.parse(content)  
+        content = ''
+        debug('document', '._data_comm', 'Message received', packet.pair.elem, 'from', id)
+        this.emit(packet.type, packet)
+       
+      })    
+     
+    })
   }
 
 

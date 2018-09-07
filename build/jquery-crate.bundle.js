@@ -48989,12 +48989,43 @@ var Event = exports.Event = function (_EventEmitter) {
         }
     }, {
         key: 'broadcast',
-        value: function broadcast(msg) {
+        value: function broadcast(message) {
             var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
+            var msg = _extends({ type: this.getType() }, message);
+            if (this.getSize(msg) >= 20000) {
+                this.broadcastStream(msg);
+            } else {
+                this.sendBroadcast(msg);
+            }
+        }
+    }, {
+        key: 'getSize',
+        value: function getSize(msg) {
+            var string = JSON.stringify(msg);
+            return string.length;
+        }
+    }, {
+        key: 'sendBroadcast',
+        value: function sendBroadcast(msg) {
             //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
-            var messageId = this._communicationChannel.sendBroadcast(_extends({ type: this.getType() }, msg));
+            var messageId = this._communicationChannel.sendBroadcast(msg);
             return messageId;
+        }
+    }, {
+        key: 'broadcastStream',
+        value: function broadcastStream(msg) {
+            console.log('message sent on stream');
+            var stream = this._communicationChannel.streamBroadcast();
+            var msgString = JSON.stringify(msg);
+            var chunks = this.chunkSubstr(msgString, 10000);
+            chunks.forEach(function (chunk) {
+                stream.write(chunk);
+            });
+
+            stream.end();
+
+            this.setLastChangesTime();
         }
     }, {
         key: 'receive',
@@ -49018,6 +49049,18 @@ var Event = exports.Event = function (_EventEmitter) {
 
             console.log('Event: ', name + '_Event', args);
             this._document.emit(name + '_Event', args);
+        }
+    }, {
+        key: 'chunkSubstr',
+        value: function chunkSubstr(str, size) {
+            var numChunks = Math.ceil(str.length / size);
+            var chunks = new Array(numChunks);
+
+            for (var i = 0, o = 0; i < numChunks; ++i, o += size) {
+                chunks[i] = str.substr(o, size);
+            }
+
+            return chunks;
         }
     }]);
 
@@ -50561,6 +50604,21 @@ var doc = function (_EventEmitter) {
           localVVwE: localVVwE
         });
       });
+
+      //TODO:consider receiving many images
+
+      var content = '';
+      this._data_comm.onStreamBroadcast(function (id, message) {
+        message.on('data', function (data) {
+          content += data;
+        });
+        message.on('end', function () {
+          var packet = JSON.parse(content);
+          content = '';
+          debug('document', '._data_comm', 'Message received', packet.pair.elem, 'from', id);
+          _this2.emit(packet.type, packet);
+        });
+      });
     }
   }, {
     key: "setLastChangesTime",
@@ -52013,7 +52071,13 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         this.sendCharByChar(Operation.Value, index);
         return index + Operation.Value.length;
       } else {
-        this.insert(Operation.Type, Operation.Value, index);
+        var stream = false;
+        if (Operation.Type == "image") {
+          stream = true;
+        }
+
+        this.insert(Operation.Type, Operation.Value, index, stream);
+
         return index + 1;
       }
     }

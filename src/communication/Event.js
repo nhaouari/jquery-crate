@@ -35,11 +35,37 @@ export class Event extends EventEmitter {
         }
     }
 
-    broadcast(msg,lastSentMsgId=null){
-    //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
-    const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg})  
+    broadcast(message,lastSentMsgId=null){
+    const msg = {type: this.getType(),...message}
+    if(this.getSize(msg)>=20000) {
+        this.broadcastStream(msg)
+    } else {
+        this.sendBroadcast(msg)
+    }
+    }
+
+    getSize(msg) {
+        const string = JSON.stringify(msg)
+        return string.length
+    }
+    sendBroadcast(msg){
+          //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
+    const messageId=  this._communicationChannel.sendBroadcast(msg)  
     return messageId
     }
+    broadcastStream(msg) {
+            console.log('message sent on stream');
+            const stream= this._communicationChannel.streamBroadcast()
+            const msgString= JSON.stringify(msg)
+            const chunks= this.chunkSubstr(msgString,10000)
+            chunks.forEach(chunk => {
+                stream.write(chunk)
+            });
+
+            stream.end()
+
+            this.setLastChangesTime()
+    };
 
     receive(msg) {
 
@@ -60,5 +86,15 @@ export class Event extends EventEmitter {
         console.log('Event: ',`${name}_Event`,args);
         this._document.emit(`${name}_Event`,args);
     }
+    chunkSubstr(str, size) {
+        const numChunks = Math.ceil(str.length / size)
+        const chunks = new Array(numChunks)
+      
+        for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+          chunks[i] = str.substr(o, size)
+        }
+      
+        return chunks
+      }
 }
   

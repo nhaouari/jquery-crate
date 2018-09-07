@@ -34,6 +34,7 @@ export class InsertManager extends TextEvent {
         return pair;
     };
 
+    
     /*!
      * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
      * with the index of the element to insert, -1 if already existing.

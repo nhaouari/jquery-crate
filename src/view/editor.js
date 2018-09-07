@@ -227,7 +227,13 @@ export class EditorController extends EventEmitter {
       this.sendCharByChar(Operation.Value,index)
       return  index + Operation.Value.length
     } else {
-      this.insert(Operation.Type,Operation.Value,index)
+      let stream = false
+      if (Operation.Type=="image") {
+       stream= true 
+      } 
+     
+      this.insert(Operation.Type,Operation.Value,index,stream)
+     
       return index+1
     }
   
