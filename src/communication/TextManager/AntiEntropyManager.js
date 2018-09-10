@@ -5,21 +5,36 @@ var debug = require('debug')('CRATE:Communication:TextManager:AntiEntropyManager
 
 export class AntiEntropyManager extends TextEvent {
     constructor(opts) {
-        const name = opts.name || 'antiEntropy'
+        const name = opts.name || 'Antientropy'
         super({name,...opts})
         this._antiEntropyPeriod= opts.AntiEntropyPeriod 
         this._textManager=opts.TextManager
+
+        this.on('Request',(msg)=>{
+            this.receiveRequest(msg)
+        })
+
+        this.on('Response',(msg)=>{
+            this.receiveResponse(msg)
+        })
     }
 
     start(){
         debug('AntiEntropyManager','start','Period',this._antiEntropyPeriod,this)
-        this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
+      //  this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
+        this.startAntiEntropy(2000)
     }
 
-    receive({id, remoteVVwEJSON, localVVwE}) {
-        debug('AntiEntropyManager','Antientrpu received','Period',this._antiEntropyPeriod, id, remoteVVwEJSON, localVVwE)
+    receive(msg) {
+        this.emit(msg.type,{...msg})
+    }
+
+
+    receiveRequest({id, causality}){
        
-        const remoteVVwE = (new VVwE(null)).constructor.fromJSON(remoteVVwEJSON); // cast
+        const localVVwE=this._document.causality.clone()
+        const remoteVVwE = (new VVwE(null)).constructor.fromJSON(causality); // cast
+        debug('AntiEntropyManager','Antientrpu received','Period',this._antiEntropyPeriod, id, remoteVVwE, localVVwE)
         let toSearch = [];
 
         // #1 for each entry of our VVwE, look if the remote VVwE knows less
@@ -56,17 +71,63 @@ export class AntiEntropyManager extends TextEvent {
         };
 
         const elements = this.getElements(toSearch);
-
         // #2 send back the found elements
 
         if (elements.length != 0) {
             debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements)
-            this._communicationChannel.broadcast.sendAntiEntropyResponse(id, localVVwE, elements);         
+            this.sendAntiEntropyResponse(id, localVVwE, elements);         
            
            console.log("sendAction",'Title',this._document.name );
             this.sendAction('Title',this._document.name) ;
         }
     }
+
+    receiveResponse({elements,causalityAtReceipt}){
+        // #1 considere each message in the response independantly
+          for (let i = 0; i < elements.length; ++i) {
+            let element = elements[i]
+            // #2 only check if the message has not been received yet
+            if (!this.haveBeenReceived(element)) {
+              this._document.causality.incrementFrom(element.id)
+              this.Event('Insert', element.payload)
+            }
+          }
+          // #3 merge causality structures
+
+          this._document.causality.merge(causalityAtReceipt) 
+    }
+
+
+    /**
+   * We started Antientropy mechanism in order to retreive old missed files
+   */
+  startAntiEntropy (delta = 2000) { 
+    this._intervalAntiEntropy = setInterval(() => {
+        this.sendAntiEntropyRequest()
+    }, delta)
+  }
+
+
+  sendAntiEntropyRequest(){
+    let id = this._document._options.editingSessionID
+
+   this.sendLocalBroadcast({type:'Request',id,causality:this._document.causality})
+  }
+
+   /**
+   * Send entropy response
+   * @deprecated
+   * @param  {[type]} origin             [description]
+   * @param  {[type]} causalityAtReceipt [description]
+   * @param  {[type]} elements           [description]
+   * @return {[type]}                    [description]
+   */
+  sendAntiEntropyResponse (origin, causalityAtReceipt, elements) {
+    let id = this._document._options.editingSessionID
+    origin = origin + '-I'
+    // #1 metadata of the antientropy response
+    this.sendUnicast(origin,{type:'Response',id, causalityAtReceipt, elements})  
+  }
 
     /*!
      * \brief search a set of elements in our sequence and return them

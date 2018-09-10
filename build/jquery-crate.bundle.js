@@ -48936,6 +48936,8 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
+var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -48988,16 +48990,26 @@ var Event = exports.Event = function (_EventEmitter) {
             }
         }
     }, {
+        key: 'getPacket',
+        value: function getPacket(message) {
+            return _extends({ event: this.getType() }, message);
+        }
+    }, {
         key: 'broadcast',
         value: function broadcast(message) {
             var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
-            var msg = _extends({ type: this.getType() }, message);
+            var msg = this.getPacket(message);
             if (this.getSize(msg) >= 20000) {
                 this.broadcastStream(msg);
             } else {
                 this.sendBroadcast(msg);
             }
+        }
+    }, {
+        key: 'haveBeenReceived',
+        value: function haveBeenReceived(element) {
+            return this._communicationChannel.broadcast._shouldStopPropagation(element);
         }
     }, {
         key: 'getSize',
@@ -49026,6 +49038,21 @@ var Event = exports.Event = function (_EventEmitter) {
             stream.end();
 
             this.setLastChangesTime();
+        }
+    }, {
+        key: 'sendUnicast',
+        value: function sendUnicast(id, message) {
+            var msg = this.getPacket(message);
+            this._communicationChannel.sendUnicast(id, msg);
+        }
+    }, {
+        key: 'sendLocalBroadcast',
+        value: function sendLocalBroadcast(msg) {
+            var _this2 = this;
+
+            this._document.broadcast._source.getNeighbours().forEach(function (neighbourId) {
+                return _this2.sendUnicast(neighbourId, msg);
+            });
         }
     }, {
         key: 'receive',
@@ -49852,12 +49879,20 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     function AntiEntropyManager(opts) {
         _classCallCheck(this, AntiEntropyManager);
 
-        var name = opts.name || 'antiEntropy';
+        var name = opts.name || 'Antientropy';
 
         var _this = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ name: name }, opts)));
 
         _this._antiEntropyPeriod = opts.AntiEntropyPeriod;
         _this._textManager = opts.TextManager;
+
+        _this.on('Request', function (msg) {
+            _this.receiveRequest(msg);
+        });
+
+        _this.on('Response', function (msg) {
+            _this.receiveResponse(msg);
+        });
         return _this;
     }
 
@@ -49865,18 +49900,24 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
         key: 'start',
         value: function start() {
             debug('AntiEntropyManager', 'start', 'Period', this._antiEntropyPeriod, this);
-            this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
+            //  this._communicationChannel.broadcast.startAntiEntropy(this._antiEntropyPeriod);
+            this.startAntiEntropy(2000);
         }
     }, {
         key: 'receive',
-        value: function receive(_ref) {
+        value: function receive(msg) {
+            this.emit(msg.type, _extends({}, msg));
+        }
+    }, {
+        key: 'receiveRequest',
+        value: function receiveRequest(_ref) {
             var id = _ref.id,
-                remoteVVwEJSON = _ref.remoteVVwEJSON,
-                localVVwE = _ref.localVVwE;
+                causality = _ref.causality;
 
-            debug('AntiEntropyManager', 'Antientrpu received', 'Period', this._antiEntropyPeriod, id, remoteVVwEJSON, localVVwE);
 
-            var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(remoteVVwEJSON); // cast
+            var localVVwE = this._document.causality.clone();
+            var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(causality); // cast
+            debug('AntiEntropyManager', 'Antientrpu received', 'Period', this._antiEntropyPeriod, id, remoteVVwE, localVVwE);
             var toSearch = [];
 
             // #1 for each entry of our VVwE, look if the remote VVwE knows less
@@ -49913,16 +49954,75 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             };
 
             var elements = this.getElements(toSearch);
-
             // #2 send back the found elements
 
             if (elements.length != 0) {
                 debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
-                this._communicationChannel.broadcast.sendAntiEntropyResponse(id, localVVwE, elements);
+                this.sendAntiEntropyResponse(id, localVVwE, elements);
 
                 console.log("sendAction", 'Title', this._document.name);
                 this.sendAction('Title', this._document.name);
             }
+        }
+    }, {
+        key: 'receiveResponse',
+        value: function receiveResponse(_ref2) {
+            var elements = _ref2.elements,
+                causalityAtReceipt = _ref2.causalityAtReceipt;
+
+            // #1 considere each message in the response independantly
+            for (var i = 0; i < elements.length; ++i) {
+                var element = elements[i];
+                // #2 only check if the message has not been received yet
+                if (!this.haveBeenReceived(element)) {
+                    this._document.causality.incrementFrom(element.id);
+                    this.Event('Insert', element.payload);
+                }
+            }
+            // #3 merge causality structures
+
+            this._document.causality.merge(causalityAtReceipt);
+        }
+
+        /**
+        * We started Antientropy mechanism in order to retreive old missed files
+        */
+
+    }, {
+        key: 'startAntiEntropy',
+        value: function startAntiEntropy() {
+            var _this2 = this;
+
+            var delta = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 2000;
+
+            this._intervalAntiEntropy = setInterval(function () {
+                _this2.sendAntiEntropyRequest();
+            }, delta);
+        }
+    }, {
+        key: 'sendAntiEntropyRequest',
+        value: function sendAntiEntropyRequest() {
+            var id = this._document._options.editingSessionID;
+
+            this.sendLocalBroadcast({ type: 'Request', id: id, causality: this._document.causality });
+        }
+
+        /**
+        * Send entropy response
+        * @deprecated
+        * @param  {[type]} origin             [description]
+        * @param  {[type]} causalityAtReceipt [description]
+        * @param  {[type]} elements           [description]
+        * @return {[type]}                    [description]
+        */
+
+    }, {
+        key: 'sendAntiEntropyResponse',
+        value: function sendAntiEntropyResponse(origin, causalityAtReceipt, elements) {
+            var id = this._document._options.editingSessionID;
+            origin = origin + '-I';
+            // #1 metadata of the antientropy response
+            this.sendUnicast(origin, { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
         }
 
         /*!
@@ -50588,12 +50688,17 @@ var doc = function (_EventEmitter) {
 
       this._behaviors_comm.onBroadcast(function (id, message) {
         debug('document', '._behaviors_comm', 'Message received', message, 'from', id);
-        _this2.emit(message.type, message);
+        _this2.emit(message.event, message);
       });
 
       this._data_comm.onBroadcast(function (id, message) {
         debug('document', '._data_comm', 'Message received', message, 'from', id);
-        _this2.emit(message.type, message);
+        _this2.emit(message.event, message);
+      });
+
+      this._data_comm.onUnicast(function (id, message) {
+        debug('document', '._data_comm unicast', 'Message received', message, 'from', id);
+        _this2.emit(message.event, message);
       });
 
       this._data_comm.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {

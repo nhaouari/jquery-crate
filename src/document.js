@@ -100,14 +100,19 @@ export default class doc extends EventEmitter {
 
     this._behaviors_comm.onBroadcast((id, message) => {
       debug('document', '._behaviors_comm', 'Message received', message, 'from', id)
-      this.emit(message.type, message)
+      this.emit(message.event, message)
       
     })
 
     this._data_comm.onBroadcast((id, message) => {
       debug('document', '._data_comm', 'Message received', message, 'from', id)
-      this.emit(message.type, message)
+      this.emit(message.event, message)
 
+    })
+
+    this._data_comm.onUnicast((id, message) => {
+      debug('document', '._data_comm unicast', 'Message received', message, 'from', id)
+      this.emit(message.event, message)
     })
 
     this._data_comm.broadcast.on('antiEntropy', (id, remoteVVwE, localVVwE) => {
@@ -129,7 +134,6 @@ export default class doc extends EventEmitter {
         content = ''
         debug('document', '._data_comm', 'Message received', packet.pair.elem, 'from', id)
         this.emit(packet.type, packet)
-       
       })    
      
     })

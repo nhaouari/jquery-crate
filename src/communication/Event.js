@@ -1,4 +1,5 @@
 import {EventEmitter} from "events"
+import { Foglet } from 'foglet-core';
 var debug = require('debug')('crate:Event')
 export class Event extends EventEmitter {
     constructor(opts) {
@@ -35,8 +36,11 @@ export class Event extends EventEmitter {
         }
     }
 
+    getPacket(message){
+        return {event: this.getType(),...message}
+    }
     broadcast(message,lastSentMsgId=null){
-    const msg = {type: this.getType(),...message}
+    const msg = this.getPacket(message)
     if(this.getSize(msg)>=20000) {
         this.broadcastStream(msg)
     } else {
@@ -44,6 +48,9 @@ export class Event extends EventEmitter {
     }
     }
 
+    haveBeenReceived(element){
+       return (this._communicationChannel.broadcast._shouldStopPropagation(element))
+    }
     getSize(msg) {
         const string = JSON.stringify(msg)
         return string.length
@@ -53,6 +60,7 @@ export class Event extends EventEmitter {
     const messageId=  this._communicationChannel.sendBroadcast(msg)  
     return messageId
     }
+
     broadcastStream(msg) {
             console.log('message sent on stream');
             const stream= this._communicationChannel.streamBroadcast()
@@ -67,8 +75,16 @@ export class Event extends EventEmitter {
             this.setLastChangesTime()
     };
 
-    receive(msg) {
+    sendUnicast(id,message){
+        const msg = this.getPacket(message)
+        this._communicationChannel.sendUnicast(id,msg) 
+    }
 
+    sendLocalBroadcast(msg){ 
+        this._document.broadcast._source.getNeighbours().forEach(neighbourId =>this.sendUnicast(neighbourId, msg)) 
+    }
+
+    receive(msg) {
         
         console.log("receive",msg)
     }
