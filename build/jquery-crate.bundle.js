@@ -49027,23 +49027,47 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'broadcastStream',
         value: function broadcastStream(msg) {
-            console.log('message sent on stream');
+            debug('message sent on stream');
             var stream = this._communicationChannel.streamBroadcast();
+            this.sendStream(stream, msg);
+            this.setLastChangesTime();
+        }
+    }, {
+        key: 'unicast',
+        value: function unicast(id, message) {
+            var msg = this.getPacket(message);
+
+            if (this.getSize(msg) >= 20000) {
+                this.unicastStream(id, msg);
+            } else {
+                this.sendUnicast(id, msg);
+            }
+        }
+    }, {
+        key: 'unicastStream',
+        value: function unicastStream(id, msg) {
+            debug('message sent on stream');
+            var stream = this._communicationChannel.streamUnicast(id);
+            this.sendStream(stream, msg);
+            this.setLastChangesTime();
+        }
+    }, {
+        key: 'sendUnicast',
+        value: function sendUnicast(id, msg) {
+            this._communicationChannel.sendUnicast(id, msg);
+        }
+    }, {
+        key: 'sendStream',
+        value: function sendStream(stream, msg) {
+            var maxSize = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 10000;
+
             var msgString = JSON.stringify(msg);
-            var chunks = this.chunkSubstr(msgString, 10000);
+            var chunks = this.chunkSubstr(msgString, maxSize);
             chunks.forEach(function (chunk) {
                 stream.write(chunk);
             });
 
             stream.end();
-
-            this.setLastChangesTime();
-        }
-    }, {
-        key: 'sendUnicast',
-        value: function sendUnicast(id, message) {
-            var msg = this.getPacket(message);
-            this._communicationChannel.sendUnicast(id, msg);
         }
     }, {
         key: 'sendLocalBroadcast',
@@ -49051,14 +49075,14 @@ var Event = exports.Event = function (_EventEmitter) {
             var _this2 = this;
 
             this._document.broadcast._source.getNeighbours().forEach(function (neighbourId) {
-                return _this2.sendUnicast(neighbourId, msg);
+                return _this2.unicast(neighbourId, msg);
             });
         }
     }, {
         key: 'receive',
         value: function receive(msg) {
 
-            console.log("receive", msg);
+            debug("default receive", msg);
         }
     }, {
         key: 'action',
@@ -49074,7 +49098,7 @@ var Event = exports.Event = function (_EventEmitter) {
         key: 'Event',
         value: function Event(name, args) {
 
-            console.log('Event: ', name + '_Event', args);
+            debug('Event: ', name + '_Event', args);
             this._document.emit(name + '_Event', args);
         }
     }, {
@@ -49967,20 +49991,24 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     }, {
         key: 'receiveResponse',
         value: function receiveResponse(_ref2) {
+            var _this2 = this;
+
             var elements = _ref2.elements,
                 causalityAtReceipt = _ref2.causalityAtReceipt;
 
-            // #1 considere each message in the response independantly
-            for (var i = 0; i < elements.length; ++i) {
-                var element = elements[i];
+            // #1 considere each message in the response independantly     
+            var elems = [];
+            elements.forEach(function (element) {
                 // #2 only check if the message has not been received yet
-                if (!this.haveBeenReceived(element)) {
-                    this._document.causality.incrementFrom(element.id);
-                    this.Event('Insert', element.payload);
+                if (!_this2.haveBeenReceived(element)) {
+                    _this2._document.causality.incrementFrom(element.id);
+                    elems.push(element.payload);
                 }
-            }
-            // #3 merge causality structures
+            });
 
+            this.Event('Insert', { pairs: elems });
+
+            // #3 merge causality structures
             this._document.causality.merge(causalityAtReceipt);
         }
 
@@ -49991,19 +50019,18 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     }, {
         key: 'startAntiEntropy',
         value: function startAntiEntropy() {
-            var _this2 = this;
+            var _this3 = this;
 
             var delta = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 2000;
 
             this._intervalAntiEntropy = setInterval(function () {
-                _this2.sendAntiEntropyRequest();
+                _this3.sendAntiEntropyRequest();
             }, delta);
         }
     }, {
         key: 'sendAntiEntropyRequest',
         value: function sendAntiEntropyRequest() {
             var id = this._document._options.editingSessionID;
-
             this.sendLocalBroadcast({ type: 'Request', id: id, causality: this._document.causality });
         }
 
@@ -50022,7 +50049,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             var id = this._document._options.editingSessionID;
             origin = origin + '-I';
             // #1 metadata of the antientropy response
-            this.sendUnicast(origin, { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
+            this.unicast(origin, { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
         }
 
         /*!
@@ -50141,6 +50168,8 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
         _this._lastSentId = null;
         _this._textManager = opts.TextManager;
         _this.action = _this.insert;
+
+        _this._pairs = [];
         return _this;
     }
 
@@ -50156,20 +50185,27 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
     _createClass(InsertManager, [{
         key: 'insert',
         value: function insert(_ref) {
+            var _this2 = this;
+
             var packet = _ref.packet,
                 position = _ref.position;
 
+            clearTimeout(this._timeout);
             var pair = this._sequence.insert(packet, position);
             debug('local Insert', packet, ' Index ', position, 'pair', pair);
 
-            if (this.isItConvertibleToJSON(pair)) {
-                this._lastSentId = this.broadcast({
-                    id: this._document.uid,
-                    pair: pair
-                }, this._lastSentId);
-                this.setLastChangesTime();
-            }
-            return pair;
+            this._pairs.push({
+                id: this._document.uid,
+                pair: pair
+            });
+
+            this._timeout = setTimeout(function () {
+                if (_this2.isItConvertibleToJSON(pair)) {
+                    _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
+                    _this2.setLastChangesTime();
+                }
+                _this2._pairs = [];
+            }, 50);
         }
     }, {
         key: 'receive',
@@ -50182,25 +50218,31 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
          * \param origin the origin id of the insert operation
          */
         value: function receive(_ref2) {
-            var id = _ref2.id,
-                pair = _ref2.pair;
+            var _this3 = this;
 
-            var index = this._sequence.applyInsert(pair, false);
-            debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
+            var pairs = _ref2.pairs;
 
-            if (index >= 0) {
-                this.emit('remoteInsert', pair.elem, index);
-                this.setLastChangesTime();
-                var range = {
-                    index: index,
-                    length: 0
-                };
-                var msg = {
-                    range: range,
-                    id: id
-                };
-                this.Event('Caret', msg);
-            };
+            pairs.forEach(function (elem) {
+                var pair = elem.pair;
+                var id = elem.id;
+
+                var index = _this3._sequence.applyInsert(pair, false);
+                debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
+
+                if (index >= 0) {
+                    _this3.emit('remoteInsert', pair.elem, index);
+                    _this3.setLastChangesTime();
+                    var range = {
+                        index: index,
+                        length: 0
+                    };
+                    var msg = {
+                        range: range,
+                        id: id
+                    };
+                    _this3.sendCaret(msg, 50);
+                }
+            });
         }
 
         /**
@@ -50218,6 +50260,16 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                 console.error('The object cannot be convert to json ', e, insertMsg);
                 return false;
             }
+        }
+    }, {
+        key: 'sendCaret',
+        value: function sendCaret(msg, timeout) {
+            var _this4 = this;
+
+            clearTimeout(this._timeout);
+            this._timeout = setTimeout(function () {
+                _this4.Event('Caret', msg);
+            }, timeout);
         }
     }]);
 
@@ -50720,8 +50772,22 @@ var doc = function (_EventEmitter) {
         message.on('end', function () {
           var packet = JSON.parse(content);
           content = '';
-          debug('document', '._data_comm', 'Message received', packet.pair.elem, 'from', id);
-          _this2.emit(packet.type, packet);
+          debug('document', '._data_comm', 'Message received', packet, 'from', id);
+          _this2.emit(packet.event, packet);
+        });
+      });
+
+      var content2 = '';
+      this._data_comm.onStreamUnicast(function (id, message) {
+        message.on('data', function (data) {
+          content2 += data;
+        });
+        message.on('end', function () {
+          var packet = JSON.parse(content2);
+          content2 = '';
+          console.log('data received');
+          debug('document', '._data_comm', 'Message received', packet, 'from', id);
+          _this2.emit(packet.event, packet);
         });
       });
     }
@@ -52316,7 +52382,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         }
       }
       var Type = this.getTypeOfContent(Value);
-      console.log('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type });
+      debug('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type });
       return { Name: Name, Value: Value, Attributes: Attributes, Type: Type };
     }
   }, {

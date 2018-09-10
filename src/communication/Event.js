@@ -39,6 +39,7 @@ export class Event extends EventEmitter {
     getPacket(message){
         return {event: this.getType(),...message}
     }
+
     broadcast(message,lastSentMsgId=null){
     const msg = this.getPacket(message)
     if(this.getSize(msg)>=20000) {
@@ -62,31 +63,51 @@ export class Event extends EventEmitter {
     }
 
     broadcastStream(msg) {
-            console.log('message sent on stream');
+        debug('message sent on stream');
             const stream= this._communicationChannel.streamBroadcast()
-            const msgString= JSON.stringify(msg)
-            const chunks= this.chunkSubstr(msgString,10000)
-            chunks.forEach(chunk => {
-                stream.write(chunk)
-            });
-
-            stream.end()
-
+            this.sendStream(stream,msg)
             this.setLastChangesTime()
     };
 
-    sendUnicast(id,message){
+    unicast(id,message){
         const msg = this.getPacket(message)
+
+        if(this.getSize(msg)>=20000) {
+            this.unicastStream(id,msg)
+        } else {
+            this.sendUnicast(id,msg)
+        }
+       
+    }
+
+    unicastStream(id,msg){
+        debug('message sent on stream');
+        const stream= this._communicationChannel.streamUnicast(id)
+        this.sendStream(stream,msg)
+        this.setLastChangesTime()
+    }
+
+    sendUnicast(id,msg){
         this._communicationChannel.sendUnicast(id,msg) 
     }
 
+    sendStream(stream,msg,maxSize=10000) {
+        const msgString= JSON.stringify(msg)
+        const chunks= this.chunkSubstr(msgString,maxSize)
+        chunks.forEach(chunk => {
+            stream.write(chunk)
+        });
+
+        stream.end()
+    }
+
     sendLocalBroadcast(msg){ 
-        this._document.broadcast._source.getNeighbours().forEach(neighbourId =>this.sendUnicast(neighbourId, msg)) 
+        this._document.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
     }
 
     receive(msg) {
         
-        console.log("receive",msg)
+        debug("default receive",msg)
     }
 
     action(msg) {
@@ -99,7 +120,7 @@ export class Event extends EventEmitter {
 
     Event(name,args) {
 
-        console.log('Event: ',`${name}_Event`,args);
+        debug('Event: ',`${name}_Event`,args);
         this._document.emit(`${name}_Event`,args);
     }
     chunkSubstr(str, size) {

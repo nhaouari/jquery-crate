@@ -354,7 +354,7 @@ export class EditorController extends EventEmitter {
       }
     }
     const Type= this.getTypeOfContent(Value)
-    console.log('extractOperationInformation',{Name,Value,Attributes,Type})
+    debug('extractOperationInformation',{Name,Value,Attributes,Type})
     return {Name,Value,Attributes,Type}
   }
 

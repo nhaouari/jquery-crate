@@ -132,8 +132,21 @@ export default class doc extends EventEmitter {
       message.on('end', () => {
         const packet= JSON.parse(content)  
         content = ''
-        debug('document', '._data_comm', 'Message received', packet.pair.elem, 'from', id)
-        this.emit(packet.type, packet)
+        debug('document', '._data_comm', 'Message received', packet, 'from', id)
+        this.emit(packet.event, packet)
+      })    
+     
+    })
+
+    let content2=''
+    this._data_comm.onStreamUnicast((id, message) => {
+      message.on('data', data => { content2 += data;})
+      message.on('end', () => {
+        const packet= JSON.parse(content2)  
+        content2 = ''
+        console.log('data received');
+        debug('document', '._data_comm', 'Message received', packet, 'from', id)
+        this.emit(packet.event, packet)
       })    
      
     })

@@ -4,12 +4,13 @@ import {TextEvent} from './TextEvent'
 var debug = require('debug')('CRATE:Communication:TextManager:InsertManager')
 export class InsertManager extends TextEvent {
     constructor(opts) {
-        
         const name = opts.name || 'Insert'
         super({name,...opts})
         this._lastSentId = null
         this._textManager=opts.TextManager
-        this.action=this.insert        
+        this.action=this.insert    
+       
+        this._pairs=[]
     }
 
 
@@ -21,17 +22,22 @@ export class InsertManager extends TextEvent {
      * \return the identifier freshly allocated
      */
     insert({packet, position}) {
+        clearTimeout(this._timeout)
         var pair = this._sequence.insert(packet, position)
         debug('local Insert', packet, ' Index ', position, 'pair',pair)
-        
-        if (this.isItConvertibleToJSON(pair)) {
-            this._lastSentId = this.broadcast({
-                id: this._document.uid,
-                pair
-            }, this._lastSentId)
-            this.setLastChangesTime()
-        }
-        return pair;
+
+        this._pairs.push({
+                    id: this._document.uid,
+                    pair
+                })
+
+        this._timeout=setTimeout(()=>{ 
+            if (this.isItConvertibleToJSON(pair)) {
+                this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)
+                this.setLastChangesTime()
+            }
+            this._pairs=[]
+        },50)
     };
 
     
@@ -41,7 +47,11 @@ export class InsertManager extends TextEvent {
      * \param ei the result of the remote insert operation
      * \param origin the origin id of the insert operation
      */
-    receive( {id,pair} ) {
+    receive( {pairs} ) {
+        pairs.forEach(elem => {
+         const pair= elem.pair
+         const id = elem.id
+
         const index = this._sequence.applyInsert(pair, false);
         debug('remoteInsert','pair', pair, ' sequence Index ', index)
        
@@ -56,8 +66,10 @@ export class InsertManager extends TextEvent {
                 range,
                 id
             }
-            this.Event('Caret', msg)
-        };
+            this.sendCaret(msg,50);
+          
+        }
+    });
     }
 
     /**
@@ -73,5 +85,12 @@ export class InsertManager extends TextEvent {
             return false
         }
     }
+
+    sendCaret(msg,timeout){
+        clearTimeout(this._timeout)
+        this._timeout = setTimeout(()=>{ 
+            this.Event('Caret', msg)
+        }, timeout);
+      }
 
 }

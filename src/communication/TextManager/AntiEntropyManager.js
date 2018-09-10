@@ -83,18 +83,20 @@ export class AntiEntropyManager extends TextEvent {
     }
 
     receiveResponse({elements,causalityAtReceipt}){
-        // #1 considere each message in the response independantly
-          for (let i = 0; i < elements.length; ++i) {
-            let element = elements[i]
+        // #1 considere each message in the response independantly     
+        let elems=[]
+        elements.forEach((element)=> {
             // #2 only check if the message has not been received yet
             if (!this.haveBeenReceived(element)) {
               this._document.causality.incrementFrom(element.id)
-              this.Event('Insert', element.payload)
+              elems.push(element.payload)
             }
-          }
+          })
+        
+        this.Event('Insert', {pairs:elems})
+ 
           // #3 merge causality structures
-
-          this._document.causality.merge(causalityAtReceipt) 
+        this._document.causality.merge(causalityAtReceipt) 
     }
 
 
@@ -110,8 +112,7 @@ export class AntiEntropyManager extends TextEvent {
 
   sendAntiEntropyRequest(){
     let id = this._document._options.editingSessionID
-
-   this.sendLocalBroadcast({type:'Request',id,causality:this._document.causality})
+    this.sendLocalBroadcast({type:'Request',id,causality:this._document.causality})
   }
 
    /**
@@ -126,7 +127,7 @@ export class AntiEntropyManager extends TextEvent {
     let id = this._document._options.editingSessionID
     origin = origin + '-I'
     // #1 metadata of the antientropy response
-    this.sendUnicast(origin,{type:'Response',id, causalityAtReceipt, elements})  
+    this.unicast(origin,{type:'Response',id, causalityAtReceipt, elements})  
   }
 
     /*!
