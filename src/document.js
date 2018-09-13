@@ -69,7 +69,7 @@ export default class doc extends EventEmitter {
     this.sequence = new LSEQTree(options.editingSessionID);
     // #1B if it is imported from an existing object, initialize it with these
 
-    this.loadCommunicationModules()
+   
     // #2 grant fast access
 
     this.broadcast = this._data_comm.broadcast;
@@ -78,7 +78,8 @@ export default class doc extends EventEmitter {
 
     this.causality = this.broadcast._causality;
     this.signalingOptions = options.signalingOptions;
-
+    
+    this.loadCommunicationModules()
 
     if (options.importFromJSON) {
       this.loadFromJSON(options.importFromJSON);
@@ -185,7 +186,7 @@ export default class doc extends EventEmitter {
     const defaultOpts = {
       document: this,
       editor: this._view._editor,
-      PingPeriod: 5000,
+      PingPeriod: 5000000,
       AntiEntropyPeriod: 5000
     }
     this._communication = new Communication(defaultOpts)
@@ -205,7 +206,7 @@ export default class doc extends EventEmitter {
     const document = {
       date: timeNow,
       title: title,
-      delta: this.viewEditor.editor.delta,
+      delta: this._view._editor.viewEditor.editor.delta,
       sequence: this.sequence,
       causality: this.causality,
       name: this.name,

@@ -49903,7 +49903,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     function AntiEntropyManager(opts) {
         _classCallCheck(this, AntiEntropyManager);
 
-        var name = opts.name || 'Antientropy';
+        var name = opts.name || 'Anti-Entropy';
 
         var _this = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ name: name }, opts)));
 
@@ -49941,13 +49941,13 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
 
             var localVVwE = this._document.causality.clone();
             var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(causality); // cast
-            debug('AntiEntropyManager', 'Antientrpu received', 'Period', this._antiEntropyPeriod, id, remoteVVwE, localVVwE);
+            debug('receiveRequest', { antiEntropyPeriod: this._antiEntropyPeriod, id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE });
             var toSearch = [];
 
             // #1 for each entry of our VVwE, look if the remote VVwE knows less
             for (var i = 0; i < localVVwE.vector.arr.length; ++i) {
                 var localEntry = localVVwE.vector.arr[i];
-                var index = remoteVVwE.vector.indexOf(localVVwE.vector.arr[i]);
+                var index = remoteVVwE.vector.indexOf(localEntry);
                 var start = 1;
                 // #A check if the entry exists in the remote vvwe
                 if (index >= 0) {
@@ -49976,26 +49976,94 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
                     };
                 };
             };
+            if (toSearch.length > 0) {
+                var elements = this.getElements(toSearch);
+                // #2 send back the found elements
 
-            var elements = this.getElements(toSearch);
-            // #2 send back the found elements
+                if (elements.length != 0) {
+                    debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
+                    this.sendAntiEntropyResponse(id, localVVwE, elements);
 
-            if (elements.length != 0) {
-                debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
-                this.sendAntiEntropyResponse(id, localVVwE, elements);
-
-                console.log("sendAction", 'Title', this._document.name);
-                this.sendAction('Title', this._document.name);
+                    console.log("sendAction", 'Title', this._document.name);
+                    this.sendAction('Title', this._document.name);
+                }
             }
+        }
+        /*!
+           * \brief search a set of elements in our sequence and return them
+           * \param toSearch the array of elements {_e, _c} to search
+           * \returns an array of nodes
+           */
+
+    }, {
+        key: 'getElements',
+        value: function getElements(toSearch) {
+            debug('getElements ', { toSearch: toSearch });
+
+            var result = [];
+            var sequenceNodes = this.getSequenceNodes();
+
+            for (var i = 0; i < toSearch.length; i++) {
+                var _toSearch$i = toSearch[i],
+                    _e = _toSearch$i._e,
+                    _c = _toSearch$i._c;
+
+                var node = this.getSequenceNode({ id: _e, counter: _c, sequenceNodes: sequenceNodes });
+
+                if (node) {
+                    result.push(this.MAEInsertOperation({
+                        elem: node.e,
+                        id: node,
+                        antientropy: true // this to prevent the caret movement in the case of anti-entropy
+                    }, node.t.s));
+                }
+            }
+
+            debug('getElements result ', { result: result.reverse() });
+            return result.reverse();
+        }
+    }, {
+        key: 'getSequenceNodes',
+        value: function getSequenceNodes() {
+            var sequenceNodes = [];
+
+            for (var i = 0; i < this._sequence.root.subCounter; i++) {
+                var tempNode = this._sequence._get(i);
+                while (tempNode.children.length > 0) {
+                    tempNode = tempNode.children[0];
+                };
+
+                sequenceNodes.push(tempNode);
+            }
+            debug('getSequenceNodes result ', { sequenceNodes: sequenceNodes });
+            return sequenceNodes;
+        }
+    }, {
+        key: 'getSequenceNode',
+        value: function getSequenceNode(_ref2) {
+            var id = _ref2.id,
+                counter = _ref2.counter,
+                sequenceNodes = _ref2.sequenceNodes;
+
+            for (var j = 0; j < sequenceNodes.length; j++) {
+                var tempNode = sequenceNodes[j];
+                if (tempNode.t.s === id && tempNode.t.c === counter) {
+                    return tempNode;
+                }
+            }
+            debug('getSequenceNode not found  ', { id: id, counter: counter, sequenceNodes: sequenceNodes });
+            return false;
         }
     }, {
         key: 'receiveResponse',
-        value: function receiveResponse(_ref2) {
+        value: function receiveResponse(_ref3) {
             var _this2 = this;
 
-            var elements = _ref2.elements,
-                causalityAtReceipt = _ref2.causalityAtReceipt;
+            var elements = _ref3.elements,
+                causalityAtReceipt = _ref3.causalityAtReceipt;
 
+
+            debug('receiveResponse', { elements: elements, causalityAtReceipt: causalityAtReceipt });
             // #1 considere each message in the response independantly     
             var elems = [];
             elements.forEach(function (element) {
@@ -50032,6 +50100,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
         value: function sendAntiEntropyRequest() {
             var id = this._document._options.editingSessionID;
             this.sendLocalBroadcast({ type: 'Request', id: id, causality: this._document.causality });
+            debug('sendAntiEntropyRequest', { type: 'Request', id: id, causality: this._document.causality });
         }
 
         /**
@@ -50050,59 +50119,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             origin = origin + '-I';
             // #1 metadata of the antientropy response
             this.unicast(origin, { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
-        }
-
-        /*!
-         * \brief search a set of elements in our sequence and return them
-         * \param toSearch the array of elements {_e, _c} to search
-         * \returns an array of nodes
-         */
-
-    }, {
-        key: 'getElements',
-        value: function getElements(toSearch) {
-            var result = [],
-                found = void 0,
-                node = void 0,
-                tempNode = void 0,
-                i = this._sequence.length,
-                j = 0;
-            // (TODO) improve research by exploiting the fact that if a node is
-            // missing, all its children are missing too.
-            // (TODO) improve the returned representation: either a tree to factorize
-            // common parts of the structure or identifiers to get the polylog size
-            // (TODO) improve the search by using the fact that toSearch is a sorted
-            // array, possibly restructure this argument to be even more efficient
-
-            while (toSearch.length > 0 && i <= this._sequence.length && i > 0) {
-                node = this._sequence._get(i);
-                tempNode = node;
-
-                while (tempNode.children.length > 0) {
-                    tempNode = tempNode.children[0];
-                };
-                j = 0;
-                found = false;
-                while (j < toSearch.length && !found) {
-                    if (tempNode.t.s === toSearch[j]._e && tempNode.t.c === toSearch[j]._c) {
-
-                        found = true;
-
-                        result.push(this.MAEInsertOperation({
-                            elem: tempNode.e,
-                            id: node,
-                            antientropy: true // this to prevent the caret movement in the case of anti-entropy
-                        }, tempNode.t.s.split("-")[0]));
-
-                        toSearch.splice(j, 1);
-                    } else {
-                        ++j;
-                    };
-                };
-                --i;
-            };
-
-            return result.reverse();
+            debug('sendAntiEntropyResponse', { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
         }
     }, {
         key: 'MAEInsertOperation',
@@ -50191,7 +50208,11 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                 position = _ref.position;
 
             clearTimeout(this._timeout);
+
             var pair = this._sequence.insert(packet, position);
+
+            this._document.causality.incrementFrom(this.getLSEQID({ pair: pair }));
+
             debug('local Insert', packet, ' Index ', position, 'pair', pair);
 
             this._pairs.push({
@@ -50205,7 +50226,7 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                     _this2.setLastChangesTime();
                 }
                 _this2._pairs = [];
-            }, 50);
+            }, 10);
         }
     }, {
         key: 'receive',
@@ -50240,7 +50261,7 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                         range: range,
                         id: id
                     };
-                    _this3.sendCaret(msg, 50);
+                    _this3.sendCaret(msg, 10);
                 }
             });
         }
@@ -50320,6 +50341,7 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
         _this._lastSentId = null;
         _this._textManager = opts.TextManager;
         _this.action = _this.remove;
+        _this._pairs = [];
         return _this;
     }
 
@@ -50334,12 +50356,23 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
     _createClass(RemoveManager, [{
         key: 'remove',
         value: function remove(index) {
+            var _this2 = this;
+
+            clearTimeout(this._timeout);
             var reference = this._sequence.remove(index);
             this._sequence._c += 1;
-            this._lastSentId = this.broadcast({
+
+            this._document.causality.incrementFrom(this.getLSEQID({ id: reference }));
+
+            this._pairs.push({
                 id: this._document.uid,
                 reference: reference
-            }, this._lastSentId);
+            });
+
+            this._timeout = setTimeout(function () {
+                _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
+                _this2._pairs = [];
+            }, 10);
 
             //TODO:  this.setLastChangesTime()
 
@@ -50356,26 +50389,32 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
          * \param origin the origin id of the removal
          */
         value: function receive(_ref) {
-            var id = _ref.id,
-                reference = _ref.reference;
+            var _this3 = this;
+
+            var pairs = _ref.pairs;
 
 
-            var index = this._sequence.applyRemove(reference);
-            this.emit('remoteRemove', index);
+            pairs.forEach(function (elem) {
+                var reference = elem.reference;
+                var id = elem.id;
 
-            if (index >= 0) {
-                var range = {
-                    index: index - 1,
-                    length: 0
+                var index = _this3._sequence.applyRemove(reference);
+                _this3.emit('remoteRemove', index);
+
+                if (index >= 0) {
+                    var range = {
+                        index: index - 1,
+                        length: 0
+                    };
+                    var msg = {
+                        range: range,
+                        id: id
+                    };
+                    _this3.Event('Caret', msg);
                 };
-                var msg = {
-                    range: range,
-                    id: id
-                };
-                this.Event('Caret', msg);
-            };
 
-            this.setLastChangesTime();
+                _this3.setLastChangesTime();
+            });
         }
     }]);
 
@@ -50399,6 +50438,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.TextEvent = undefined;
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 var _Event2 = __webpack_require__(/*! ./../Event */ "./src/communication/Event.js");
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -50421,6 +50462,21 @@ var TextEvent = exports.TextEvent = function (_Event) {
         _this._sequence = _this._document.sequence;
         return _this;
     }
+
+    _createClass(TextEvent, [{
+        key: 'getLSEQID',
+        value: function getLSEQID(_ref) {
+            var pair = _ref.pair,
+                id = _ref.id;
+
+            var LSEQID = id;
+            if (pair) LSEQID = pair.id;
+
+            var idForCausal = { e: LSEQID._s[LSEQID._s.length - 1], c: LSEQID._c[LSEQID._c.length - 1] };
+
+            return idForCausal;
+        }
+    }]);
 
     return TextEvent;
 }(_Event2.Event);
@@ -50476,7 +50532,7 @@ var TextManager = exports.TextManager = function (_TextEvent) {
         _this._removeManager = new _RemoveManager.RemoveManager(_extends({ TextManager: _this }, opts));
         _this._titleManager = new _TitleManager.TitleManager(_extends({ TextManager: _this }, opts));
         _this._antiEntropyManager = new _AntiEntropyManager.AntiEntropyManager(_extends({ TextManager: _this }, opts));
-        _this._antiEntropyManager.start();
+        _this._antiEntropyManager.sendAntiEntropyRequest();
 
         _this.on('sendChangeTitle', function () {
             _this._titleManager.sendChangeTitle();
@@ -50696,7 +50752,7 @@ var doc = function (_EventEmitter) {
                 this.sequence = new _LSEQTree2.default(options.editingSessionID);
                 // #1B if it is imported from an existing object, initialize it with these
 
-                this.loadCommunicationModules();
+
                 // #2 grant fast access
 
                 this.broadcast = this._data_comm.broadcast;
@@ -50705,6 +50761,8 @@ var doc = function (_EventEmitter) {
 
                 this.causality = this.broadcast._causality;
                 this.signalingOptions = options.signalingOptions;
+
+                this.loadCommunicationModules();
 
                 if (options.importFromJSON) {
                   this.loadFromJSON(options.importFromJSON);
@@ -50827,7 +50885,7 @@ var doc = function (_EventEmitter) {
       var defaultOpts = {
         document: this,
         editor: this._view._editor,
-        PingPeriod: 5000,
+        PingPeriod: 5000000,
         AntiEntropyPeriod: 5000
       };
       this._communication = new _Communication.Communication(defaultOpts);
@@ -50850,7 +50908,7 @@ var doc = function (_EventEmitter) {
         var document = {
           date: timeNow,
           title: title,
-          delta: this.viewEditor.editor.delta,
+          delta: this._view._editor.viewEditor.editor.delta,
           sequence: this.sequence,
           causality: this.causality,
           name: this.name,

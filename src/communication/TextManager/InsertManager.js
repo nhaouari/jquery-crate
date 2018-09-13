@@ -23,7 +23,12 @@ export class InsertManager extends TextEvent {
      */
     insert({packet, position}) {
         clearTimeout(this._timeout)
+       
         var pair = this._sequence.insert(packet, position)
+        
+        this._document.causality.incrementFrom(this.getLSEQID({pair}))
+
+ 
         debug('local Insert', packet, ' Index ', position, 'pair',pair)
 
         this._pairs.push({
@@ -37,7 +42,7 @@ export class InsertManager extends TextEvent {
                 this.setLastChangesTime()
             }
             this._pairs=[]
-        },50)
+        },10)
     };
 
     
@@ -66,7 +71,7 @@ export class InsertManager extends TextEvent {
                 range,
                 id
             }
-            this.sendCaret(msg,50);
+            this.sendCaret(msg,10);
           
         }
     });

@@ -5,7 +5,7 @@ var debug = require('debug')('CRATE:Communication:TextManager:AntiEntropyManager
 
 export class AntiEntropyManager extends TextEvent {
     constructor(opts) {
-        const name = opts.name || 'Antientropy'
+        const name = opts.name || 'Anti-Entropy'
         super({name,...opts})
         this._antiEntropyPeriod= opts.AntiEntropyPeriod 
         this._textManager=opts.TextManager
@@ -34,13 +34,13 @@ export class AntiEntropyManager extends TextEvent {
        
         const localVVwE=this._document.causality.clone()
         const remoteVVwE = (new VVwE(null)).constructor.fromJSON(causality); // cast
-        debug('AntiEntropyManager','Antientrpu received','Period',this._antiEntropyPeriod, id, remoteVVwE, localVVwE)
+        debug('receiveRequest',{antiEntropyPeriod:this._antiEntropyPeriod, id, remoteVVwE, localVVwE})
         let toSearch = [];
 
         // #1 for each entry of our VVwE, look if the remote VVwE knows less
         for (let i = 0; i < localVVwE.vector.arr.length; ++i) {
             const localEntry = localVVwE.vector.arr[i];
-            const index = remoteVVwE.vector.indexOf(localVVwE.vector.arr[i]);
+            const index = remoteVVwE.vector.indexOf(localEntry);
             let start = 1;
             // #A check if the entry exists in the remote vvwe
             if (index >= 0) {
@@ -69,7 +69,7 @@ export class AntiEntropyManager extends TextEvent {
                 };
             };
         };
-
+        if(toSearch.length>0){
         const elements = this.getElements(toSearch);
         // #2 send back the found elements
 
@@ -81,8 +81,66 @@ export class AntiEntropyManager extends TextEvent {
             this.sendAction('Title',this._document.name) ;
         }
     }
+    }
+  /*!
+     * \brief search a set of elements in our sequence and return them
+     * \param toSearch the array of elements {_e, _c} to search
+     * \returns an array of nodes
+     */
+    getElements(toSearch) {
+        debug('getElements ',{toSearch})
+    
+        let result = []
+        const sequenceNodes= this.getSequenceNodes()
 
+        for (let i = 0; i < toSearch.length; i++) {
+            const {_e,_c} = toSearch[i];   
+            let node=this.getSequenceNode({id:_e,counter:_c,sequenceNodes})
+
+            if (node){
+                result.push(this.MAEInsertOperation({
+                    elem: node.e,
+                    id: node,
+                    antientropy: true // this to prevent the caret movement in the case of anti-entropy
+                }, node.t.s));
+            }
+        }
+        
+            debug('getElements result ',{result: result.reverse()})
+         return  result.reverse();
+     };
+ 
+    getSequenceNodes(){
+        let sequenceNodes = []
+
+        for (let i = 0; i < this._sequence.root.subCounter; i++) {
+            let tempNode = this._sequence._get(i);
+            while (tempNode.children.length > 0) {
+                tempNode = tempNode.children[0];
+            };
+
+            sequenceNodes.push(tempNode)    
+        }
+        debug('getSequenceNodes result ',{sequenceNodes})
+    return sequenceNodes
+    }
+
+    getSequenceNode({id,counter,sequenceNodes}){
+        for (let j = 0; j < sequenceNodes.length; j++) {
+            const tempNode=sequenceNodes[j]
+            if (tempNode.t.s ===id &&
+                tempNode.t.c === counter) {
+                return tempNode        
+             }      
+        
+    }
+    debug('getSequenceNode not found  ',{id,counter,sequenceNodes})
+    return false
+
+}
     receiveResponse({elements,causalityAtReceipt}){
+      
+      debug('receiveResponse',{elements,causalityAtReceipt})
         // #1 considere each message in the response independantly     
         let elems=[]
         elements.forEach((element)=> {
@@ -113,6 +171,7 @@ export class AntiEntropyManager extends TextEvent {
   sendAntiEntropyRequest(){
     let id = this._document._options.editingSessionID
     this.sendLocalBroadcast({type:'Request',id,causality:this._document.causality})
+    debug('sendAntiEntropyRequest',{type:'Request',id,causality:this._document.causality})
   }
 
    /**
@@ -128,57 +187,10 @@ export class AntiEntropyManager extends TextEvent {
     origin = origin + '-I'
     // #1 metadata of the antientropy response
     this.unicast(origin,{type:'Response',id, causalityAtReceipt, elements})  
+    debug('sendAntiEntropyResponse',{type:'Response',id, causalityAtReceipt, elements})
   }
 
-    /*!
-     * \brief search a set of elements in our sequence and return them
-     * \param toSearch the array of elements {_e, _c} to search
-     * \returns an array of nodes
-     */
-    getElements(toSearch) {
-        let result = [],
-            found, node, tempNode, i = this._sequence.length,
-            j = 0;
-        // (TODO) improve research by exploiting the fact that if a node is
-        // missing, all its children are missing too.
-        // (TODO) improve the returned representation: either a tree to factorize
-        // common parts of the structure or identifiers to get the polylog size
-        // (TODO) improve the search by using the fact that toSearch is a sorted
-        // array, possibly restructure this argument to be even more efficient
-
-        while (toSearch.length > 0 && i <= this._sequence.length && i > 0) {
-            node = this._sequence._get(i);
-            tempNode = node;
-
-            while (tempNode.children.length > 0) {
-                tempNode = tempNode.children[0];
-            };
-            j = 0;
-            found = false;
-            while (j < toSearch.length && !found) {
-                if (tempNode.t.s === toSearch[j]._e &&
-                    tempNode.t.c === toSearch[j]._c) {
-
-                    found = true;
-
-                    result.push(this.MAEInsertOperation({
-                        elem: tempNode.e,
-                        id: node,
-                        antientropy: true // this to prevent the caret movement in the case of anti-entropy
-                    }, tempNode.t.s.split("-")[0]));
-
-                    toSearch.splice(j, 1);
-                } else {
-                    ++j;
-                };
-            };
-            --i;
-        };
-
-        return result.reverse();
-    };
-
-
+  
 
 MAEInsertOperation(pair, id){
     const packet = {

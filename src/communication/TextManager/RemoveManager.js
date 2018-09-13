@@ -9,6 +9,7 @@ export class RemoveManager extends TextEvent {
         this._lastSentId = null
         this._textManager=opts.TextManager
         this.action= this.remove
+        this._pairs=[]
     }
 
     /*!
@@ -18,13 +19,22 @@ export class RemoveManager extends TextEvent {
      * \return the identifier freshly removed
      */
     remove(index) {
-        var reference = this._sequence.remove(index);
+        clearTimeout(this._timeout)
+        const reference = this._sequence.remove(index);
         this._sequence._c += 1;
-        this._lastSentId = this.broadcast({
+
+        this._document.causality.incrementFrom( this.getLSEQID({id:reference}))
+
+        this._pairs.push({
             id: this._document.uid,
             reference
-        }, this._lastSentId)
-      
+        })
+        
+        this._timeout=setTimeout(()=>{ 
+            this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)     
+            this._pairs=[]
+        },10)
+
       //TODO:  this.setLastChangesTime()
       
         return reference;
@@ -37,8 +47,12 @@ export class RemoveManager extends TextEvent {
      * \param id the result of the remote insert operation
      * \param origin the origin id of the removal
      */
-    receive({id,reference}) {
-    
+    receive({pairs}) {
+
+        pairs.forEach(elem => {
+            const reference= elem.reference
+            const id = elem.id
+ 
         const index = this._sequence.applyRemove(reference);
         this.emit('remoteRemove', index);
 
@@ -53,10 +67,10 @@ export class RemoveManager extends TextEvent {
             }
             this.Event('Caret', msg)
         };
-
+        
         this.setLastChangesTime()
-    };
-
+    })
+    }
 
 
 }
