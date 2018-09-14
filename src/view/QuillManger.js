@@ -1,11 +1,26 @@
+import { ImageDrop } from 'quill-image-drop-module'
+import { ImageResize } from 'quill-image-resize-module';
+
 export class QuillManager {
 
   constructor(editorContainerID, comments) {
     this._editorContainerID = editorContainerID
     this._comments = comments
+    
+  }
+  
+  registerModules () {
+
+    
+    Quill.register('modules/cursors', QuillCursors);
+    Quill.register('modules/comment', QuillComment);
+    Quill.register('modules/imageDrop', ImageDrop);
+    //Quill.register('modules/imageResize', ImageResize);
+    
   }
 
   getQuill() {
+    this.registerModules()
     const quill = new Quill(`#${this._editorContainerID} #editor`, {
       modules: {
         formula: true,
@@ -29,11 +44,20 @@ export class QuillManager {
         },
         cursors: this.getCursorModuleOptions(),
         history: this.getHistoryModuleOptions(),
-        comment: this.getCommentsModuleOptions()
+        comment: this.getCommentsModuleOptions(),
+        imageDrop: true
       },
 
       theme: 'snow'
     });
+/** ImageResize: {
+          modules: [ 'Resize', 'DisplaySize', 'Toolbar' ],
+          handleStyles: {
+            backgroundColor: 'black',
+            border: 'none',
+            color: white
+            // other camelCase styles for size display
+        } */
 
     this.addExtraToolbarOptions()
 

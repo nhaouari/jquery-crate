@@ -22,6 +22,7 @@ export class InsertManager extends TextEvent {
      * \return the identifier freshly allocated
      */
     insert({packet, position}) {
+
         clearTimeout(this._timeout)
        
         var pair = this._sequence.insert(packet, position)
@@ -30,7 +31,7 @@ export class InsertManager extends TextEvent {
 
  
         debug('local Insert', packet, ' Index ', position, 'pair',pair)
-
+        
         this._pairs.push({
                     id: this._document.uid,
                     pair

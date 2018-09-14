@@ -13,9 +13,6 @@ import {
 var debug = require('debug')('crate:view:editor')
 
 
-Quill.register('modules/cursors', QuillCursors);
-Quill.register('modules/comment', QuillComment);
-
 /**
  * EditorController this the link between the core functions and the interface.
  */
@@ -155,8 +152,9 @@ export class EditorController extends EventEmitter {
     Operations.map(operation=>{
       start= this.sendIt(operation, start, false)
     })
-  
+
   }
+
 
   /**
    * sendIt Send the changes character by character 
@@ -172,21 +170,47 @@ export class EditorController extends EventEmitter {
   sendIt(operation, start, isItInsertWithAtt) {
     switch (operation.Name) {
       case "retain":  
-        start = this.sendFormat(start,operation)   
+        this.sendFormat(start,operation)  
         break
 
       case "insert":
-        start= this.sendInsert(start,operation)
+        this.sendInsert(start,operation) 
         break
 
       case "delete":
         this.sendDelete(start,operation.Value,isItInsertWithAtt)
       break
     }
-    return start
+    return this.getNextIndex(start,operation)
   }
 
 
+ getNextIndex(index,operation) {
+  debug('getNextIndex',{index,operation})
+  let nextIndex=index
+  
+  if (operation.Name==='insert'&&operation.Type==="text") {
+    nextIndex=index+ operation.Value.length
+  }
+
+  if (operation.Name==='insert'&&operation.Type!="text") {
+    nextIndex=index+ 1
+  }
+
+  if (operation.Name==='retain'&&operation.Attributes==="") {
+    nextIndex=index+ operation.Value
+  }
+  debug('getNextIndex',{nextIndex})
+  return nextIndex
+}
+
+  
+
+  
+ 
+
+
+  
 /**
  *   the value in this case is the end of format 
 
@@ -198,43 +222,43 @@ export class EditorController extends EventEmitter {
  * @param {*} operation 
  * @param {*} start 
  */
-  sendFormat(start,operation) {
+
+ sendFormat(start,operation) {
     if (operation.Attributes != "") {
       let isItInsertWithAtt = true
-      this.sendDelete(start,operation.Value,isItInsertWithAtt)
+     
       
       // 2 Get delta of the insert text with attributes
-      const delta = this.getDelta(start, start + operation.Value)
-     
+      const delta = this.getDelta(start, start + operation.Value)     
       const operations = this.getOperations(delta) 
       const insertOperations = operations.filter(op => op.Name==="insert");
       let s=start
   
       insertOperations.map((op)=>{
-        s=this.sendInsert(s,op)
+        if(this.isItComplete(op.Attributes)) { 
+          this.sendDelete(s,operation.Value,isItInsertWithAtt)
+          s=this.sendInsert(s,op)
+        }
       })
       
-    } else {
-      start += operation.Value
-
-    } 
-    return start
-   
+      } 
+     }
+      
+        /** sometimes we receive the attributes one by one if they are not complete yet we wait
+   * we have to specify the first attrubyte that appears and the their number
+   */
+  isItComplete(attributes) {
+    if(attributes.hasOwnProperty('commentAuthor') && Object.keys(attributes).length<5) {
+      return false
+    }
+    return true
   }
-
   sendInsert(index,Operation){
     if (Operation.Type==="text") {
       this.sendCharByChar(Operation.Value,index)
       return  index + Operation.Value.length
-    } else {
-      let stream = false
-      if (Operation.Type=="image") {
-       stream= true 
-      } 
-     
-      this.insert(Operation.Type,Operation.Value,index,stream)
-     
-      return index+1
+    } else {     
+      this.insert(Operation.Type,Operation.Value,index)
     }
   
   }
@@ -266,6 +290,7 @@ export class EditorController extends EventEmitter {
     const attributes = this.viewEditor.getFormat(position, 1)
     const packet = {type,content,attributes}
     this.textManager._insertManager.insert({packet, position})
+
   }
 
   /**

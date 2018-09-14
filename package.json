@@ -29,6 +29,8 @@
         "lseqtree": "^1.0.0",
         "marked": "0.3.x",
         "node-fetch": "^2.1.2",
+        "quill-image-drop-module": "^1.0.3",
+        "quill-image-resize-module": "^3.0.0",
         "request": "^2.87.0",
         "rtcpeerconnection": "^8.3.0",
         "shortid": "*",

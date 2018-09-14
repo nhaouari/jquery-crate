@@ -142,7 +142,7 @@ export class Comments {
 
 	async saveComment() {
 		let comment = this._commentInput.val();
-
+		this._commentInput.val("")
 		await this.addCommentToList(comment, this._authorId)
 		this._commentCallback(comment);
 	}
