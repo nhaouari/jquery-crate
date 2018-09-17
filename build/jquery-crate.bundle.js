@@ -49640,12 +49640,11 @@ var View = exports.View = function () {
     }
 
     var sessionID = this._options.signalingOptions.session;
-    var s = session.default.getCrateSession(sessionID);
-    if (s._previous) {
-      sessionID = s._previous._options.signalingOptions.session;
-    }
-    session.default.focusOnSession(this._options.signalingOptions.session, this._options.signalingOptions.session);
+
+    session.default.getCrateSession(sessionID).goTo(sessionID);
+
     //TODO:this.viewEditor.focus()
+
     this._editor = new _editor.EditorController(this._document, this._options.signalingOptions.session, this._editorContainerID);
   }
 
@@ -49654,6 +49653,7 @@ var View = exports.View = function () {
     value: function init() {
       var _this2 = this;
 
+      session.default.updateViews();
       this._editor.initDocument();
       /**
       * if there are any changes local or remote then we have to wake up the storageServer
@@ -49673,32 +49673,7 @@ var View = exports.View = function () {
       });
 
       jQuery("#" + this._editorContainerID + " #closeDocument").click(function () {
-        // Get object of the list for this session
-        var crateSession = session.default.getCrateSession(_this2._options.signalingOptions.session);
-
-        if (session.headSession !== crateSession) {
-
-          // remove the crateSession for the list 
-          if (crateSession._previous) {
-            crateSession._previous._next = crateSession._next;
-          }
-
-          if (crateSession._next) {
-            crateSession._next._previous = crateSession._previous;
-          } else {
-            session.lastSession = crateSession._previous;
-          }
-
-          // remove it from the browser   
-          jQuery("#" + _this2._editorContainerID).remove();
-
-          //  disconnect and remove the model
-
-          crateSession.moveToPrevious();
-          crateSession.close();
-        } else {
-          console.log('You cannot remove the first document');
-        }
+        _this2.closeDocument();
       });
 
       //Menu Bar events
@@ -49718,11 +49693,38 @@ var View = exports.View = function () {
       this._statesHeader = new _statesheader.StatesHeader(this._document, sharingLinkContainer, shareButton, this._editorContainerID);
     }
   }, {
+    key: "closeDocument",
+    value: function closeDocument() {
+      // Get object of the list for this session
+      var crateSession = session.default.getCrateSession(this._options.signalingOptions.session);
+
+      if (session.default.headSession !== crateSession) {
+
+        session.default.removeSession(this._options.signalingOptions.session);
+
+        // remove it from the browser   
+        jQuery("#" + this._editorContainerID).remove();
+
+        //  disconnect and remove the model
+
+        crateSession.moveToPrevious();
+        crateSession.close();
+      } else {
+        console.log('You cannot remove the first document');
+      }
+    }
+  }, {
     key: "createCRATE",
     value: function createCRATE() {
       var _this3 = this;
 
-      var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\" style=\" width: 20px;\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n         <div id=\"state\" style=\"margin-left: -50px;\" \">\n            <i class=\"fa fa-globe fa-3x ficon \"></i>\n         </div>\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
+      var width = 98;
+
+      if (session.default.number > 1) {
+        width = 45;
+      }
+
+      var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" style=\"'width:" + width + "vw !important'\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\" style=\" width: 20px;\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n         <div id=\"state\" style=\"margin-left: -50px;\" \">\n            <i class=\"fa fa-globe fa-3x ficon \"></i>\n         </div>\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
       jQuery("#" + this._editorsHolderID).append(html);
 
       jQuery("#" + this._editorContainerID + " #saveComment").click(function () {
@@ -49862,6 +49864,16 @@ var View = exports.View = function () {
       //TODO: Optimize change only if the text is changed from last state 
       this._document._communication.textManager._titleManager.sendChangeTitle(jQuery("#" + this._editorContainerID + " #title").text());
     }
+  }, {
+    key: "fullScreen",
+    value: function fullScreen() {
+      jQuery("#" + this._editorContainerID).css("cssText", 'width:98vw !important');
+    }
+  }, {
+    key: "splitedScreen",
+    value: function splitedScreen() {
+      jQuery("#" + this._editorContainerID).css("cssText", 'width:45vw !important');
+    }
   }], [{
     key: "addMoveShortcuts",
     value: function addMoveShortcuts() {
@@ -49944,6 +49956,12 @@ var Communication = exports.Communication = function () {
             this._options = Object.assign(this._options, opts);
             this.markerManager = new _MarkerManager.MarkerManager(this._options);
             this.textManager = new _TextManager.TextManager(this._options);
+        }
+    }, {
+        key: "close",
+        value: function close() {
+            this.markerManager.close();
+            this.textManager.close();
         }
     }]);
 
@@ -50150,6 +50168,9 @@ var Event = exports.Event = function (_EventEmitter) {
 
             return chunks;
         }
+    }, {
+        key: 'close',
+        value: function close() {}
     }]);
 
     return Event;
@@ -50419,6 +50440,13 @@ var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
     value: function caretMoved(range) {
       this._caretManger.caretMoved(range);
     }
+  }, {
+    key: 'close',
+    value: function close() {
+      this._pingManager.close();
+
+      this._caretManger.close();
+    }
   }]);
 
   return MarkerManager;
@@ -50534,6 +50562,11 @@ var PingManger = exports.PingManger = function (_MarkerEvent) {
         // to create the avatar
         this.addMarker(id, false).setPseudo(pseudo);
       }
+    }
+  }, {
+    key: 'close',
+    value: function close() {
+      this.stopPing();
     }
   }]);
 
@@ -51173,6 +51206,18 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             };
             return packet;
         }
+    }, {
+        key: 'stopAntiEnropy',
+        value: function stopAntiEnropy() {
+            if (this._intervalAntiEntropy) {
+                clearInterval(this._intervalAntiEntropy);
+            }
+        }
+    }, {
+        key: 'close',
+        value: function close() {
+            this.stopAntiEnropy();
+        }
     }]);
 
     return AntiEntropyManager;
@@ -51396,12 +51441,17 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
         value: function remove(index) {
             var _this2 = this;
 
+            debug("remove", index);
+            if (index = this._sequence.root.children.length - 1) {
+                console.log(_extends({}, this._sequence));
+            }
+
             clearTimeout(this._timeout);
             var reference = this._sequence.remove(index);
             this._sequence._c += 1;
+            var lseqID = this.getLSEQID({ id: reference });
 
-            this._document.causality.incrementFrom(this.getLSEQID({ id: reference }));
-
+            this._document.causality.incrementFrom(lseqID);
             this._pairs.push({
                 id: this._document.uid,
                 reference: reference
@@ -51431,7 +51481,7 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
 
             var pairs = _ref.pairs;
 
-
+            debug("receive remove", { pairs: pairs });
             pairs.forEach(function (elem) {
                 var reference = elem.reference;
                 var id = elem.id;
@@ -51538,6 +51588,8 @@ exports.TextManager = undefined;
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 var _TextEvent2 = __webpack_require__(/*! ./TextEvent */ "./src/communication/TextManager/TextEvent.js");
 
 var _AntiEntropyManager = __webpack_require__(/*! ./AntiEntropyManager */ "./src/communication/TextManager/AntiEntropyManager.js");
@@ -51582,6 +51634,17 @@ var TextManager = exports.TextManager = function (_TextEvent) {
 
         return _this;
     }
+
+    _createClass(TextManager, [{
+        key: 'close',
+        value: function close() {
+
+            this._insertManager.close();
+            this._removeManager.close();
+            this._titleManager.close();
+            this._antiEntropyManager.close();
+        }
+    }]);
 
     return TextManager;
 }(_TextEvent2.TextEvent);
@@ -51805,7 +51868,6 @@ var doc = function (_EventEmitter) {
                 if (options.importFromJSON) {
                   this.loadFromJSON(options.importFromJSON);
                 }
-
                 this.routersInit();
 
                 if (options.display) {
@@ -51960,6 +52022,27 @@ var doc = function (_EventEmitter) {
         console.error(error);
         return false;
       }
+    }
+  }, {
+    key: "close",
+    value: function close() {
+      var _this3 = this;
+
+      this._foglet.unshare();
+      this._foglet._networkManager._rps.network._rps.disconnect();
+      if (this._view) {
+        clearInterval(this._view._timerStorageServer);
+        for (var marker in this._view._editor.markers) {
+          clearInterval(marker.timer);
+        }
+      }
+      this._communication.close();
+
+      setTimeout(function () {
+        _this3._foglet._networkManager._rps.network._rps.disconnect();
+        _this3._document = null;
+        _this3._foglet = null;
+      }, 2000);
     }
   }]);
 
@@ -52346,6 +52429,9 @@ var session = function (_EventEmitter) {
       session._next = null;
 
       var sessionClass = this.constructor;
+
+      sessionClass.updateLength({ insert: 1 });
+
       if (!sessionClass.actualSession || sessionClass.actualSession == null) {
         sessionClass.actualSession = session;
         sessionClass.lastSession = session;
@@ -52500,23 +52586,7 @@ var session = function (_EventEmitter) {
   }, {
     key: "close",
     value: function close() {
-      var _this4 = this;
-
-      this._foglet.unshare();
-      this._foglet._networkManager._rps.network._rps.disconnect();
-      if (this._documents[0]._view) {
-        this._documents[0]._view._editor.stopPing();
-        clearInterval(this._documents[0]._view._timerStorageServer);
-        for (var marker in this._documents[0]._view._editor.markers) {
-          clearInterval(marker.timer);
-        }
-      }
-
-      setTimeout(function () {
-        _this4._foglet._networkManager._rps.network._rps.disconnect();
-        _this4._document = null;
-        _this4._foglet = null;
-      }, 2000);
+      this._documents[0].close();
     }
   }], [{
     key: "getCrateSession",
@@ -52532,6 +52602,52 @@ var session = function (_EventEmitter) {
         search = search._next;
       }
       return -1;
+    }
+  }, {
+    key: "updateLength",
+    value: function updateLength(_ref5) {
+      var insert = _ref5.insert,
+          remove = _ref5.remove;
+
+
+      if (this.number) {
+        if (insert) this.number += insert;
+        if (remove) {
+          this.number -= remove;
+        }
+        this.updateViews();
+      } else {
+        this.number = insert;
+      }
+    }
+  }, {
+    key: "updateViews",
+    value: function updateViews() {
+      var number = this.number;
+
+      var sessions = this.getSessions();
+
+      console.log(sessions);
+      sessions.forEach(function (session) {
+        if (number === 1) {
+          session._documents[0]._view.fullScreen();
+        } else {
+          session._documents[0]._view.splitedScreen();
+        }
+      });
+    }
+  }, {
+    key: "getSessions",
+    value: function getSessions() {
+
+      var start = this.headSession;
+      var sessions = [];
+      while (start !== null) {
+        sessions.push(start);
+        start = start._next;
+      }
+
+      return sessions;
     }
   }, {
     key: "GUID",
@@ -52620,6 +52736,26 @@ var session = function (_EventEmitter) {
           }
         }
       }
+    }
+  }, {
+    key: "removeSession",
+    value: function removeSession(sessionID) {
+      var crateSession = this.getCrateSession(sessionID);
+
+      if (this.headSession !== crateSession) {
+
+        // remove the crateSession for the list 
+        if (crateSession._previous) {
+          crateSession._previous._next = crateSession._next;
+        }
+
+        if (crateSession._next) {
+          crateSession._next._previous = crateSession._previous;
+        } else {
+          this.lastSession = crateSession._previous;
+        }
+      }
+      this.updateLength({ remove: 1 });
     }
   }]);
 
@@ -52945,8 +53081,11 @@ var Comments = exports.Comments = function () {
 	}, {
 		key: 'addCommentToList',
 		value: function () {
-			var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(comment, authorId) {
-				var marker, date, currentTimestamp, divId, opts, cmtBox;
+			var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(_ref) {
+				var comment = _ref.comment,
+				    currentTimestamp = _ref.currentTimestamp,
+				    authorId = _ref.authorId;
+				var marker, date, divId, opts, cmtBox;
 				return regeneratorRuntime.wrap(function _callee$(_context) {
 					while (1) {
 						switch (_context.prev = _context.next) {
@@ -52955,11 +53094,6 @@ var Comments = exports.Comments = function () {
 									lifetime: -1
 								});
 								date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
-								_context.next = 4;
-								return this.getCurrentTimestamp();
-
-							case 4:
-								currentTimestamp = _context.sent;
 								divId = 'ql-comment-' + authorId + '-' + currentTimestamp;
 								opts = {
 									id: divId,
@@ -52974,7 +53108,7 @@ var Comments = exports.Comments = function () {
 								this._comments.append(cmtBox);
 								this.addFocusEffects(divId);
 
-							case 10:
+							case 7:
 							case 'end':
 								return _context.stop();
 						}
@@ -52982,8 +53116,8 @@ var Comments = exports.Comments = function () {
 				}, _callee, this);
 			}));
 
-			function addCommentToList(_x, _x2) {
-				return _ref.apply(this, arguments);
+			function addCommentToList(_x) {
+				return _ref2.apply(this, arguments);
 			}
 
 			return addCommentToList;
@@ -53000,8 +53134,10 @@ var Comments = exports.Comments = function () {
 		value: function addFocusEffects(divId) {
 			var _this = this;
 
+			console.log('#comment-box-' + divId);
+
 			$('#comment-box-' + divId).focusin(function () {
-				_this.commentBoxFocus(divId);
+				_this.commentBoxFocus(divId, 'in');
 			});
 
 			$('#comment-box-' + divId).focusout(function () {
@@ -53011,8 +53147,8 @@ var Comments = exports.Comments = function () {
 	}, {
 		key: 'saveComment',
 		value: function () {
-			var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
-				var comment;
+			var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+				var comment, currentTimestamp;
 				return regeneratorRuntime.wrap(function _callee2$(_context2) {
 					while (1) {
 						switch (_context2.prev = _context2.next) {
@@ -53021,12 +53157,17 @@ var Comments = exports.Comments = function () {
 
 								this._commentInput.val("");
 								_context2.next = 4;
-								return this.addCommentToList(comment, this._authorId);
+								return this.getCurrentTimestamp();
 
 							case 4:
-								this._commentCallback(comment);
+								currentTimestamp = _context2.sent;
+								_context2.next = 7;
+								return this.addCommentToList({ comment: comment, currentTimestamp: currentTimestamp, authorId: this._authorId });
 
-							case 5:
+							case 7:
+								this._commentCallback({ comment: comment, currentTimestamp: currentTimestamp });
+
+							case 8:
 							case 'end':
 								return _context2.stop();
 						}
@@ -53035,7 +53176,7 @@ var Comments = exports.Comments = function () {
 			}));
 
 			function saveComment() {
-				return _ref2.apply(this, arguments);
+				return _ref3.apply(this, arguments);
 			}
 
 			return saveComment;
@@ -53043,6 +53184,7 @@ var Comments = exports.Comments = function () {
 	}, {
 		key: 'commentBoxFocus',
 		value: function commentBoxFocus(id, type) {
+			console.log(type, '.ql-comments #' + id);
 			if (type !== 'out') {
 				$('.ql-comments #' + id).addClass('commentFocus');
 				this._comments.find('.' + id).css('border-color', 'red');
@@ -53067,8 +53209,10 @@ var Comments = exports.Comments = function () {
 			// for each insert check att if it contains the author then insert comment 
 			this.viewEditor.editor.delta.ops.forEach(function (op) {
 				if (op.insert && op.attributes && op.attributes.commentAuthor) {
-					var id = op.attributes.commentAuthor;
-					_this2.addCommentToList(op.attributes.comment, id, op.attributes.commentTimestamp);
+					var authorId = op.attributes.commentAuthor;
+					var comment = op.attributes.comment;
+					var currentTimestamp = op.attributes.commentTimestamp;
+					_this2.addCommentToList({ comment: comment, currentTimestamp: currentTimestamp, authorId: authorId });
 				}
 			});
 		}
@@ -53332,8 +53476,28 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       if (operation.Name === 'retain' && operation.Attributes === "") {
         nextIndex = index + operation.Value;
       }
+
       debug('getNextIndex', { nextIndex: nextIndex });
       return nextIndex;
+    }
+
+    /**inline operations */
+
+  }, {
+    key: "isItBlock",
+    value: function isItBlock(Attributes) {
+      var props = ['blockquote', 'header', 'indent', 'list', 'align', 'direction', 'code-block'];
+      var a = Object.getOwnPropertyNames(Attributes);
+
+      var found = false;
+      a.forEach(function (att) {
+
+        var index = props.indexOf(att);
+        if (index > -1) {
+          found = true;
+        }
+      });
+      return found;
     }
 
     /**
@@ -53354,15 +53518,19 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var _this4 = this;
 
       if (operation.Attributes != "") {
-        var isItInsertWithAtt = true;
 
+        var isItInsertWithAtt = true;
+        var s = start;
+
+        /*if(this.isItBlock(operation.Attributes)&&s>=1){
+          s-=1
+        }*/
         // 2 Get delta of the insert text with attributes
-        var delta = this.getDelta(start, start + operation.Value);
+        var delta = this.getDelta(s, s + operation.Value);
         var operations = this.getOperations(delta);
         var insertOperations = operations.filter(function (op) {
           return op.Name === "insert";
         });
-        var s = start;
 
         insertOperations.map(function (op) {
           if (_this4.isItComplete(op.Attributes)) {
@@ -53406,15 +53574,12 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: "sendDelete",
     value: function sendDelete(index, length, isItInsertWithAtt) {
-
       console.log('Send delete', index, length, isItInsertWithAtt);
       //to ensure that the editor contains just \n without any attributes 
       if (!isItInsertWithAtt) {
         this._comments.UpdateComments();
       }
-
       // Delete caracter by caracter
-
       for (var i = index; i < index + length; ++i) {
         this.textManager._removeManager.remove(index);
       }
@@ -53503,7 +53668,6 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var operations = changesDelta.ops.map(function (op) {
         return _this6.extractOperationInformation(op);
       });
-
       return operations;
     }
   }, {

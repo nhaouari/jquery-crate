@@ -19,17 +19,22 @@ export class RemoveManager extends TextEvent {
      * \return the identifier freshly removed
      */
     remove(index) {
-        clearTimeout(this._timeout)
+        debug("remove",index)
+        if (index=this._sequence.root.children.length-1) {          
+            console.log({...this._sequence})
+        }
+       
+      clearTimeout(this._timeout)
         const reference = this._sequence.remove(index);
         this._sequence._c += 1;
+        const lseqID= this.getLSEQID({id:reference})
 
-        this._document.causality.incrementFrom( this.getLSEQID({id:reference}))
-
+        this._document.causality.incrementFrom(lseqID)
         this._pairs.push({
-            id: this._document.uid,
+            id: this._document.uid, 
             reference
         })
-        
+
         this._timeout=setTimeout(()=>{ 
             this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)     
             this._pairs=[]
@@ -48,7 +53,7 @@ export class RemoveManager extends TextEvent {
      * \param origin the origin id of the removal
      */
     receive({pairs}) {
-
+        debug("receive remove",{pairs})
         pairs.forEach(elem => {
             const reference= elem.reference
             const id = elem.id
@@ -58,7 +63,7 @@ export class RemoveManager extends TextEvent {
 
         if (index >= 0) {
             const range = {
-                index: index - 1,
+                index: index-1  ,
                 length: 0
             }
             const msg = {

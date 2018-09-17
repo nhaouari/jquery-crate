@@ -83,8 +83,7 @@ export default class doc extends EventEmitter {
 
     if (options.importFromJSON) {
       this.loadFromJSON(options.importFromJSON);
-    }
-
+    } 
     this.routersInit()
 
     if (options.display) {
@@ -223,5 +222,22 @@ export default class doc extends EventEmitter {
   }
   }
 
+  close() {
+    this._foglet.unshare();
+    this._foglet._networkManager._rps.network._rps.disconnect();
+    if (this._view) {
+      clearInterval(this._view._timerStorageServer);
+      for (let marker in this._view._editor.markers) {
+        clearInterval(marker.timer);
+      }
+     }
+     this._communication.close()
+     
+    setTimeout(() => {
+      this._foglet._networkManager._rps.network._rps.disconnect();
+      this._document = null;
+      this._foglet = null;
+    }, 2000);
 
+}
 }

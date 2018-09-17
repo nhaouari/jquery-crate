@@ -133,5 +133,9 @@ export class Event extends EventEmitter {
       
         return chunks
       }
+    
+      close(){
+
+    }
 }
   

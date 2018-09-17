@@ -71,7 +71,7 @@ export class AntiEntropyManager extends TextEvent {
         };
         if(toSearch.length>0){
         const elements = this.getElements(toSearch);
-        // #2 send back the found elements
+            // #2 send back the found elements
 
         if (elements.length != 0) {
             debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements)
@@ -190,6 +190,7 @@ export class AntiEntropyManager extends TextEvent {
     debug('sendAntiEntropyResponse',{type:'Response',id, causalityAtReceipt, elements})
   }
 
+
   
 
 MAEInsertOperation(pair, id){
@@ -205,4 +206,14 @@ MAEInsertOperation(pair, id){
     }
     return packet
 };
+
+stopAntiEnropy(){
+    if (this._intervalAntiEntropy) {
+        clearInterval(this._intervalAntiEntropy)
+        }   
+}
+
+close(){
+    this.stopAntiEnropy()
+}
 }

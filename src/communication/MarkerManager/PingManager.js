@@ -68,6 +68,10 @@ export class PingManger extends MarkerEvent {
           .setPseudo(pseudo)
       }
     }
+
+    close(){
+      this.stopPing()
+    }
   
   }
   

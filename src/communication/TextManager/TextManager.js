@@ -31,7 +31,13 @@ export class TextManager extends TextEvent {
 
     }
 
-   
+    close(){
+        
+        this._insertManager.close()
+        this._removeManager.close() 
+        this._titleManager.close()
+        this._antiEntropyManager.close()
+    }
 
    
 }

@@ -14,4 +14,9 @@ export class Communication {
         this.textManager= new TextManager(this._options) 
     }
 
+    close() {
+        this.markerManager.close()
+        this.textManager.close()
+    }
+
 }

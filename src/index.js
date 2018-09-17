@@ -214,6 +214,10 @@ async setOptions() {
     session._next = null;
 
     let sessionClass = this.constructor;
+
+    sessionClass.updateLength({insert:1})
+
+
     if (!sessionClass.actualSession || sessionClass.actualSession == null) {
       sessionClass.actualSession = session;
       sessionClass.lastSession = session;
@@ -343,23 +347,9 @@ async setOptions() {
    * close the session and stop the different timers
    */
   close() {
-    this._foglet.unshare();
-    this._foglet._networkManager._rps.network._rps.disconnect();
-    if (this._documents[0]._view) {
-      this._documents[0]._view._editor.stopPing();
-      clearInterval(this._documents[0]._view._timerStorageServer);
-      for (var marker in this._documents[0]._view._editor.markers) {
-        clearInterval(marker.timer);
-      }
+    this._documents[0].close()
     }
-
-    setTimeout(() => {
-      this._foglet._networkManager._rps.network._rps.disconnect();
-      this._document = null;
-      this._foglet = null;
-    }, 2000);
-  }
-
+  
   static getCrateSession(id) {
     let found = false;
     var search = this.headSession
@@ -372,6 +362,51 @@ async setOptions() {
       search = search._next
     }
     return -1;
+  }
+
+  static updateLength({insert,remove}){
+
+    if(this.number) {
+      if(insert) this.number+=insert;
+      if(remove) {
+        this.number-=remove
+     
+      }
+      this.updateViews()
+    } else {
+      this.number = insert
+    } 
+  }
+  
+  
+  static updateViews(){
+    let number= this.number
+
+    let sessions=this.getSessions()
+
+    console.log(sessions);
+    sessions.forEach((session)=>{
+      if(number===1) {
+        session._documents[0]._view.fullScreen()
+      } else {
+        session._documents[0]._view.splitedScreen()
+      }
+      
+
+    })
+
+  }
+  
+  static getSessions(){
+
+    let start = this.headSession
+    let sessions=[]
+    while (start !== null) {
+      sessions.push(start)
+      start = start._next
+    }
+
+    return sessions
   }
 
   static GUID() {
@@ -436,6 +471,27 @@ async setOptions() {
       }
     }
   }
+
+  static removeSession(sessionID){
+    let crateSession = this.getCrateSession(sessionID)
+
+   
+     if (this.headSession !== crateSession) {
+
+       // remove the crateSession for the list 
+       if (crateSession._previous) {
+         crateSession._previous._next = crateSession._next
+       }
+
+       if (crateSession._next) {
+         crateSession._next._previous = crateSession._previous
+       } else {
+         this.lastSession = crateSession._previous
+       }
+
+  }
+  this.updateLength({remove:1})
+}
 }
 
 session.Marker = Marker

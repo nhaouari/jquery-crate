@@ -19,18 +19,18 @@ export class View {
     }
 
     let sessionID = this._options.signalingOptions.session
-    let s = session.default.getCrateSession(sessionID)
-    if (s._previous) {
-      sessionID = s._previous._options.signalingOptions.session
-    }
-    session.default.focusOnSession( this._options.signalingOptions.session, this._options.signalingOptions.session)   
+
+    session.default.getCrateSession(sessionID).goTo(sessionID)   
+    
+    
     //TODO:this.viewEditor.focus()
+    
     this._editor = new EditorController(this._document, this._options.signalingOptions.session, this._editorContainerID)
    
   }
 
   init(){
-
+     session.default.updateViews()
     this._editor.initDocument()
         /**
        * if there are any changes local or remote then we have to wake up the storageServer
@@ -50,33 +50,8 @@ export class View {
     })  
 
     jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
-      // Get object of the list for this session
-      let crateSession = session.default.getCrateSession(this._options.signalingOptions.session)
-
-      if (session.headSession !== crateSession) {
-
-        // remove the crateSession for the list 
-        if (crateSession._previous) {
-          crateSession._previous._next = crateSession._next
-        }
-
-        if (crateSession._next) {
-          crateSession._next._previous = crateSession._previous
-        } else {
-          session.lastSession = crateSession._previous
-        }
-
-        // remove it from the browser   
-        jQuery(`#${this._editorContainerID}`).remove()
-
-        //  disconnect and remove the model
-
-        crateSession.moveToPrevious()
-        crateSession.close()
-      } else {
-        console.log('You cannot remove the first document')
-      }
-
+      this.closeDocument()
+     
     })
 
      //Menu Bar events
@@ -98,9 +73,35 @@ export class View {
 
     }
 
+  closeDocument() {
+     // Get object of the list for this session
+     let crateSession = session.default.getCrateSession(this._options.signalingOptions.session)
+
+     if (session.default.headSession !== crateSession) {
+
+       session.default.removeSession( this._options.signalingOptions.session)
+
+       // remove it from the browser   
+       jQuery(`#${this._editorContainerID}`).remove()
+
+       //  disconnect and remove the model
+
+       crateSession.moveToPrevious()
+       crateSession.close()
+     } else {
+       console.log('You cannot remove the first document')
+     }
+  }
   createCRATE() {
+    let width = 98
+
+    if(session.default.number>1) 
+    {
+      width = 45
+    } 
+
     const html = ` 
-<div class="col-md-10 editorContainer" id="${this._editorContainerID}" >
+<div class="col-md-10 editorContainer" id="${this._editorContainerID}" style="'width:${width}vw !important'" >
  <!-- Head -->
    <div id="head">
       <div id="firstrow" class="row">
@@ -164,6 +165,7 @@ export class View {
         </div>
     `
     jQuery(`#${this._editorsHolderID}`).append(html);
+
 
     jQuery(`#${this._editorContainerID} #saveComment`).click(() => {
       this.saveComment()
@@ -331,6 +333,13 @@ export class View {
   }
 
 
+  fullScreen(){
+    jQuery(`#${this._editorContainerID}`).css("cssText",'width:98vw !important')
+  }
+
+  splitedScreen(){
+    jQuery(`#${this._editorContainerID}`).css("cssText",'width:45vw !important')
+  }
 }
 
 View.addMoveShortcuts() 

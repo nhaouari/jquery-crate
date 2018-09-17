@@ -86,14 +86,13 @@ export class Comments {
 		}
 	}
 
-	async addCommentToList(comment, authorId) {
+	async addCommentToList({comment,currentTimestamp,authorId}) {
 
 		const marker = this._markerManager.addMarker(authorId, false, {
 			lifetime: -1
 		})
 		const date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
 
-		const currentTimestamp = await this.getCurrentTimestamp()
 		const divId = 'ql-comment-' + authorId + '-' + currentTimestamp;
 
 		const opts = {
@@ -130,8 +129,10 @@ export class Comments {
 	}
 
 	addFocusEffects(divId) {
+		console.log('#comment-box-' + divId);
+		
 		$('#comment-box-' + divId).focusin(() => {
-			this.commentBoxFocus(divId)
+			this.commentBoxFocus(divId,'in')
 
 		})
 
@@ -143,20 +144,20 @@ export class Comments {
 	async saveComment() {
 		let comment = this._commentInput.val();
 		this._commentInput.val("")
-		await this.addCommentToList(comment, this._authorId)
-		this._commentCallback(comment);
+		const currentTimestamp = await this.getCurrentTimestamp()
+		await this.addCommentToList({comment,currentTimestamp,authorId:this._authorId})		
+		this._commentCallback({comment,currentTimestamp});
 	}
 
 	commentBoxFocus(id, type) {
+		console.log(type,'.ql-comments #' + id)
 		if (type !== 'out') {
-			$('.ql-comments #' + id).addClass('commentFocus');
-			this._comments.find('.' + id).css('border-color', 'red');
-
+			$('.ql-comments #' + id).addClass('commentFocus')
+			this._comments.find('.' + id).css('border-color', 'red')
 		} else {
-			$('.ql-comments #' + id).removeClass('commentFocus');
-			this._comments.find('.comment-box').css('border-color', '#F0F0F0');
+			$('.ql-comments #' + id).removeClass('commentFocus')
+			this._comments.find('.comment-box').css('border-color', '#F0F0F0')
 		}
-
 	}
 
 	/**
@@ -170,8 +171,10 @@ export class Comments {
 		// for each insert check att if it contains the author then insert comment 
 		this.viewEditor.editor.delta.ops.forEach((op) => {
 			if (op.insert && op.attributes && op.attributes.commentAuthor) {
-				const id = op.attributes.commentAuthor
-				this.addCommentToList(op.attributes.comment, id, op.attributes.commentTimestamp)
+				const authorId = op.attributes.commentAuthor
+				const comment=op.attributes.comment
+				const currentTimestamp=op.attributes.commentTimestamp
+				this.addCommentToList({comment,currentTimestamp,authorId})
 			}
 
 		})

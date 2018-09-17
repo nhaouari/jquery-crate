@@ -33,5 +33,10 @@ export class MarkerManager extends MarkerEvent {
       this._caretManger.caretMoved(range)
     }
   
+    close() {
+      this._pingManager.close()
+  
+      this._caretManger.close()
+    }
   }
   

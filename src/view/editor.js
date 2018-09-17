@@ -144,14 +144,15 @@ export class EditorController extends EventEmitter {
    * @return {[type]}           [description]
    */
   applyChanges(delta, iniRetain) {
+    
+      let start = iniRetain
 
-    let start = iniRetain
+      let Operations = this.getOperations(delta)
 
-    let Operations = this.getOperations(delta)
-
-    Operations.map(operation=>{
-      start= this.sendIt(operation, start, false)
-    })
+      Operations.map(operation=>{
+        start= this.sendIt(operation, start, false)
+      })
+    
 
   }
 
@@ -200,9 +201,28 @@ export class EditorController extends EventEmitter {
   if (operation.Name==='retain'&&operation.Attributes==="") {
     nextIndex=index+ operation.Value
   }
+
   debug('getNextIndex',{nextIndex})
   return nextIndex
 }
+
+/**inline operations */
+
+isItBlock(Attributes){
+  const props=['blockquote','header','indent','list','align','direction','code-block']
+  let a=Object.getOwnPropertyNames(Attributes);
+  
+  let found = false
+	a.forEach((att)=>{
+    
+    const index= props.indexOf(att)
+    if(index>-1){
+      found= true
+    }
+  })
+  return found
+}
+
 
   
 
@@ -225,15 +245,19 @@ export class EditorController extends EventEmitter {
 
  sendFormat(start,operation) {
     if (operation.Attributes != "") {
+    
       let isItInsertWithAtt = true
+      let s=start
      
-      
+      /*if(this.isItBlock(operation.Attributes)&&s>=1){
+        s-=1
+      }*/
       // 2 Get delta of the insert text with attributes
-      const delta = this.getDelta(start, start + operation.Value)     
+      const delta = this.getDelta(s, s + operation.Value)     
       const operations = this.getOperations(delta) 
       const insertOperations = operations.filter(op => op.Name==="insert");
-      let s=start
-  
+      
+      
       insertOperations.map((op)=>{
         if(this.isItComplete(op.Attributes)) { 
           this.sendDelete(s,operation.Value,isItInsertWithAtt)
@@ -271,18 +295,16 @@ export class EditorController extends EventEmitter {
   }
 
   sendDelete(index,length,isItInsertWithAtt){
-
     console.log('Send delete',index,length,isItInsertWithAtt );
     //to ensure that the editor contains just \n without any attributes 
     if (!isItInsertWithAtt) {
       this._comments.UpdateComments()
     }
-    
     // Delete caracter by caracter
-
     for (var i = index; i < (index + length); ++i) {
       this.textManager._removeManager.remove(index)
     }
+    
   }
 
 
@@ -342,7 +364,6 @@ export class EditorController extends EventEmitter {
     }
   }
 
-
   getDelta(start,end) {
     return this.viewEditor.editor.delta.slice(start, end)
   }
@@ -356,9 +377,7 @@ export class EditorController extends EventEmitter {
   }
 
   getOperations(changesDelta) {
-   
     const operations = changesDelta.ops.map(op=>this.extractOperationInformation(op) )
-  
     return operations
   }
 
@@ -396,6 +415,5 @@ export class EditorController extends EventEmitter {
       
       return 'text'
     }
-
- 
+    
 }
