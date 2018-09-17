@@ -245,13 +245,12 @@ isItBlock(Attributes){
 
  sendFormat(start,operation) {
     if (operation.Attributes != "") {
-    
       let isItInsertWithAtt = true
       let s=start
      
-      /*if(this.isItBlock(operation.Attributes)&&s>=1){
+      if(this.isItBlock(operation.Attributes)&&s>0){
         s-=1
-      }*/
+      }
       // 2 Get delta of the insert text with attributes
       const delta = this.getDelta(s, s + operation.Value)     
       const operations = this.getOperations(delta) 

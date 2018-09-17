@@ -51441,41 +51441,55 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
         value: function remove(index) {
             var _this2 = this;
 
-            debug("remove", index);
-            if (index = this._sequence.root.children.length - 1) {
-                console.log(_extends({}, this._sequence));
+            debug("Remove", { index: index });
+
+            var reference = this.removeFromSequence(index);
+
+            if (reference) {
+                clearTimeout(this._timeout);
+                this._sequence._c += 1;
+                var lseqID = this.getLSEQID({ id: reference });
+                this._document.causality.incrementFrom(lseqID);
+
+                this._pairs.push({
+                    id: this._document.uid,
+                    reference: reference
+                });
+
+                this._timeout = setTimeout(function () {
+                    _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
+                    _this2._pairs = [];
+                }, 10);
             }
-
-            clearTimeout(this._timeout);
-            var reference = this._sequence.remove(index);
-            this._sequence._c += 1;
-            var lseqID = this.getLSEQID({ id: reference });
-
-            this._document.causality.incrementFrom(lseqID);
-            this._pairs.push({
-                id: this._document.uid,
-                reference: reference
-            });
-
-            this._timeout = setTimeout(function () {
-                _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
-                _this2._pairs = [];
-            }, 10);
-
             //TODO:  this.setLastChangesTime()
 
-            return reference;
+            // return reference;
         }
     }, {
-        key: 'receive',
+        key: 'removeFromSequence',
+        value: function removeFromSequence(index) {
+            if (this._sequence.root.subCounter === 2) {
+                console.warn('sequence is empty');
+                debugger;
+            } else if (index >= this._sequence.root.subCounter - 2) {
+                console.warn('error outofbounds ');
+                debugger;
+            } else {
 
-
+                var reference = this._sequence.remove(index);
+                return reference;
+            }
+            return null;
+        }
         /*!
          * \brief removal of an element from a remote site.  It emits 'remoteRemove'
          * with the index of the element to remove, -1 if does not exist
          * \param id the result of the remote insert operation
          * \param origin the origin id of the removal
          */
+
+    }, {
+        key: 'receive',
         value: function receive(_ref) {
             var _this3 = this;
 
@@ -53518,13 +53532,12 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var _this4 = this;
 
       if (operation.Attributes != "") {
-
         var isItInsertWithAtt = true;
         var s = start;
 
-        /*if(this.isItBlock(operation.Attributes)&&s>=1){
-          s-=1
-        }*/
+        if (this.isItBlock(operation.Attributes) && s > 0) {
+          s -= 1;
+        }
         // 2 Get delta of the insert text with attributes
         var delta = this.getDelta(s, s + operation.Value);
         var operations = this.getOperations(delta);

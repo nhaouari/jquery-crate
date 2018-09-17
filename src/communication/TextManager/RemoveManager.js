@@ -18,18 +18,17 @@ export class RemoveManager extends TextEvent {
      * \param index the index of the element to remove
      * \return the identifier freshly removed
      */
-    remove(index) {
-        debug("remove",index)
-        if (index=this._sequence.root.children.length-1) {          
-            console.log({...this._sequence})
-        }
+    remove(index) { 
+        debug("Remove",{index})  
        
-      clearTimeout(this._timeout)
-        const reference = this._sequence.remove(index);
+        const reference = this.removeFromSequence(index)
+
+        if(reference) {
+        clearTimeout(this._timeout)
         this._sequence._c += 1;
         const lseqID= this.getLSEQID({id:reference})
-
         this._document.causality.incrementFrom(lseqID)
+
         this._pairs.push({
             id: this._document.uid, 
             reference
@@ -39,13 +38,28 @@ export class RemoveManager extends TextEvent {
             this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)     
             this._pairs=[]
         },10)
-
+        }
       //TODO:  this.setLastChangesTime()
       
-        return reference;
+       // return reference;
     };
 
+    removeFromSequence(index){
+       if(this._sequence.root.subCounter===2) {
+           console.warn('sequence is empty')
+           debugger
+       } else if (index>=this._sequence.root.subCounter-2) {
+           console.warn('error outofbounds ')
+           debugger
+       } else {
 
+       const reference= this._sequence.remove(index)
+       return reference
+        }
+       return null
+ 
+
+    }
     /*!
      * \brief removal of an element from a remote site.  It emits 'remoteRemove'
      * with the index of the element to remove, -1 if does not exist
