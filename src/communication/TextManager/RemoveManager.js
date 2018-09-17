@@ -46,13 +46,10 @@ export class RemoveManager extends TextEvent {
 
     removeFromSequence(index){
        if(this._sequence.root.subCounter===2) {
-           console.warn('sequence is empty')
-           debugger
+           console.warn('remove from sequence is empty')
        } else if (index>=this._sequence.root.subCounter-2) {
-           console.warn('error outofbounds ')
-           debugger
+           console.warn('Lseq, index is out Of Bounds ')
        } else {
-
        const reference= this._sequence.remove(index)
        return reference
         }
