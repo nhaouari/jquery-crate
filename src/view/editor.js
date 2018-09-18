@@ -257,8 +257,10 @@ isItBlock(Attributes){
         if(range.index>=s){
           s-=1
         } else {
-          length= s+operation.Value
+          //length= s+operation.Value
+        
           s=range.index
+          length= s+operation.Value
         }
       }
 
