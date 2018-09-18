@@ -179,7 +179,7 @@ export class EditorController extends EventEmitter {
         break
 
       case "delete":
-        this.sendDelete(start,operation.Value,isItInsertWithAtt)
+        this.sendDelete(start,operation,isItInsertWithAtt)
       break
     }
     return this.getNextIndex(start,operation)
@@ -247,20 +247,34 @@ isItBlock(Attributes){
     if (operation.Attributes != "") {
       let isItInsertWithAtt = true
       let s=start
-     
+      let length= operation.Value
+
+      let blocAttributes= null
       if(this.isItBlock(operation.Attributes)&&s>0){
         s-=1
+        blocAttributes=operation.Attributes
+        const range= this.viewEditor.getSelection()
+        if(range.index>=s){
+          s-=1
+        } else {
+          length= s+operation.Value
+          s=range.index
+        }
       }
+
       // 2 Get delta of the insert text with attributes
-      const delta = this.getDelta(s, s + operation.Value)     
+      const delta = this.getDelta(s, s+length)     
       const operations = this.getOperations(delta) 
       const insertOperations = operations.filter(op => op.Name==="insert");
       
-      
-      insertOperations.map((op)=>{
+      insertOperations.map((op)=>{  
         if(this.isItComplete(op.Attributes)) { 
-          this.sendDelete(s,operation.Value,isItInsertWithAtt)
-          s=this.sendInsert(s,op)
+          let opp= op 
+          if(blocAttributes){
+           opp.Attributes={...opp.Attributes,...blocAttributes}
+          }
+          this.sendDelete(s,opp,isItInsertWithAtt)
+          s=this.sendInsert(s,opp)
         }
       })
       
@@ -278,12 +292,11 @@ isItBlock(Attributes){
   }
   sendInsert(index,Operation){
     if (Operation.Type==="text") {
-      this.sendCharByChar(Operation.Value,index)
-      return  index + Operation.Value.length
+      this.sendCharByChar(Operation.Value,index)  
     } else {     
       this.insert(Operation.Type,Operation.Value,index)
     }
-  
+    return index + Operation.Length  
   }
 
   sendCharByChar(text,index){
@@ -293,14 +306,14 @@ isItBlock(Attributes){
     }
   }
 
-  sendDelete(index,length,isItInsertWithAtt){
-    console.log('Send delete',index,length,isItInsertWithAtt );
+  sendDelete(index,operation,isItInsertWithAtt){
+    console.log('Send delete',index,operation,isItInsertWithAtt );
     //to ensure that the editor contains just \n without any attributes 
     if (!isItInsertWithAtt) {
       this._comments.UpdateComments()
     }
     // Delete caracter by caracter
-    for (var i = index; i < (index + length); ++i) {
+    for (var i = index; i < (index + operation.Length); ++i) {
       this.textManager._removeManager.remove(index)
     }
     
@@ -385,6 +398,8 @@ isItBlock(Attributes){
     let Name = ""
     let Attributes = ""
     let Value = ""
+    let Length= 1
+
 
     // extract attributes from the operation in the case of there existance
     for (let i = operation.length - 1; i >= 0; i--) {
@@ -397,8 +412,16 @@ isItBlock(Attributes){
       }
     }
     const Type= this.getTypeOfContent(Value)
-    debug('extractOperationInformation',{Name,Value,Attributes,Type})
-    return {Name,Value,Attributes,Type}
+
+    if(Name === 'delete') {
+      Length=Value
+    } else if(Type === 'text') {
+      Length=Value.length
+    }
+
+ 
+    debug('extractOperationInformation',{Name,Value,Attributes,Type,Length})
+    return {Name,Value,Attributes,Type,Length}
   }
 
   getTypeOfContent(value){

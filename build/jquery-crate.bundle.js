@@ -51055,7 +51055,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
 
             for (var j = start; j <= localEntry.v; ++j) {
                 // #B check if not one of the local exceptions
-                //   if (localEntry.x.indexOf(j) < 0) {
+                //TODO: Check why it dose not work   if (localEntry.x.indexOf(j) < 0) {
                 missingLSEQIDs.push({ _e: localEntry.e, _c: j });
                 // };
             };
@@ -51072,7 +51072,6 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
                     }
                 }
             }
-            debugger;
             return missingLSEQIDs;
         }
 
@@ -53273,6 +53272,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.EditorController = undefined;
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _comments = __webpack_require__(/*! ../view/comments */ "./src/view/comments.js");
@@ -53476,7 +53477,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
           break;
 
         case "delete":
-          this.sendDelete(start, operation.Value, isItInsertWithAtt);
+          this.sendDelete(start, operation, isItInsertWithAtt);
           break;
       }
       return this.getNextIndex(start, operation);
@@ -53542,12 +53543,23 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       if (operation.Attributes != "") {
         var isItInsertWithAtt = true;
         var s = start;
+        var length = operation.Value;
 
+        var blocAttributes = null;
         if (this.isItBlock(operation.Attributes) && s > 0) {
           s -= 1;
+          blocAttributes = operation.Attributes;
+          var range = this.viewEditor.getSelection();
+          if (range.index >= s) {
+            s -= 1;
+          } else {
+            length = s + operation.Value;
+            s = range.index;
+          }
         }
+
         // 2 Get delta of the insert text with attributes
-        var delta = this.getDelta(s, s + operation.Value);
+        var delta = this.getDelta(s, s + length);
         var operations = this.getOperations(delta);
         var insertOperations = operations.filter(function (op) {
           return op.Name === "insert";
@@ -53555,8 +53567,12 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
         insertOperations.map(function (op) {
           if (_this4.isItComplete(op.Attributes)) {
-            _this4.sendDelete(s, operation.Value, isItInsertWithAtt);
-            s = _this4.sendInsert(s, op);
+            var opp = op;
+            if (blocAttributes) {
+              opp.Attributes = _extends({}, opp.Attributes, blocAttributes);
+            }
+            _this4.sendDelete(s, opp, isItInsertWithAtt);
+            s = _this4.sendInsert(s, opp);
           }
         });
       }
@@ -53579,10 +53595,10 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     value: function sendInsert(index, Operation) {
       if (Operation.Type === "text") {
         this.sendCharByChar(Operation.Value, index);
-        return index + Operation.Value.length;
       } else {
         this.insert(Operation.Type, Operation.Value, index);
       }
+      return index + Operation.Length;
     }
   }, {
     key: "sendCharByChar",
@@ -53594,14 +53610,14 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     }
   }, {
     key: "sendDelete",
-    value: function sendDelete(index, length, isItInsertWithAtt) {
-      console.log('Send delete', index, length, isItInsertWithAtt);
+    value: function sendDelete(index, operation, isItInsertWithAtt) {
+      console.log('Send delete', index, operation, isItInsertWithAtt);
       //to ensure that the editor contains just \n without any attributes 
       if (!isItInsertWithAtt) {
         this._comments.UpdateComments();
       }
       // Delete caracter by caracter
-      for (var i = index; i < index + length; ++i) {
+      for (var i = index; i < index + operation.Length; ++i) {
         this.textManager._removeManager.remove(index);
       }
     }
@@ -53698,6 +53714,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var Name = "";
       var Attributes = "";
       var Value = "";
+      var Length = 1;
 
       // extract attributes from the operation in the case of there existance
       for (var i = operation.length - 1; i >= 0; i--) {
@@ -53710,8 +53727,15 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         }
       }
       var Type = this.getTypeOfContent(Value);
-      debug('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type });
-      return { Name: Name, Value: Value, Attributes: Attributes, Type: Type };
+
+      if (Name === 'delete') {
+        Length = Value;
+      } else if (Type === 'text') {
+        Length = Value.length;
+      }
+
+      debug('extractOperationInformation', { Name: Name, Value: Value, Attributes: Attributes, Type: Type, Length: Length });
+      return { Name: Name, Value: Value, Attributes: Attributes, Type: Type, Length: Length };
     }
   }, {
     key: "getTypeOfContent",

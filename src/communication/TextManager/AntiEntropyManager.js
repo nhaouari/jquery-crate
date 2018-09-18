@@ -76,7 +76,7 @@ export class AntiEntropyManager extends TextEvent {
 
         for (let j = start; j <= localEntry.v; ++j) {
                     // #B check if not one of the local exceptions
-                 //   if (localEntry.x.indexOf(j) < 0) {
+                 //TODO: Check why it dose not work   if (localEntry.x.indexOf(j) < 0) {
                         missingLSEQIDs.push({ _e: localEntry.e, _c: j});
                    // };
                 };
@@ -96,7 +96,6 @@ export class AntiEntropyManager extends TextEvent {
                 }
             }
         }
-        debugger
         return missingLSEQIDs
     }
 
