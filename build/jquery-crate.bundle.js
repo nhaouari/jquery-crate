@@ -51005,51 +51005,35 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     }, {
         key: 'receiveRequest',
         value: function receiveRequest(_ref) {
+            var _this2 = this;
+
             var id = _ref.id,
                 causality = _ref.causality;
 
 
             var localVVwE = this._document.causality.clone();
             var remoteVVwE = new _versionVectorWithExceptions2.default(null).constructor.fromJSON(causality); // cast
+
             debug('receiveRequest', { antiEntropyPeriod: this._antiEntropyPeriod, id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE });
-            var toSearch = [];
+            var missingLSEQIDs = [];
 
             // #1 for each entry of our VVwE, look if the remote VVwE knows less
-            for (var i = 0; i < localVVwE.vector.arr.length; ++i) {
-                var localEntry = localVVwE.vector.arr[i];
-                var index = remoteVVwE.vector.indexOf(localEntry);
-                var start = 1;
-                // #A check if the entry exists in the remote vvwe
-                if (index >= 0) {
-                    start = remoteVVwE.vector.arr[index].v + 1;
-                };
 
-                for (var j = start; j <= localEntry.v; ++j) {
-                    // #B check if not one of the local exceptions
-                    if (localEntry.x.indexOf(j) < 0) {
-                        toSearch.push({
-                            _e: localEntry.e,
-                            _c: j
-                        });
-                    };
-                };
-                // #C handle the exceptions of the remote vector
-                if (index >= 0) {
-                    for (var j = 0; j < remoteVVwE.vector.arr[index].x.length; ++j) {
-                        var except = remoteVVwE.vector.arr[index].x[j];
-                        if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
-                            toSearch.push({
-                                _e: localEntry.e,
-                                _c: except
-                            });
-                        };
-                    };
-                };
-            };
-            if (toSearch.length > 0) {
-                var elements = this.getElements(toSearch);
+            var localEntries = localVVwE.vector.arr;
+
+            localEntries.forEach(function (localEntry) {
+                var remoteEntryIndex = remoteVVwE.vector.indexOf(localEntry);
+                var remoteEntry = null;
+                if (remoteEntryIndex > 0) {
+                    remoteEntry = remoteVVwE.vector.arr[index];
+                }
+                var missingLSEQIDsEntry = _this2.getMissingLSEQIDs(localEntry, remoteEntry);
+                Array.prototype.push.apply(missingLSEQIDs, missingLSEQIDsEntry);
+            });
+
+            if (missingLSEQIDs.length > 0) {
+                var elements = this.getElements(missingLSEQIDs);
                 // #2 send back the found elements
-
                 if (elements.length != 0) {
                     debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements);
                     this.sendAntiEntropyResponse(id, localVVwE, elements);
@@ -51059,6 +51043,39 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
                 }
             }
         }
+    }, {
+        key: 'getMissingLSEQIDs',
+        value: function getMissingLSEQIDs(localEntry, remoteEntry) {
+            var start = 1;
+            if (remoteEntry) {
+                start = remoteEntry.v + 1;
+            }
+
+            var missingLSEQIDs = [];
+
+            for (var j = start; j <= localEntry.v; ++j) {
+                // #B check if not one of the local exceptions
+                //   if (localEntry.x.indexOf(j) < 0) {
+                missingLSEQIDs.push({ _e: localEntry.e, _c: j });
+                // };
+            };
+
+            // #C handle the exceptions of the remote vector
+            if (remoteEntry) {
+                for (var _j = 0; _j < remoteEntry.x.length; ++_j) {
+                    var except = remoteEntry.x[_j];
+                    if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
+                        missingLSEQIDs.push({
+                            _e: localEntry.e,
+                            _c: except
+                        });
+                    }
+                }
+            }
+            debugger;
+            return missingLSEQIDs;
+        }
+
         /*!
            * \brief search a set of elements in our sequence and return them
            * \param toSearch the array of elements {_e, _c} to search
@@ -51127,7 +51144,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     }, {
         key: 'receiveResponse',
         value: function receiveResponse(_ref3) {
-            var _this2 = this;
+            var _this3 = this;
 
             var elements = _ref3.elements,
                 causalityAtReceipt = _ref3.causalityAtReceipt;
@@ -51138,8 +51155,8 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             var elems = [];
             elements.forEach(function (element) {
                 // #2 only check if the message has not been received yet
-                if (!_this2.haveBeenReceived(element)) {
-                    _this2._document.causality.incrementFrom(element.id);
+                if (!_this3.haveBeenReceived(element)) {
+                    _this3._document.causality.incrementFrom(element.id);
                     elems.push(element.payload);
                 }
             });
@@ -51157,12 +51174,12 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     }, {
         key: 'startAntiEntropy',
         value: function startAntiEntropy() {
-            var _this3 = this;
+            var _this4 = this;
 
             var delta = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 2000;
 
             this._intervalAntiEntropy = setInterval(function () {
-                _this3.sendAntiEntropyRequest();
+                _this4.sendAntiEntropyRequest();
             }, delta);
         }
     }, {
@@ -51306,6 +51323,7 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
             this._timeout = setTimeout(function () {
                 if (_this2.isItConvertibleToJSON(pair)) {
                     _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
+
                     _this2.setLastChangesTime();
                 }
                 _this2._pairs = [];
@@ -51336,15 +51354,18 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                 if (index >= 0) {
                     _this3.emit('remoteInsert', pair.elem, index);
                     _this3.setLastChangesTime();
-                    var range = {
-                        index: index,
-                        length: 0
-                    };
-                    var msg = {
-                        range: range,
-                        id: id
-                    };
-                    _this3.sendCaret(msg, 10);
+                    if (!pair.antientropy) {
+                        var range = {
+                            index: index,
+                            length: 0
+                        };
+                        var msg = {
+                            range: range,
+                            id: id
+                        };
+                        console.log('cursor sent    ');
+                        _this3.Event('Caret', msg);
+                    }
                 }
             });
         }
@@ -51364,16 +51385,6 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                 console.error('The object cannot be convert to json ', e, insertMsg);
                 return false;
             }
-        }
-    }, {
-        key: 'sendCaret',
-        value: function sendCaret(msg, timeout) {
-            var _this4 = this;
-
-            clearTimeout(this._timeout);
-            this._timeout = setTimeout(function () {
-                _this4.Event('Caret', msg);
-            }, timeout);
         }
     }]);
 

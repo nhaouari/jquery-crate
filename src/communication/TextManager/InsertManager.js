@@ -28,7 +28,6 @@ export class InsertManager extends TextEvent {
         var pair = this._sequence.insert(packet, position)
         
         this._document.causality.incrementFrom(this.getLSEQID({pair}))
-
  
         debug('local Insert', packet, ' Index ', position, 'pair',pair)
         
@@ -40,6 +39,7 @@ export class InsertManager extends TextEvent {
         this._timeout=setTimeout(()=>{ 
             if (this.isItConvertibleToJSON(pair)) {
                 this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)
+                
                 this.setLastChangesTime()
             }
             this._pairs=[]
@@ -64,6 +64,7 @@ export class InsertManager extends TextEvent {
         if (index >= 0) {
             this.emit('remoteInsert', pair.elem, index);
             this.setLastChangesTime()
+          if(!pair.antientropy) {
             const range = {
                 index: index,
                 length: 0
@@ -72,8 +73,9 @@ export class InsertManager extends TextEvent {
                 range,
                 id
             }
-            this.sendCaret(msg,10);
-          
+            console.log('cursor sent    ')
+            this.Event('Caret', msg)
+        }
         }
     });
     }
@@ -92,11 +94,5 @@ export class InsertManager extends TextEvent {
         }
     }
 
-    sendCaret(msg,timeout){
-        clearTimeout(this._timeout)
-        this._timeout = setTimeout(()=>{ 
-            this.Event('Caret', msg)
-        }, timeout);
-      }
 
 }

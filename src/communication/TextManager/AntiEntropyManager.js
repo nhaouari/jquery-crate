@@ -34,45 +34,28 @@ export class AntiEntropyManager extends TextEvent {
        
         const localVVwE=this._document.causality.clone()
         const remoteVVwE = (new VVwE(null)).constructor.fromJSON(causality); // cast
+       
         debug('receiveRequest',{antiEntropyPeriod:this._antiEntropyPeriod, id, remoteVVwE, localVVwE})
-        let toSearch = [];
+        let missingLSEQIDs=[]
 
         // #1 for each entry of our VVwE, look if the remote VVwE knows less
-        for (let i = 0; i < localVVwE.vector.arr.length; ++i) {
-            const localEntry = localVVwE.vector.arr[i];
-            const index = remoteVVwE.vector.indexOf(localEntry);
-            let start = 1;
-            // #A check if the entry exists in the remote vvwe
-            if (index >= 0) {
-                start = remoteVVwE.vector.arr[index].v + 1;
-            };
+        
+        const localEntries= localVVwE.vector.arr
 
-            for (var j = start; j <= localEntry.v; ++j) {
-                // #B check if not one of the local exceptions
-                if (localEntry.x.indexOf(j) < 0) {
-                    toSearch.push({
-                        _e: localEntry.e,
-                        _c: j
-                    });
-                };
-            };
-            // #C handle the exceptions of the remote vector
-            if (index >= 0) {
-                for (var j = 0; j < remoteVVwE.vector.arr[index].x.length; ++j) {
-                    var except = remoteVVwE.vector.arr[index].x[j];
-                    if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
-                        toSearch.push({
-                            _e: localEntry.e,
-                            _c: except
-                        });
-                    };
-                };
-            };
-        };
-        if(toSearch.length>0){
-        const elements = this.getElements(toSearch);
+        localEntries.forEach(localEntry => {
+            const remoteEntryIndex= remoteVVwE.vector.indexOf(localEntry)
+            let remoteEntry= null
+            if(remoteEntryIndex>0) {
+                remoteEntry=remoteVVwE.vector.arr[index]
+            }
+            const missingLSEQIDsEntry=this.getMissingLSEQIDs(localEntry,remoteEntry)
+            Array.prototype.push.apply(missingLSEQIDs,missingLSEQIDsEntry);
+                 
+        })
+
+        if(missingLSEQIDs.length>0){
+        const elements = this.getElements(missingLSEQIDs);
             // #2 send back the found elements
-
         if (elements.length != 0) {
             debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements)
             this.sendAntiEntropyResponse(id, localVVwE, elements);         
@@ -82,6 +65,43 @@ export class AntiEntropyManager extends TextEvent {
         }
     }
     }
+
+    getMissingLSEQIDs(localEntry,remoteEntry){
+        let start = 1
+        if(remoteEntry){
+            start = remoteEntry.v + 1;
+        }   
+
+        let missingLSEQIDs=[]
+
+        for (let j = start; j <= localEntry.v; ++j) {
+                    // #B check if not one of the local exceptions
+                 //   if (localEntry.x.indexOf(j) < 0) {
+                        missingLSEQIDs.push({ _e: localEntry.e, _c: j});
+                   // };
+                };
+        
+
+
+         // #C handle the exceptions of the remote vector
+         if (remoteEntry) {
+            for (let j = 0; j < remoteEntry.x.length; ++j) {
+                let except = remoteEntry.x[j];
+                if (localEntry.x.indexOf(except) < 0 && except <= localEntry.v) {
+                    missingLSEQIDs.push({
+                        _e: localEntry.e,
+                        _c: except
+                    })
+               
+                }
+            }
+        }
+        debugger
+        return missingLSEQIDs
+    }
+
+
+
   /*!
      * \brief search a set of elements in our sequence and return them
      * \param toSearch the array of elements {_e, _c} to search
