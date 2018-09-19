@@ -189,7 +189,6 @@ export function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-
 // default options
 let simulationOptions = {
     seed: 3,
@@ -201,11 +200,14 @@ let simulationOptions = {
     preSimulationTime: 2 * 1000,
     useSignalingServer: true,
     crateOptions: {
-        signalingServer: "https://carteserver.herokuapp.com",
+        ICEsURL: "https://carteserver.herokuapp.com",
         storageServer: "https://storagecrate.herokuapp.com",
         stun: "23.21.150.121",
         containerID: "content-default",
-        editingSession: "test",
+        signalingOptions:{
+            address: "https://carteserver.herokuapp.com",
+            session: "test"
+            },
         display: false,
         webRTCOptions:{wrtc:wrtc}
     }

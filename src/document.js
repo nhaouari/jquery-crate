@@ -161,6 +161,7 @@ export default class doc extends EventEmitter {
     const d = new Date()
     const n = d.getTime()
     this._lastChanges = n
+    this.refreshDocument()
   }
 
 
@@ -220,6 +221,57 @@ export default class doc extends EventEmitter {
     console.error(error);
     return false
   }
+  }
+
+  getDeltaFromSequence(){
+    let root=this.sequence.root
+
+    
+  }
+
+  getLSEQNodes(){
+    let LSEQNodeArray=[]
+    const root=this.sequence.root
+
+    let preorder=(node)=>{
+      if(node.e&&node.e!=""){
+      LSEQNodeArray.push(node)
+    }
+      const children = node.children
+      children.forEach(child => {
+        preorder(child)
+      });
+    }
+
+    preorder(root)
+    return LSEQNodeArray
+  }
+
+
+  getDeltaFromSequence(){
+    let LSEQNodes=this.getLSEQNodes()
+
+    let ops=[]
+    
+    LSEQNodes.forEach((node)=>{
+      ops.push({insert:node.e.content,attributes:node.e.attributes})
+    })
+
+    return {ops}
+  }
+
+  refreshDocument(){
+    clearTimeout(this.refreshDocumentTimeout)
+
+    this.refreshDocumentTimeout=setTimeout(()=>{
+      const delta=this.getDeltaFromSequence()
+      console.log(delta)
+      let range=this._view._editor.viewEditor.getSelection()
+
+      this._view._editor.viewEditor.setContents(delta,'silent')
+      this._view._editor.viewEditor.setSelection(range,'silent')
+    },10)
+  
   }
 
   close() {

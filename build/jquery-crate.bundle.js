@@ -51980,6 +51980,7 @@ var doc = function (_EventEmitter) {
       var d = new Date();
       var n = d.getTime();
       this._lastChanges = n;
+      this.refreshDocument();
     }
 
     /*!
@@ -52045,9 +52046,62 @@ var doc = function (_EventEmitter) {
       }
     }
   }, {
+    key: "getDeltaFromSequence",
+    value: function getDeltaFromSequence() {
+      var root = this.sequence.root;
+    }
+  }, {
+    key: "getLSEQNodes",
+    value: function getLSEQNodes() {
+      var LSEQNodeArray = [];
+      var root = this.sequence.root;
+
+      var preorder = function preorder(node) {
+        if (node.e && node.e != "") {
+          LSEQNodeArray.push(node);
+        }
+        var children = node.children;
+        children.forEach(function (child) {
+          preorder(child);
+        });
+      };
+
+      preorder(root);
+      return LSEQNodeArray;
+    }
+  }, {
+    key: "getDeltaFromSequence",
+    value: function getDeltaFromSequence() {
+      var LSEQNodes = this.getLSEQNodes();
+
+      var ops = [];
+
+      LSEQNodes.forEach(function (node) {
+        ops.push({ insert: node.e.content, attributes: node.e.attributes });
+      });
+
+      return { ops: ops };
+    }
+  }, {
+    key: "refreshDocument",
+    value: function refreshDocument() {
+      var _this3 = this;
+
+      clearTimeout(this.refreshDocumentTimeout);
+
+      this.refreshDocumentTimeout = setTimeout(function () {
+        var delta = _this3.getDeltaFromSequence();
+        console.log(delta);
+        var range = _this3._view._editor.viewEditor.getSelection();
+
+        _this3._view._editor.viewEditor.setContents(delta, 'silent');
+        _this3._view._editor.viewEditor.setSelection(range, 'silent');
+      }, 10);
+    }
+  }, {
     key: "close",
     value: function close() {
-      var _this3 = this;
+      var _this4 = this;
 
       this._foglet.unshare();
       this._foglet._networkManager._rps.network._rps.disconnect();
@@ -52060,9 +52114,9 @@ var doc = function (_EventEmitter) {
       this._communication.close();
 
       setTimeout(function () {
-        _this3._foglet._networkManager._rps.network._rps.disconnect();
-        _this3._document = null;
-        _this3._foglet = null;
+        _this4._foglet._networkManager._rps.network._rps.disconnect();
+        _this4._document = null;
+        _this4._foglet = null;
       }, 2000);
     }
   }]);
@@ -53546,20 +53600,19 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
         var length = operation.Value;
 
         var blocAttributes = null;
-        if (this.isItBlock(operation.Attributes) && s > 0) {
-          s -= 1;
-          blocAttributes = operation.Attributes;
-          var range = this.viewEditor.getSelection();
-          if (range.index >= s) {
-            s -= 1;
-          } else {
-            //length= s+operation.Value
-
-            s = range.index;
-            length = s + operation.Value;
-          }
-        }
-
+        /* if(this.isItBlock(operation.Attributes)&&s>0){
+           s-=1
+           blocAttributes=operation.Attributes
+           const range= this.viewEditor.getSelection()
+             if(range.index>=s){
+             s-=1
+           } else {
+             //length= s+operation.Value
+             s=range.index
+             length= s+operation.Value
+           }
+         }
+        */
         // 2 Get delta of the insert text with attributes
         var delta = this.getDelta(s, s + length);
         var operations = this.getOperations(delta);

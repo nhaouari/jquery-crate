@@ -250,20 +250,20 @@ isItBlock(Attributes){
       let length= operation.Value
 
       let blocAttributes= null
-      if(this.isItBlock(operation.Attributes)&&s>0){
+     /* if(this.isItBlock(operation.Attributes)&&s>0){
         s-=1
         blocAttributes=operation.Attributes
         const range= this.viewEditor.getSelection()
+
         if(range.index>=s){
           s-=1
         } else {
           //length= s+operation.Value
-        
           s=range.index
           length= s+operation.Value
         }
       }
-
+*/
       // 2 Get delta of the insert text with attributes
       const delta = this.getDelta(s, s+length)     
       const operations = this.getOperations(delta) 
