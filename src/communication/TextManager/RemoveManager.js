@@ -34,12 +34,12 @@ export class RemoveManager extends TextEvent {
             reference
         })
 
-        this._timeout=setTimeout(()=>{ 
+      //  this._timeout=setTimeout(()=>{ 
             this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)     
             this._pairs=[]
-        },10)
+      //  },10)
         }
-      //TODO:  this.setLastChangesTime()
+      this.setLastChangesTime()
       
        // return reference;
     };

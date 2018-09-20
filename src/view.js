@@ -122,7 +122,11 @@ export class View {
               float: right;
              position: relative;
                 ">
-            <i class="fa fa-window-close" aria-hidden="true" ></i>
+            <i class="fa fa-window-close" style="
+            position: absolute;
+            top: -15px;
+            left: 25px;
+        " aria-hidden="true" ></i>
             </div>
          </div>
       </div>

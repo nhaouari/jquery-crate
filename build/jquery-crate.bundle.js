@@ -51396,7 +51396,7 @@ var View = exports.View = function () {
         width = 45;
       }
 
-      var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" style=\"'width:" + width + "vw !important'\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\" style=\" width: 20px;\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n         <div id=\"state\" style=\"margin-left: -50px;\" \">\n            <i class=\"fa fa-globe fa-3x ficon \"></i>\n         </div>\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
+      var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" style=\"'width:" + width + "vw !important'\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\" style=\" width: 20px;\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" style=\"\n            position: absolute;\n            top: -15px;\n            left: 25px;\n        \" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n         <div id=\"state\" style=\"margin-left: -50px;\" \">\n            <i class=\"fa fa-globe fa-3x ficon \"></i>\n         </div>\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
       jQuery("#" + this._editorsHolderID).append(html);
 
       jQuery("#" + this._editorContainerID + " #saveComment").click(function () {
@@ -53216,7 +53216,6 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
     _createClass(RemoveManager, [{
         key: 'remove',
         value: function remove(index) {
-            var _this2 = this;
 
             var reference = this.removeFromSequence(index);
             debug("Remove", { index: index, reference: reference });
@@ -53231,12 +53230,12 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
                     reference: reference
                 });
 
-                this._timeout = setTimeout(function () {
-                    _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
-                    _this2._pairs = [];
-                }, 10);
+                //  this._timeout=setTimeout(()=>{ 
+                this._lastSentId = this.broadcast({ pairs: this._pairs }, this._lastSentId);
+                this._pairs = [];
+                //  },10)
             }
-            //TODO:  this.setLastChangesTime()
+            this.setLastChangesTime();
 
             // return reference;
         }
@@ -53264,7 +53263,7 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
     }, {
         key: 'receive',
         value: function receive(_ref) {
-            var _this3 = this;
+            var _this2 = this;
 
             var pairs = _ref.pairs;
 
@@ -53273,8 +53272,8 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
                 var reference = elem.reference;
                 var id = elem.id;
 
-                var index = _this3._sequence.applyRemove(reference);
-                _this3.emit('remoteRemove', index);
+                var index = _this2._sequence.applyRemove(reference);
+                _this2.emit('remoteRemove', index);
 
                 if (index >= 0) {
                     var range = {
@@ -53285,10 +53284,10 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
                         range: range,
                         id: id
                     };
-                    _this3.Event('Caret', msg);
+                    _this2.Event('Caret', msg);
                 };
 
-                _this3.setLastChangesTime();
+                _this2.setLastChangesTime();
             });
         }
     }]);
@@ -53778,7 +53777,7 @@ var doc = function (_EventEmitter) {
       var defaultOpts = {
         document: this,
         editor: this._view._editor,
-        PingPeriod: 5000000,
+        PingPeriod: 2000,
         AntiEntropyPeriod: 5000
       };
       this._communication = new _Communication.Communication(defaultOpts);
@@ -54072,8 +54071,6 @@ var session = function (_EventEmitter) {
   function session(options) {
     _classCallCheck(this, session);
 
-    // use defaultOptions to use them when we open other sessions
-    //@todo: make these options global
     var _this = _possibleConstructorReturn(this, (session.__proto__ || Object.getPrototypeOf(session)).call(this));
     /**
      *      signalingServer: "https://carteserver.herokuapp.com/",
@@ -54085,6 +54082,9 @@ var session = function (_EventEmitter) {
      */
 
 
+    console.log(options);
+    // use defaultOptions to use them when we open other sessions
+    //@todo: make these options global
     _this._defaultOptions = _extends({}, options);
     _this._options = _extends({}, options);
     _this.openDocument();
@@ -54407,9 +54407,9 @@ var session = function (_EventEmitter) {
             b: 5,
             protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
             webrtc: this._options.webRTCOptions,
-            timeout: 120 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-            pendingTimeout: 120 * 1000,
-            delta: 120 * 1000, // spray-wrtc shuffle interval
+            timeout: 1200 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+            pendingTimeout: 1200 * 1000,
+            delta: 1200 * 1000, // spray-wrtc shuffle interval
             signaling: _extends({}, this._options.signalingOptions, { room: this._options.signalingOptions.session // signaling options
             }) }
         }

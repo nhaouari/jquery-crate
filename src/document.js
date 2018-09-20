@@ -187,7 +187,7 @@ export default class doc extends EventEmitter {
     const defaultOpts = {
       document: this,
       editor: this._view._editor,
-      PingPeriod: 5000000,
+      PingPeriod: 2000, 
       AntiEntropyPeriod: 5000
     }
     this._communication = new Communication(defaultOpts)

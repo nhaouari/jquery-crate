@@ -58,6 +58,8 @@ export default class session extends EventEmitter {
             you have to generate ID at this point
      */
     super();
+
+    console.log(options)
     // use defaultOptions to use them when we open other sessions
     //@todo: make these options global
     this._defaultOptions = { ...options}
@@ -267,9 +269,9 @@ async setOptions() {
           b:5,
           protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
           webrtc:  this._options.webRTCOptions,
-          timeout: 120 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-          pendingTimeout: 120 * 1000,
-          delta: 120 * 1000, // spray-wrtc shuffle interval
+          timeout: 1200 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          pendingTimeout: 1200 * 1000,
+          delta: 1200 * 1000, // spray-wrtc shuffle interval
           signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
         }
       }
