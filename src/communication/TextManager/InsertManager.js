@@ -11,6 +11,7 @@ export class InsertManager extends TextEvent {
         this.action=this.insert    
        
         this._pairs=[]
+        this._pairs2=[]
     }
 
 
@@ -35,7 +36,10 @@ export class InsertManager extends TextEvent {
                     id: this._document.uid,
                     pair
                 })
-
+        this._pairs2.push({
+            id: this._document.uid,
+            pair
+        })
         this._timeout=setTimeout(()=>{ 
             if (this.isItConvertibleToJSON(pair)) {
                 this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)

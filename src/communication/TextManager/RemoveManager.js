@@ -19,10 +19,10 @@ export class RemoveManager extends TextEvent {
      * \return the identifier freshly removed
      */
     remove(index) { 
-        debug("Remove",{index})  
+       
        
         const reference = this.removeFromSequence(index)
-
+        debug("Remove",{index,reference})  
         if(reference) {
         clearTimeout(this._timeout)
         this._sequence._c += 1;
@@ -48,15 +48,14 @@ export class RemoveManager extends TextEvent {
        if(this._sequence.root.subCounter===2) {
            console.warn('remove from sequence is empty')
        } else if (index>=this._sequence.root.subCounter-2) {
-           console.warn('Lseq, index is out Of Bounds ')
+           console.warn('Lseq, index is out Of Bounds')
        } else {
        const reference= this._sequence.remove(index)
        return reference
         }
        return null
- 
-
     }
+
     /*!
      * \brief removal of an element from a remote site.  It emits 'remoteRemove'
      * with the index of the element to remove, -1 if does not exist

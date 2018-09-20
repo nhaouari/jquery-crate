@@ -1,6 +1,9 @@
 
 import VVwE from "version-vector-with-exceptions"
 import {TextEvent} from './TextEvent'
+import LSEQTree from "LSEQTree"
+import BI  from "BigInt"
+
 var debug = require('debug')('CRATE:Communication:TextManager:AntiEntropyManager')
 
 export class AntiEntropyManager extends TextEvent {
@@ -111,24 +114,93 @@ export class AntiEntropyManager extends TextEvent {
     
         let result = []
         const sequenceNodes= this.getSequenceNodes()
+        debug('getSequenceNodes result ',{sequenceNodes})
+        let lseqTreeTest= new LSEQTree('test')
 
-        for (let i = 0; i < toSearch.length; i++) {
-            const {_e,_c} = toSearch[i];   
-            let node=this.getSequenceNode({id:_e,counter:_c,sequenceNodes})
+       
 
-            if (node){
-                result.push(this.MAEInsertOperation({
+        sequenceNodes.forEach((node)=>{
+           
+            const id = node.t.s
+            const clock=node.t.c
+            //node.children=[]
+            if (this.isInToSearch({id,clock,toSearch})){
+                const pair = {
                     elem: node.e,
-                    id: node,
+                    id: this.fromNode(node),
                     antientropy: true // this to prevent the caret movement in the case of anti-entropy
-                }, node.t.s));
+                }
+                lseqTreeTest.applyInsert(pair, false);
+                result.push(this.MAEInsertOperation(pair, node.t.s));
             }
-        }
+
+        })
+           
         
-            debug('getElements result ',{result: result.reverse()})
+        debug('getElements result ',{result: result.reverse()})
+        debugger
          return  result.reverse();
-     };
+    }
  
+
+
+     getLSEQNodes(){
+        let LSEQNodeArray=[]
+        const root=this._sequence.root
+    
+        let preorder=(node)=>{
+          if(node.e&&node.e!=""){
+          LSEQNodeArray.push(node)
+        }
+          const children = node.children
+          children.forEach(child => {
+            preorder(child)
+          });
+        }
+    
+        preorder(root)
+        return LSEQNodeArray
+      }
+    
+
+    /**
+      * Set the d,s,c values according to the node in argument
+      * @param {LSeqNode} node The lseqnode containing the path in the tree
+      * structure.
+      * @return {Identifier} This identifier modified.
+      */
+     fromNode (node) {
+        let _base = this._sequence._base
+        let _s = []
+        let _c= []
+
+
+         // #1 process the length of the path
+         let length = 1, tempNode = node
+         
+         while (!tempNode.isLeaf) {
+         ++length;
+             tempNode = tempNode.child
+         };
+         // #2 copy the values contained in the path
+         let _d = BI.int2bigInt(0, _base.getSumBit(length - 1))
+         
+         for (let i = 0; i < length ; ++i) {
+             // #1a copy the site id
+            _s.push(node.t.s)
+             // #1b copy the counter
+            _c.push(node.t.c)
+             // #1c copy the digit
+             BI.addInt_(_d, node.t.p)
+             if (i !== length - 1) {
+                 BI.leftShift_(_d, _base.getBitBase(i+1))
+             };
+             node = node.child;
+         };
+         
+         return {_base,_d,_s,_c}
+     }
+
     getSequenceNodes(){
         let sequenceNodes = []
 
@@ -140,20 +212,31 @@ export class AntiEntropyManager extends TextEvent {
 
             sequenceNodes.push(tempNode)    
         }
-        debug('getSequenceNodes result ',{sequenceNodes})
+        
     return sequenceNodes
     }
 
-    getSequenceNode({id,counter,sequenceNodes}){
+    getSequenceNode({id,clock,sequenceNodes}){
         for (let j = 0; j < sequenceNodes.length; j++) {
             const tempNode=sequenceNodes[j]
             if (tempNode.t.s ===id &&
-                tempNode.t.c === counter) {
+                tempNode.t.c === clock) {
                 return tempNode        
              }      
         
     }
-    debug('getSequenceNode not found  ',{id,counter,sequenceNodes})
+    }
+
+    isInToSearch({id,clock,toSearch}) {
+
+        for (let j = 0; j < toSearch.length; j++) {
+            const {_e,_c}=toSearch[j]
+           
+            if (_e ===id &&
+                _c === clock) {
+                return true        
+             } 
+    }
     return false
 
 }
