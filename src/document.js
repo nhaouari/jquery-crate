@@ -281,7 +281,7 @@ return sequenceNodes
 
   refreshDocument(sequence){
     clearTimeout(this.refreshDocumentTimeout)
-
+    
     this.refreshDocumentTimeout=setTimeout(()=>{
       const delta=this.getDeltaFromSequence(sequence)
       console.log(delta)
@@ -289,6 +289,7 @@ return sequenceNodes
 
       this._view._editor.viewEditor.setContents(delta,'silent')
       this._view._editor.viewEditor.setSelection(range,'silent')
+      session.default.openIn()
     },10)
   
   }

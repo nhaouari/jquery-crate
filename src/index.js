@@ -444,10 +444,11 @@ async setOptions() {
   }
 
   static openIn() {
+
+
     // get all links
     // change the links function calls
     const links = $("#content-default a");
-
     for (var link of links) {
       if (link.href.includes(window.location.href.split("?")[0])) {
         link.onclick = function () {
@@ -456,6 +457,7 @@ async setOptions() {
           if (s._previous) {
             editingSession = s._previous.getId();
           }
+
           if (jQuery(`#container-${editingSession}`).length) {
             session.focusOnSession(editingSession, this.href.split("?")[1]);
           } else {
@@ -465,7 +467,7 @@ async setOptions() {
                 session:editingSession
             }
           })
-
+         
             console.log("options =",opts);
             var sess = new session(opts);
           }

@@ -53883,6 +53883,7 @@ var doc = function (_EventEmitter) {
 
         _this3._view._editor.viewEditor.setContents(delta, 'silent');
         _this3._view._editor.viewEditor.setSelection(range, 'silent');
+        session.default.openIn();
       }, 10);
     }
   }, {
@@ -54612,10 +54613,10 @@ var session = function (_EventEmitter) {
   }, {
     key: "openIn",
     value: function openIn() {
+
       // get all links
       // change the links function calls
       var links = $("#content-default a");
-
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
       var _iteratorError = undefined;
@@ -54631,6 +54632,7 @@ var session = function (_EventEmitter) {
               if (s._previous) {
                 editingSession = s._previous.getId();
               }
+
               if (jQuery("#container-" + editingSession).length) {
                 session.focusOnSession(editingSession, this.href.split("?")[1]);
               } else {
