@@ -27,7 +27,7 @@ export class RemoveManager extends TextEvent {
         clearTimeout(this._timeout)
         this._sequence._c += 1;
         const lseqID= this.getLSEQID({id:reference})
-        this._document.causality.incrementFrom(lseqID)
+        //this._document.causality.incrementFrom(lseqID)
 
         this._pairs.push({
             id: this._document.uid, 

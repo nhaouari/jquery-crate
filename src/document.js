@@ -12,7 +12,7 @@ import {
 } from './communication/Communication'
 import BI  from "BigInt"
 
-var debug = require('debug')('crate:crate-document')
+var debug = require('debug')('CRATE:Document')
 
 export default class doc extends EventEmitter {
   constructor(options, foglet) {
@@ -110,6 +110,7 @@ export default class doc extends EventEmitter {
 
     })
 
+
     this._data_comm.onUnicast((id, message) => {
       debug('document', '._data_comm unicast', 'Message received', message, 'from', id)
       this.emit(message.event, message)
@@ -187,7 +188,7 @@ export default class doc extends EventEmitter {
     const defaultOpts = {
       document: this,
       editor: this._view._editor,
-      PingPeriod: 2000, 
+      PingPeriod: 2000000, 
       AntiEntropyPeriod: 5000
     }
     this._communication = new Communication(defaultOpts)
