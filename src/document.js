@@ -188,8 +188,8 @@ export default class doc extends EventEmitter {
     const defaultOpts = {
       document: this,
       editor: this._view._editor,
-      PingPeriod: 2000000, 
-      AntiEntropyPeriod: 5000
+      PingPeriod: 2000, 
+      AntiEntropyPeriod: 2000
     }
     this._communication = new Communication(defaultOpts)
     this._communication.init()
@@ -204,10 +204,9 @@ export default class doc extends EventEmitter {
   saveDocument() {
     try {
     const timeNow = new Date().getTime()
-    const title = jQuery(`#${this._editorContainerID} #title`).text()
     const document = {
       date: timeNow,
-      title: title,
+      title:  this.name,
       delta: this._view._editor.viewEditor.editor.delta,
       sequence: this.sequence,
       causality: this.causality,
@@ -217,6 +216,8 @@ export default class doc extends EventEmitter {
       signalingOptions: this.signalingOptions
     }
     store.set("CRATE2-" + this.signalingOptions.session, document)
+
+    debug('Document saved => ',document)
     return true
   } 
   catch(error) {

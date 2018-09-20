@@ -53578,8 +53578,8 @@ var doc = function (_EventEmitter) {
       var defaultOpts = {
         document: this,
         editor: this._view._editor,
-        PingPeriod: 2000000,
-        AntiEntropyPeriod: 5000
+        PingPeriod: 2000,
+        AntiEntropyPeriod: 2000
       };
       this._communication = new _Communication.Communication(defaultOpts);
       this._communication.init();
@@ -53597,10 +53597,9 @@ var doc = function (_EventEmitter) {
     value: function saveDocument() {
       try {
         var timeNow = new Date().getTime();
-        var title = jQuery("#" + this._editorContainerID + " #title").text();
         var document = {
           date: timeNow,
-          title: title,
+          title: this.name,
           delta: this._view._editor.viewEditor.editor.delta,
           sequence: this.sequence,
           causality: this.causality,
@@ -53610,6 +53609,8 @@ var doc = function (_EventEmitter) {
           signalingOptions: this.signalingOptions
         };
         store.set("CRATE2-" + this.signalingOptions.session, document);
+
+        debug('Document saved => ', document);
         return true;
       } catch (error) {
         console.error(error);
