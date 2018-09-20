@@ -51396,7 +51396,7 @@ var View = exports.View = function () {
         width = 45;
       }
 
-      var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" style=\"'width:" + width + "vw !important'\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\" style=\" width: 20px;\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" style=\"\n            position: absolute;\n            top: -15px;\n            left: 25px;\n        \" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n         <div id=\"state\" style=\"margin-left: -50px;\" \">\n            <i class=\"fa fa-globe fa-3x ficon \"></i>\n         </div>\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
+      var html = " \n<div class=\"col-md-10 editorContainer\" id=\"" + this._editorContainerID + "\" style=\"'width:" + width + "vw !important'\" >\n <!-- Head -->\n   <div id=\"head\">\n      <div id=\"firstrow\" class=\"row\">\n         <div id=\"connectionState\">\n         </div>\n         <div id=\"title\">\n            " + this._options.name + "\n         </div>\n         <div id=\"features\">\n            <div id=\"shareicon\">\n               <i class=\"fa fa-link fa-2x ficon2\"></i>\n            </div>\n            <div id=\"saveicon\"><i class=\"fa fa-floppy-o fa-2x ficon2\"></i></div>\n            <div id=\"remotesave\">\n               <i class=\"fa fa-cloud fa-2x ficon2\"></i>\n            </div>\n            <div id=\"state\">\n            <i class=\"fa fa-globe fa-2x ficon2 \"></i>\n         </div>\n            <div id=\"closeDocument\" style=\"\n              float: right;\n             position: relative;\n                \">\n            <i class=\"fa fa-window-close\" style=\"\n        \" aria-hidden=\"true\" ></i>\n            </div>\n         </div>\n      </div>\n      <div id=\"sharinglink\" class=\"row\">\n      </div>\n   </div>\n   \n <!-- Content -->\n   <div id=\"content\" class=\"content\">\n      <div id=\"users\" class=\"row\">\n      </div>\n      <div id=\"editorSection\">\n         <div id=\"editor\" class=\"editor\">\n         </div>\n         <div id=\"comments\">\n         </div>\n      </div>\n   </div>\n\n\n  <div id=\"inputCommentModal\" class=\"modal fade\" role=\"dialog\" style=\"display: none;\">\n            <div class=\"modal-dialog\">\n        \n                <!-- Modal content-->\n                <div class=\"modal-content\">\n                    <div class=\"modal-body\">\n                    <button type=\"button\" class=\"close\" data-dismiss=\"modal\">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name=\"commentInput\" id=\"commentInput\" style=\"width: 100%;\" rows=\"5\"></textarea></p>\n                    </div>\n                    <div class=\"modal-footer\">\n                    <button type=\"button\" class=\"btn btn-default\" id=\"saveComment\"data-dismiss=\"modal\">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ";
       jQuery("#" + this._editorsHolderID).append(html);
 
       jQuery("#" + this._editorContainerID + " #saveComment").click(function () {
@@ -51544,7 +51544,7 @@ var View = exports.View = function () {
   }, {
     key: "splitedScreen",
     value: function splitedScreen() {
-      jQuery("#" + this._editorContainerID).css("cssText", 'width:45vw !important');
+      jQuery("#" + this._editorContainerID).css("cssText", 'width:calc(50vw - 17.5px) !important');
     }
   }], [{
     key: "addMoveShortcuts",
@@ -54210,9 +54210,9 @@ var session = function (_EventEmitter) {
             b: 5,
             protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
             webrtc: this._options.webRTCOptions,
-            timeout: 1200 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-            pendingTimeout: 1200 * 1000,
-            delta: 1200 * 1000, // spray-wrtc shuffle interval
+            timeout: 12000 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+            pendingTimeout: 12000 * 1000,
+            delta: 12000 * 1000, // spray-wrtc shuffle interval
             signaling: _extends({}, this._options.signalingOptions, { room: this._options.signalingOptions.session // signaling options
             }) }
         }
@@ -54346,6 +54346,12 @@ var session = function (_EventEmitter) {
       } else {
         this.number = insert;
       }
+
+      if (this.number >= 2) {
+        jQuery("#content-default").css("cssText", "width:calc(53% * " + this.number + ") !important");
+      } else {
+        jQuery("#content-default").css("cssText", "width:100% !important");
+      }
     }
   }, {
     key: "updateViews",
@@ -54409,7 +54415,7 @@ var session = function (_EventEmitter) {
         }
       }
       jQuery("html, body").animate({
-        scrollLeft: jQuery("#container-" + moveToSession).offset().left - 40
+        scrollLeft: jQuery("#container-" + moveToSession).offset().left - 10
       }, "slow");
     }
   }, {
@@ -54445,6 +54451,7 @@ var session = function (_EventEmitter) {
                 });
 
                 console.log("options =", opts);
+
                 var sess = new session(opts);
               }
             };

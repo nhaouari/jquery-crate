@@ -269,9 +269,9 @@ async setOptions() {
           b:5,
           protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
           webrtc:  this._options.webRTCOptions,
-          timeout: 1200 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-          pendingTimeout: 1200 * 1000,
-          delta: 1200 * 1000, // spray-wrtc shuffle interval
+          timeout: 12000 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          pendingTimeout: 12000 * 1000,
+          delta: 12000 * 1000, // spray-wrtc shuffle interval
           signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
         }
       }
@@ -378,6 +378,12 @@ async setOptions() {
     } else {
       this.number = insert
     } 
+
+    if(this.number>=2){
+      jQuery(`#content-default`).css("cssText",`width:calc(53% * ${this.number}) !important`)
+    } else {
+      jQuery(`#content-default`).css("cssText",`width:100% !important`)
+    }
   }
   
   
@@ -437,7 +443,7 @@ async setOptions() {
       }
     }
     jQuery("html, body").animate({
-        scrollLeft: jQuery(`#container-${moveToSession}`).offset().left - 40
+        scrollLeft: jQuery(`#container-${moveToSession}`).offset().left - 10
       },
       "slow"
     )
@@ -469,6 +475,7 @@ async setOptions() {
           })
          
             console.log("options =",opts);
+           
             var sess = new session(opts);
           }
         };

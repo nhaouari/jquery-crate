@@ -115,17 +115,17 @@ export class View {
                <i class="fa fa-link fa-2x ficon2"></i>
             </div>
             <div id="saveicon"><i class="fa fa-floppy-o fa-2x ficon2"></i></div>
-            <div id="remotesave" style=" width: 20px;">
+            <div id="remotesave">
                <i class="fa fa-cloud fa-2x ficon2"></i>
             </div>
+            <div id="state">
+            <i class="fa fa-globe fa-2x ficon2 "></i>
+         </div>
             <div id="closeDocument" style="
               float: right;
              position: relative;
                 ">
             <i class="fa fa-window-close" style="
-            position: absolute;
-            top: -15px;
-            left: 25px;
         " aria-hidden="true" ></i>
             </div>
          </div>
@@ -137,9 +137,6 @@ export class View {
  <!-- Content -->
    <div id="content" class="content">
       <div id="users" class="row">
-         <div id="state" style="margin-left: -50px;" ">
-            <i class="fa fa-globe fa-3x ficon "></i>
-         </div>
       </div>
       <div id="editorSection">
          <div id="editor" class="editor">
@@ -342,7 +339,7 @@ export class View {
   }
 
   splitedScreen(){
-    jQuery(`#${this._editorContainerID}`).css("cssText",'width:45vw !important')
+    jQuery(`#${this._editorContainerID}`).css("cssText",'width:calc(50vw - 17.5px) !important')
   }
 }
 
