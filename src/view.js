@@ -9,7 +9,6 @@ export class View {
     this._editorsHolderID = editorsContainerID
     this._editorContainerID = `container-${this._options.signalingOptions.session}`
     this.createCRATE()
-
     this._document = document
    
     if (session.config.storageServer) {

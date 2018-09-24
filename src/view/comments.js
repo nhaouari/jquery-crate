@@ -21,7 +21,7 @@ export class Comments {
 		this._authorId = this._editor._document.uid
 		this._editorContainerID = this._editor._editorContainerID
 		this._viewEditor = this._editor.viewEditor
-		this._markerManager=this._editor.markerManager
+		this._markerManager=this._editor._MarkerViewManager
 
 		this.setSelectors()
 		return this

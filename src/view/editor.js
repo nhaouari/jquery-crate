@@ -9,6 +9,7 @@ import {
   QuillManager
 } from "./QuillManger"
 
+import {MarkerViewManager} from "./MarkerViewManager"
 
 var debug = require('debug')('crate:view:editor')
 
@@ -70,7 +71,7 @@ export class EditorController extends EventEmitter {
   initCommunicationModules(){
     this.markerManager= this._document._communication.markerManager
     this.textManager= this._document._communication.textManager
-    this.markerManager.addMarker(this._document.uid, true)   
+    this._MarkerViewManager=new MarkerViewManager(this.markerManager,this)
   }
 
   /**

@@ -4,8 +4,9 @@ var debug = require('debug')('CRATE:Communication:TextManager:RemoveManager')
 export class RemoveManager extends TextEvent {
     constructor(opts) {
 
-        const name = opts.name || 'Remove'
-        super({name,...opts})
+        const EventName = opts.EventName || 'Remove'
+        super({EventName,...opts})
+        
         this._lastSentId = null
         this._textManager=opts.TextManager
         this.action= this.remove

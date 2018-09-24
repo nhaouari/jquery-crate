@@ -4,12 +4,13 @@ import {TextEvent} from './TextEvent'
 var debug = require('debug')('CRATE:Communication:TextManager:InsertManager')
 export class InsertManager extends TextEvent {
     constructor(opts) {
-        const name = opts.name || 'Insert'
-        super({name,...opts})
-        this._lastSentId = null
+        const EventName = opts.EventName || 'Insert'
+        super({EventName,...opts})
+
+        
         this._textManager=opts.TextManager
         this.action=this.insert    
-       
+        this._lastSentId=null
         this._pairs=[]
         this._pairs2=[]
     }
@@ -22,32 +23,34 @@ export class InsertManager extends TextEvent {
      * \param index the index in the sequence to insert
      * \return the identifier freshly allocated
      */
-    insert({packet, position}) {
+    insert({packet, position,source}) {
 
-        clearTimeout(this._timeout)
-       
+       // clearTimeout(this._timeout)
         var pair = this._sequence.insert(packet, position)
         
-        this._document.causality.incrementFrom(this.getLSEQID({pair}))
- 
-        debug('local Insert', packet, ' Index ', position, 'pair',pair)
+        this._document._communication.causality.incrementFrom(this.getLSEQID({pair}))
         
-        this._pairs.push({
-                    id: this._document.uid,
-                    pair
-                })
-        this._pairs2.push({
-            id: this._document.uid,
-            pair
-        })
-        this._timeout=setTimeout(()=>{ 
-            if (this.isItConvertibleToJSON(pair)) {
-                this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)
-                
-                this.setLastChangesTime()
-            }
-            this._pairs=[]
-        },10)
+        debug('local Insert', packet, ' Index ', position, 'pair',pair)
+        if (source==='user'){
+            this._pairs.push({
+                        id: this._document.uid,
+                        pair
+                    })
+
+            this._pairs2.push({
+                id: this._document.uid,
+                pair
+            })
+
+        //    this._timeout=setTimeout(()=>{ 
+                if (this.isItConvertibleToJSON(pair)) {
+                    this._lastSentId = this.broadcast({pairs:this._pairs})
+                    
+                    this.setLastChangesTime()
+                }
+                this._pairs=[]
+        //    },10)
+    }
     };
 
     
@@ -58,6 +61,7 @@ export class InsertManager extends TextEvent {
      * \param origin the origin id of the insert operation
      */
     receive( {pairs} ) {
+        
         pairs.forEach(elem => {
          const pair= elem.pair
          const id = elem.id

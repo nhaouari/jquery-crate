@@ -26625,10 +26625,19 @@ var Broadcast = function (_AbstractBroadcast) {
     value: function send(message, id) {
       var isReady = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 
-      var a = id || this._causality.increment();
+
+      var a = id;
+      if (a) {
+        this._causality.incrementFrom(a);
+        console.log('qsdqsdqsd', a);
+      } else {
+        a = this._causality.increment();
+        console.log('2qsdqsdqsd', a);
+      }
+
       var broadcastMessage = messages.BroadcastMessage(this._protocol, a, isReady, message);
       // #2 register the message in the structure
-      this._causality.incrementFrom(a);
+      //  this._causality.incrementFrom(a)
 
       // #3 send the message to the neighborhood
       this._sendAll(broadcastMessage);
@@ -51300,7 +51309,6 @@ var View = exports.View = function () {
     this._editorsHolderID = editorsContainerID;
     this._editorContainerID = "container-" + this._options.signalingOptions.session;
     this.createCRATE();
-
     this._document = document;
 
     if (session.config.storageServer) {
@@ -51600,7 +51608,7 @@ View.addMoveShortcuts();
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 exports.Communication = undefined;
 
@@ -51610,34 +51618,152 @@ var _MarkerManager = __webpack_require__(/*! ./MarkerManager/MarkerManager */ ".
 
 var _TextManager = __webpack_require__(/*! ./TextManager/TextManager */ "./src/communication/TextManager/TextManager.js");
 
+var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
+
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication');
+
 var Communication = exports.Communication = function () {
-    function Communication(opts) {
-        _classCallCheck(this, Communication);
+  function Communication(opts) {
+    _classCallCheck(this, Communication);
 
-        this._document = opts.document;
-        this._options = opts;
+    this._options = opts;
+    this._document = this._options.document;
+    this._foglet = this._options._foglet;
+  }
+
+  _createClass(Communication, [{
+    key: "initModules",
+    value: function initModules() {
+      var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      this.causality = this._data_comm.broadcast._causality;
+      this.markerManager = new _MarkerManager.MarkerManager(this._options);
+      this.textManager = new _TextManager.TextManager(this._options);
     }
+  }, {
+    key: "initConnection",
+    value: function () {
+      var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                if (!this._options.foglet) {
+                  _context.next = 5;
+                  break;
+                }
 
-    _createClass(Communication, [{
-        key: "init",
-        value: function init() {
-            var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+                _context.next = 3;
+                return this._foglet.connection(this._options.foglet);
 
-            this._options = Object.assign(this._options, opts);
-            this.markerManager = new _MarkerManager.MarkerManager(this._options);
-            this.textManager = new _TextManager.TextManager(this._options);
-        }
-    }, {
-        key: "close",
-        value: function close() {
-            this.markerManager.close();
-            this.textManager.close();
-        }
-    }]);
+              case 3:
+                _context.next = 8;
+                break;
 
-    return Communication;
+              case 5:
+                this._foglet.share();
+                _context.next = 8;
+                return this._foglet.connection();
+
+              case 8:
+
+                this.setCommunicationChannels();
+                this.InitRouters();
+
+                this._foglet.emit("connected");
+                console.log("application connected!");
+
+              case 12:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function initConnection() {
+        return _ref.apply(this, arguments);
+      }
+
+      return initConnection;
+    }()
+  }, {
+    key: "setCommunicationChannels",
+    value: function setCommunicationChannels() {
+      this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "_data_comm");
+      this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "_behaviors_comm");
+    }
+  }, {
+    key: "InitRouters",
+    value: function InitRouters() {
+      var _this = this;
+
+      this._behaviors_comm.onBroadcast(function (id, message) {
+        debug('document', '._behaviors_comm', 'Message received', message, 'from', id);
+        _this._document.emit(message.event, message);
+      });
+
+      this._data_comm.onBroadcast(function (id, message) {
+        debug('document', '._data_comm', 'Message received', message, 'from', id);
+        _this._document.emit(message.event, message);
+      });
+
+      this._data_comm.onUnicast(function (id, message) {
+        debug('document', '._data_comm unicast', 'Message received', message, 'from', id);
+        _this._document.emit(message.event, message);
+      });
+
+      this._data_comm.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {
+        debug('antiEntropy', { id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE });
+        _this._document.emit('antiEntropy_Event', {
+          id: id,
+          remoteVVwEJSON: remoteVVwE,
+          localVVwE: localVVwE
+        });
+      });
+
+      //TODO:consider receiving many images
+
+      var content = '';
+      this._data_comm.onStreamBroadcast(function (id, message) {
+        message.on('data', function (data) {
+          content += data;
+        });
+        message.on('end', function () {
+          var packet = JSON.parse(content);
+          content = '';
+          debug('document', '._data_comm', 'Message received', packet, 'from', id);
+          _this._document.emit(packet.event, packet);
+        });
+      });
+
+      var content2 = '';
+      this._data_comm.onStreamUnicast(function (id, message) {
+        message.on('data', function (data) {
+          content2 += data;
+        });
+        message.on('end', function () {
+          var packet = JSON.parse(content2);
+          content2 = '';
+          console.log('data received');
+          debug('document', '._data_comm', 'Message received', packet, 'from', id);
+          _this._document.emit(packet.event, packet);
+        });
+      });
+    }
+  }, {
+    key: "close",
+    value: function close() {
+      this.markerManager.close();
+      this.textManager.close();
+    }
+  }]);
+
+  return Communication;
 }();
 
 /***/ }),
@@ -51682,11 +51808,8 @@ var Event = exports.Event = function (_EventEmitter) {
         var _this = _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).call(this));
 
         _this._document = opts.document;
-        _this._editor = opts.editor;
-
-        _this._communicationChannel = _this._document._data_comm;
-        _this._name = opts.name;
-
+        _this._communicationChannel = _this._document._communication._data_comm;
+        _this._name = opts.EventName;
         _this._document.on(_this.getType(), function (msg) {
             debug("receive", _this.getType(), msg);
             _this.receive(msg);
@@ -51724,7 +51847,6 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'broadcast',
         value: function broadcast(message) {
-            var lastSentMsgId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
             var msg = this.getPacket(message);
             if (this.getSize(msg) >= 20000) {
@@ -51748,6 +51870,8 @@ var Event = exports.Event = function (_EventEmitter) {
         key: 'sendBroadcast',
         value: function sendBroadcast(msg) {
             //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
+            // this brodcast will not change the id the causal broadcast
+            // const id = this._document._communication.causality.vector.local
             var messageId = this._communicationChannel.sendBroadcast(msg);
             return messageId;
         }
@@ -51763,7 +51887,6 @@ var Event = exports.Event = function (_EventEmitter) {
         key: 'unicast',
         value: function unicast(id, message) {
             var msg = this.getPacket(message);
-
             if (this.getSize(msg) >= 20000) {
                 this.unicastStream(id, msg);
             } else {
@@ -51863,7 +51986,7 @@ var Event = exports.Event = function (_EventEmitter) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.CaretManger = undefined;
+exports.CaretManager = undefined;
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
@@ -51879,15 +52002,15 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:CaretManger');
 
-var CaretManger = exports.CaretManger = function (_MarkerEvent) {
-  _inherits(CaretManger, _MarkerEvent);
+var CaretManager = exports.CaretManager = function (_MarkerEvent) {
+  _inherits(CaretManager, _MarkerEvent);
 
-  function CaretManger(opts) {
-    _classCallCheck(this, CaretManger);
+  function CaretManager(opts) {
+    _classCallCheck(this, CaretManager);
 
-    var name = opts.name || 'Caret';
+    var EventName = opts.EventName || 'Caret';
 
-    var _this = _possibleConstructorReturn(this, (CaretManger.__proto__ || Object.getPrototypeOf(CaretManger)).call(this, _extends({ name: name }, opts)));
+    var _this = _possibleConstructorReturn(this, (CaretManager.__proto__ || Object.getPrototypeOf(CaretManager)).call(this, _extends({ EventName: EventName }, opts)));
 
     _this._defaultOptions = {
       lifeTime: 5 * 1000,
@@ -51903,7 +52026,7 @@ var CaretManger = exports.CaretManger = function (_MarkerEvent) {
    */
 
 
-  _createClass(CaretManger, [{
+  _createClass(CaretManager, [{
     key: 'caretMoved',
     value: function caretMoved(range) {
       this.broadcast({ range: range, id: this._document.uid });
@@ -51919,24 +52042,15 @@ var CaretManger = exports.CaretManger = function (_MarkerEvent) {
      * @param  {[type]} id [description]
      * @return {[type]}        [description]
      */
-    value: function receive(msg) {
-      var range = msg.range,
-          id = msg.id;
+    value: function receive(_ref) {
+      var range = _ref.range,
+          id = _ref.id;
 
-
-      if (!id) return;
-
-      if (this.getMarker(id)) {
-        this.getMarker(id).update(range, true); // to keep avatar
-      } else {
-        this.addMarker(id, false, {
-          range: range
-        });
-      }
+      this.emit('Caret_received', { range: range, id: id });
     }
   }]);
 
-  return CaretManger;
+  return CaretManager;
 }(_MarkerEvent2.MarkerEvent);
 
 /***/ }),
@@ -51956,17 +52070,9 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.MarkerEvent = undefined;
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _marker = __webpack_require__(/*! ./marker */ "./src/communication/MarkerManager/marker.js");
-
-var _marker2 = _interopRequireDefault(_marker);
-
 var _Event2 = __webpack_require__(/*! ./../Event */ "./src/communication/Event.js");
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -51984,8 +52090,7 @@ var MarkerEvent = exports.MarkerEvent = function (_Event) {
 
     var _this = _possibleConstructorReturn(this, (MarkerEvent.__proto__ || Object.getPrototypeOf(MarkerEvent)).call(this, opts));
 
-    _this._markers = opts.markers;
-    _this._communicationChannel = _this._document._behaviors_comm;
+    _this._communicationChannel = _this._document._communication._behaviors_comm;
     _this._defaultOptions = {
       lifeTime: 5 * 1000,
       range: {
@@ -52003,31 +52108,7 @@ var MarkerEvent = exports.MarkerEvent = function (_Event) {
       var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 
-      var options = Object.assign(_extends({}, this._defaultOptions, {
-        isItMe: isItMe
-      }), opts);
-
-      if (!this._markers.hasOwnProperty(id)) {
-
-        this._markers[id] = new _marker2.default(id, options, this._editor);
-
-        if (isItMe) {
-          if (store.get('myId')) {
-            this._markers[id].setPseudo(store.get('myId').pseudo);
-          } else {
-            store.set('myId', {
-              id: id,
-              pseudo: this._markers[id].pseudoName
-            });
-          }
-        }
-      }
-      return this._markers[id];
-    }
-  }, {
-    key: 'getMarker',
-    value: function getMarker(id) {
-      return this._markers[id];
+      this.emit('addMarker', id, isItMe, opts);
     }
   }, {
     key: 'removeMarker',
@@ -52081,22 +52162,19 @@ var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
   function MarkerManager(opts) {
     _classCallCheck(this, MarkerManager);
 
-    var markers = {};
-    opts.markers = markers;
-    var name = opts.name || 'MarkerManager';
+    var EventName = opts.EventName || 'MarkerManager';
 
-    /**
-     * markers contains all marks of the users: carets, avatars...
-     * @type {Marker[]}
-     */
+    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, _extends({ EventName: EventName }, opts)));
 
-    var _this = _possibleConstructorReturn(this, (MarkerManager.__proto__ || Object.getPrototypeOf(MarkerManager)).call(this, _extends({ name: name }, opts)));
+    _this._pingManager = new _PingManager.PingManager(_extends({}, opts));
+    _this._caretManger = new _CaretManager.CaretManager(_extends({}, opts));
 
-    _this._markers = markers;
-
-    _this._pingManager = new _PingManager.PingManger(_extends({}, opts));
-
-    _this._caretManger = new _CaretManager.CaretManger(_extends({}, opts));
+    _this._pingManager.on("Ping_received", function (msg) {
+      _this.emit("Ping_received", msg);
+    });
+    _this._caretManger.on("Caret_received", function (msg) {
+      _this.emit("Caret_received", msg);
+    });
 
     return _this;
   }
@@ -52139,7 +52217,7 @@ var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.PingManger = undefined;
+exports.PingManager = undefined;
 
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
@@ -52155,19 +52233,19 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:PingManger');
 
-var PingManger = exports.PingManger = function (_MarkerEvent) {
-  _inherits(PingManger, _MarkerEvent);
+var PingManager = exports.PingManager = function (_MarkerEvent) {
+  _inherits(PingManager, _MarkerEvent);
 
-  function PingManger(opts) {
-    _classCallCheck(this, PingManger);
+  function PingManager(opts) {
+    _classCallCheck(this, PingManager);
 
-    var name = opts.name || 'Ping';
+    var EventName = opts.EventName || 'Ping';
 
     /**
      * startimer A timer used for sending pings
      * @type {Timer}
      */
-    var _this = _possibleConstructorReturn(this, (PingManger.__proto__ || Object.getPrototypeOf(PingManger)).call(this, _extends({ name: name }, opts)));
+    var _this = _possibleConstructorReturn(this, (PingManager.__proto__ || Object.getPrototypeOf(PingManager)).call(this, _extends({ EventName: EventName }, opts)));
 
     _this._startTimer = {};
 
@@ -52188,15 +52266,13 @@ var PingManger = exports.PingManger = function (_MarkerEvent) {
    */
 
 
-  _createClass(PingManger, [{
+  _createClass(PingManager, [{
     key: 'startPing',
     value: function startPing(interval) {
       var _this2 = this;
 
       this._startTimer = setInterval(function () {
-        var id = _this2._document.uid;
-        var pseudo = _this2.getMarker(id).pseudoName;
-        _this2.broadcast({ id: id, pseudo: pseudo });
+        _this2.broadcast(_this2._document.user);
       }, interval);
     }
 
@@ -52225,15 +52301,7 @@ var PingManger = exports.PingManger = function (_MarkerEvent) {
       var id = _ref.id,
           pseudo = _ref.pseudo;
 
-      debug('Ping Received', id, pseudo);
-
-      if (this.getMarker(id)) {
-        this.getMarker(id).update(null, false) // to keep avatar
-        .setPseudo(pseudo);
-      } else {
-        // to create the avatar
-        this.addMarker(id, false).setPseudo(pseudo);
-      }
+      this.emit('Ping_received', { id: id, pseudo: pseudo });
     }
   }, {
     key: 'close',
@@ -52242,365 +52310,8 @@ var PingManger = exports.PingManger = function (_MarkerEvent) {
     }
   }]);
 
-  return PingManger;
+  return PingManager;
 }(_MarkerEvent2.MarkerEvent);
-
-/***/ }),
-
-/***/ "./src/communication/MarkerManager/marker.js":
-/*!***************************************************!*\
-  !*** ./src/communication/MarkerManager/marker.js ***!
-  \***************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _animals = __webpack_require__(/*! animals */ "./node_modules/animals/index.js");
-
-var _animals2 = _interopRequireDefault(_animals);
-
-var _stringHash = __webpack_require__(/*! string-hash */ "./node_modules/string-hash/index.js");
-
-var _stringHash2 = _interopRequireDefault(_stringHash);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:Marker');
-
-/**
- * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
- */
-
-var Marker = function () {
-  /**
-   * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
-   * @param {[string]}  origin the id of the the user
-   * @param {Number}  lifeTime After this time, if no ping or Caret position is received => 
-   * remove caret and avatar. if lifetime is -1 we didn't add the avatar
-   * @param {[{index: index,length: 0}]}  range  range stars from index with the specified length
-   * @param {[cursor module]}  cursorsp the used cursor module for quilljs
-   * @param {[Boolean]}  cursor  create the caret or not. If it is from ping, it will be false else true
-   * @param {Boolean} isItME  is it my caret ? true or false to disable the time if it is true
-   */
-
-  function Marker(origin, options, editor) {
-    _classCallCheck(this, Marker);
-
-    //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
-
-
-    if (origin === undefined) {
-      console.error("origin not defined", origin);
-    }
-    if (editor === undefined) {
-      console.error("editor not defined", editor);
-    }
-
-    if (Object.keys(editor).length === 0 && editor.constructor === Object) {
-      console.error("editor is empty", editor);
-    }
-
-    if (options == null) {
-      var options = {
-        lifeTime: -1,
-        range: {},
-        cursor: false,
-        isItME: false
-      };
-    }
-    /**
-     *  origin the id of the the user
-     * @type {[type]}
-     */
-
-    this.options = options;
-    this.origin = origin;
-
-    /**
-     * lifeTime After this time, if no ping or Caret position is received => 
-     * remove caret and avatar. if lifetime is -1 we don't add the avatar
-     * @type {[type]}
-     */
-    this.lifeTime = options.lifeTime;
-
-    /**
-     * used to store last update time to detected outdated users
-     * @type {Date}
-     */
-    this.time = new Date().getTime();
-
-    /**
-     * color rgb(r,g,b)
-     * @type {String}
-     */
-    this.colorRGB = this.constructor.getColor(this.origin, 'rgb');
-
-    /**
-     *  color rgba(r,g,b,0.5)
-     * @type {String}
-     */
-    this.colorRGBLight = this.constructor.getColor(this.origin, 'rgba');
-
-    /**
-     * auto generated pseudo name (from animals list)
-     * @type {[type]}
-     */
-    this.animal = this.constructor.getPseudoname(this.origin, null);
-
-    /**
-     * Anonymous + auto generated pseudo name
-     * @type {String}
-     */
-    this.pseudoName = this.constructor.getPseudoname(this.origin);
-
-    /**
-     * add or not the avatar 
-     * @type {Boolean}
-     */
-    this.avatarAdd = false;
-
-    /**
-     * true for an editor, false if it is from a ping
-     * @type {[type]}
-     */
-    this.cursor = options.cursor;
-
-    this._editor = editor;
-
-    if (editor) {
-      this._editorContainerID = editor._editorContainerID;
-    }
-
-    if (this.lifeTime != -1) {
-      // -1 => created without timer avatar cursor 
-      if (options.isItMe) {
-        this.addAvatar();
-      } else if (this.cursor) {
-        this.addCursor(options.range);
-      }
-    }
-  }
-
-  /**
-   * capitalize uppercase the first letter
-   * @param  {[string]} s [string]
-   * @return {[string]}   [String the first letter is in uppercase]
-   */
-
-
-  _createClass(Marker, [{
-    key: "update",
-
-    /**
-     * update the time to keep the avatar and cursor if it exist
-     * @param  {[{index: index,length: 0}]} range  [description]
-     * @param  {[boolean]} cursor [if it is true add update the caret position]
-     */
-    value: function update(range, cursor) {
-      this.time = new Date().getTime();
-      var editor = $("#" + this._editorContainerID);
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-
-      if (!avatar.length && editor.length) {
-        this.addAvatar();
-      }
-
-      if (this.avatarAdd) {
-        avatar.attr('data-toggle', 'tooltip');
-        avatar.attr('title', this.pseudoName);
-      }
-      if (this.cursor == true && cursor == true) {
-        // in the case of update, make sure that ping updates don't change the range
-
-        this._editor.viewEditor.getModule('cursors').moveCursor(this.origin, range);
-      } else if (cursor == true) {
-        this.cursor = cursor;
-        this.addCursor(range);
-      }
-      return this;
-    }
-  }, {
-    key: "checkIfOutdated",
-
-
-    /**
-     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
-     */
-    value: function checkIfOutdated() {
-      var timeNow = new Date().getTime();
-      var dff = timeNow - this.time;
-      // if  cursor  is outdated 
-      if (timeNow - this.time >= this.lifeTime) {
-        // Remve cursor and avatar
-        if (this.cursor) {
-          this._editor.viewEditor.getModule('cursors').removeCursor(this.origin);
-          this.cursor = false;
-        }
-        this.removeAvatar();
-        return true;
-      } else {
-        // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
-        return false;
-      }
-    }
-
-    /*
-     * addAvatar addAvatar of the user to the editor with corresponding divID
-     * @param {String} divID [the id of the div where the avatars are placed]
-     */
-
-  }, {
-    key: "addAvatar",
-    value: function addAvatar() {
-      var _this = this;
-
-      var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "#users";
-
-
-      jQuery("#" + this._editorContainerID + " " + divID).append(this.getAvatar());
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-      avatar.attr('data-toggle', 'tooltip');
-      avatar.attr('title', this.pseudoName);
-      this.avatarAdd = true;
-
-      if (!this.options.isItMe) {
-        /**
-         * a timer that is used to check if the user is Outdated
-         * @return {[type]}   [description]
-         */
-
-        this.timer = setInterval(function () {
-          return _this.checkIfOutdated();
-        }, 1000);
-      }
-      return this;
-    }
-  }, {
-    key: "getAvatar",
-
-
-    /**
-     * getAvatar return a div that contains this user id
-     * @return {[type]} [description]
-     */
-    value: function getAvatar() {
-      return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="./icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
-    }
-  }, {
-    key: "removeAvatar",
-
-
-    /**
-     * removeAvatar remove the avatar of the user from the interface
-     * @return {[type]} [description]
-     */
-    value: function removeAvatar() {
-
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-      avatar.remove();
-      this.avatarAdd = false;
-      clearInterval(this.timer);
-      return this;
-    }
-  }, {
-    key: "setPseudo",
-
-
-    /**
-     * setPseudo set pseudo  for the user
-     * @param {[type]} Pseudo [description]
-     */
-
-    value: function setPseudo(Pseudo) {
-      this.pseudoName = Pseudo;
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
-      if (avatar.length) {
-        avatar.attr('title', this.pseudoName);
-      }
-      return this;
-    }
-  }, {
-    key: "addCursor",
-
-
-    /**
-     * addCursor add the cursor to the editor
-     * @param {[{index: index,length: 0}]} range [description]
-     */
-    value: function addCursor(range) {
-      this.cursor = true;
-      this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
-      return this;
-    }
-  }], [{
-    key: "capitalize",
-    value: function capitalize(s) {
-      return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-  }, {
-    key: "getColor",
-
-
-    /**
-     * getColor for a specific id, get a unique color
-     * @param  {[string]} str [the id of the user]
-     * @return {[(r,g,b))]}     [the corresponding rgb color]
-     */
-    value: function getColor(str) {
-      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'rgb';
-
-      var h1 = (0, _stringHash2.default)(str) % 206;
-      var h2 = h1 * 7 % 206;
-      var h3 = h1 * 11 % 206;
-      var color = Math.floor(h1 + 50) + ", " + Math.floor(h2 + 50) + ", " + Math.floor(h3 + 50);
-      if (format === 'rgb') {
-        return 'rgb(' + color + ')';
-      }
-
-      if (format === 'rgba') {
-        return 'rgba(' + color + ')';
-      }
-
-      return color;
-    }
-  }, {
-    key: "getPseudoname",
-    value: function getPseudoname(id) {
-      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'Anonymous';
-
-
-      if (format === 'Anonymous') {
-        return 'Anonymous ' + this.capitalize(_animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length]);
-      }
-      return _animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length];
-    }
-  }, {
-    key: "getAvatar",
-
-
-    /**
-     * getAvatar return the div that contains this user id
-     * @return {[type]} [description]
-     */
-    value: function getAvatar(id) {
-      return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
-    }
-  }]);
-
-  return Marker;
-}();
-
-exports.default = Marker;
 
 /***/ }),
 
@@ -52645,9 +52356,9 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
     function AntiEntropyManager(opts) {
         _classCallCheck(this, AntiEntropyManager);
 
-        var name = opts.name || 'antiEntropy';
+        var EventName = opts.EventName || 'antiEntropy';
 
-        var _this = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ name: name }, opts)));
+        var _this = _possibleConstructorReturn(this, (AntiEntropyManager.__proto__ || Object.getPrototypeOf(AntiEntropyManager)).call(this, _extends({ EventName: EventName }, opts)));
 
         _this._antiEntropyPeriod = opts.AntiEntropyPeriod;
         _this._textManager = opts.TextManager;
@@ -52840,14 +52551,13 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
     function InsertManager(opts) {
         _classCallCheck(this, InsertManager);
 
-        var name = opts.name || 'Insert';
+        var EventName = opts.EventName || 'Insert';
 
-        var _this = _possibleConstructorReturn(this, (InsertManager.__proto__ || Object.getPrototypeOf(InsertManager)).call(this, _extends({ name: name }, opts)));
+        var _this = _possibleConstructorReturn(this, (InsertManager.__proto__ || Object.getPrototypeOf(InsertManager)).call(this, _extends({ EventName: EventName }, opts)));
 
-        _this._lastSentId = null;
         _this._textManager = opts.TextManager;
         _this.action = _this.insert;
-
+        _this._lastSentId = null;
         _this._pairs = [];
         _this._pairs2 = [];
         return _this;
@@ -52865,36 +52575,37 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
     _createClass(InsertManager, [{
         key: 'insert',
         value: function insert(_ref) {
-            var _this2 = this;
-
             var packet = _ref.packet,
-                position = _ref.position;
+                position = _ref.position,
+                source = _ref.source;
 
 
-            clearTimeout(this._timeout);
-
+            // clearTimeout(this._timeout)
             var pair = this._sequence.insert(packet, position);
 
-            this._document.causality.incrementFrom(this.getLSEQID({ pair: pair }));
+            this._document._communication.causality.incrementFrom(this.getLSEQID({ pair: pair }));
 
             debug('local Insert', packet, ' Index ', position, 'pair', pair);
+            if (source === 'user') {
+                this._pairs.push({
+                    id: this._document.uid,
+                    pair: pair
+                });
 
-            this._pairs.push({
-                id: this._document.uid,
-                pair: pair
-            });
-            this._pairs2.push({
-                id: this._document.uid,
-                pair: pair
-            });
-            this._timeout = setTimeout(function () {
-                if (_this2.isItConvertibleToJSON(pair)) {
-                    _this2._lastSentId = _this2.broadcast({ pairs: _this2._pairs }, _this2._lastSentId);
+                this._pairs2.push({
+                    id: this._document.uid,
+                    pair: pair
+                });
 
-                    _this2.setLastChangesTime();
+                //    this._timeout=setTimeout(()=>{ 
+                if (this.isItConvertibleToJSON(pair)) {
+                    this._lastSentId = this.broadcast({ pairs: this._pairs });
+
+                    this.setLastChangesTime();
                 }
-                _this2._pairs = [];
-            }, 10);
+                this._pairs = [];
+                //    },10)
+            }
         }
     }, {
         key: 'receive',
@@ -52907,20 +52618,21 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
          * \param origin the origin id of the insert operation
          */
         value: function receive(_ref2) {
-            var _this3 = this;
+            var _this2 = this;
 
             var pairs = _ref2.pairs;
+
 
             pairs.forEach(function (elem) {
                 var pair = elem.pair;
                 var id = elem.id;
 
-                var index = _this3._sequence.applyInsert(pair, false);
+                var index = _this2._sequence.applyInsert(pair, false);
                 debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
 
                 if (index >= 0) {
-                    _this3.emit('remoteInsert', pair.elem, index);
-                    _this3.setLastChangesTime();
+                    _this2.emit('remoteInsert', pair.elem, index);
+                    _this2.setLastChangesTime();
                     if (!pair.antientropy) {
                         var range = {
                             index: index,
@@ -52931,7 +52643,7 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                             id: id
                         };
                         console.log('cursor sent    ');
-                        _this3.Event('Caret', msg);
+                        _this2.Event('Caret', msg);
                     }
                 }
             });
@@ -52995,9 +52707,9 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
     function RemoveManager(opts) {
         _classCallCheck(this, RemoveManager);
 
-        var name = opts.name || 'Remove';
+        var EventName = opts.EventName || 'Remove';
 
-        var _this = _possibleConstructorReturn(this, (RemoveManager.__proto__ || Object.getPrototypeOf(RemoveManager)).call(this, _extends({ name: name }, opts)));
+        var _this = _possibleConstructorReturn(this, (RemoveManager.__proto__ || Object.getPrototypeOf(RemoveManager)).call(this, _extends({ EventName: EventName }, opts)));
 
         _this._lastSentId = null;
         _this._textManager = opts.TextManager;
@@ -53133,7 +52845,7 @@ var TextEvent = exports.TextEvent = function (_Event) {
 
         var _this = _possibleConstructorReturn(this, (TextEvent.__proto__ || Object.getPrototypeOf(TextEvent)).call(this, opts));
 
-        _this._communicationChannel = _this._document._data_comm;
+        _this._communicationChannel = _this._document._communication._data_comm;
         _this._sequence = _this._document.sequence;
         return _this;
     }
@@ -53201,9 +52913,9 @@ var TextManager = exports.TextManager = function (_TextEvent) {
     function TextManager(opts) {
         _classCallCheck(this, TextManager);
 
-        var name = opts.name || 'TextManager';
+        var EventName = opts.EventName || 'TextManager';
 
-        var _this = _possibleConstructorReturn(this, (TextManager.__proto__ || Object.getPrototypeOf(TextManager)).call(this, _extends({ name: name }, opts)));
+        var _this = _possibleConstructorReturn(this, (TextManager.__proto__ || Object.getPrototypeOf(TextManager)).call(this, _extends({ EventName: EventName }, opts)));
 
         _this._insertManager = new _InsertManager.InsertManager(_extends({ TextManager: _this }, opts));
         _this._removeManager = new _RemoveManager.RemoveManager(_extends({ TextManager: _this }, opts));
@@ -53273,9 +52985,9 @@ var TitleManager = exports.TitleManager = function (_TextEvent) {
     function TitleManager(opts) {
         _classCallCheck(this, TitleManager);
 
-        var name = opts.name || 'Title';
+        var EventName = opts.EventName || 'Title';
 
-        var _this = _possibleConstructorReturn(this, (TitleManager.__proto__ || Object.getPrototypeOf(TitleManager)).call(this, _extends({ name: name }, opts)));
+        var _this = _possibleConstructorReturn(this, (TitleManager.__proto__ || Object.getPrototypeOf(TitleManager)).call(this, _extends({ EventName: EventName }, opts)));
 
         _this._textManager = opts.TextManager;
         _this.action = _this.sendChangeTitle;
@@ -53332,9 +53044,9 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
-var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
@@ -53347,6 +53059,10 @@ var _Communication = __webpack_require__(/*! ./communication/Communication */ ".
 var _BigInt = __webpack_require__(/*! BigInt */ "./node_modules/BigInt/src/BigInt.js");
 
 var _BigInt2 = _interopRequireDefault(_BigInt);
+
+var _versionVectorWithExceptions = __webpack_require__(/*! version-vector-with-exceptions */ "./node_modules/version-vector-with-exceptions/lib/vvwe.js");
+
+var _versionVectorWithExceptions2 = _interopRequireDefault(_versionVectorWithExceptions);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -53363,27 +53079,24 @@ var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.j
 var doc = function (_EventEmitter) {
   _inherits(doc, _EventEmitter);
 
-  function doc(options, foglet) {
+  function doc(options) {
     _classCallCheck(this, doc);
 
     var _this = _possibleConstructorReturn(this, (doc.__proto__ || Object.getPrototypeOf(doc)).call(this));
 
-    _this._foglet = foglet;
     _this._options = options;
+    _this._foglet = _this._options._foglet;
 
     _this._lastChanges = new Date();
 
     _this.name = options.name;
     _this.date = new Date(); // (TODO) change
-
     //User ID
     _this.user = options.user;
     _this.uid = _this.user.id;
-
     /**
      * connect to the session of the document
      */
-
     return _this;
   }
 
@@ -53399,76 +53112,58 @@ var doc = function (_EventEmitter) {
               case 0:
                 options = this._options;
 
+
+                this._communication = new _Communication.Communication(_extends({ document: this }, this._options));
+
+                _context.next = 4;
+                return this._communication.initConnection();
+
+              case 4:
                 if (!options.display) {
-                  _context.next = 8;
+                  _context.next = 10;
                   break;
                 }
 
-                _context.next = 4;
+                _context.next = 7;
                 return Promise.resolve().then(function () {
                   return __webpack_require__(/*! ./View.js */ "./src/View.js");
                 });
 
-              case 4:
+              case 7:
                 _ref2 = _context.sent;
                 View = _ref2.View;
 
                 this._view = new View(options, this, options.containerID);
-                this.emit("ViewIsReady");
 
-              case 8:
-                if (!options.foglet) {
-                  _context.next = 13;
-                  break;
-                }
-
-                _context.next = 11;
-                return this._foglet.connection(options.foglet);
-
-              case 11:
-                _context.next = 16;
-                break;
-
-              case 13:
-                this._foglet.share();
-                _context.next = 16;
-                return this._foglet.connection();
-
-              case 16:
-
-                console.log("application connected!");
-
-                this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "_data_comm");
-                this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "_behaviors_comm");
+              case 10:
 
                 this.sequence = new _LSEQTree2.default(options.editingSessionID);
+
+                /* TODO:Think about the creation of modules without view */
+                this._communication.initModules();
+
                 // #1B if it is imported from an existing object, initialize it with these
 
 
                 // #2 grant fast access
 
-                this.broadcast = this._data_comm.broadcast;
-                this.broadcastCaret = this._behaviors_comm.broadcast;
-                this.rps = this._data_comm.network.rps;
-
-                this.causality = this.broadcast._causality;
+                this.broadcast = this._communication._data_comm.broadcast;
+                this.broadcastCaret = this._communication._behaviors_comm.broadcast;
+                this.rps = this._communication._data_comm.network.rps;
+                this.causality = this._communication.causality;
                 this.signalingOptions = options.signalingOptions;
-
-                this.loadCommunicationModules();
 
                 if (options.importFromJSON) {
                   this.loadFromJSON(options.importFromJSON);
                 }
-                this.routersInit();
 
                 if (options.display) {
                   this._view.init();
                 }
 
-                this._foglet.emit("connected");
                 this.emit("connected");
 
-              case 31:
+              case 20:
               case "end":
                 return _context.stop();
             }
@@ -53482,64 +53177,6 @@ var doc = function (_EventEmitter) {
 
       return init;
     }()
-  }, {
-    key: "routersInit",
-    value: function routersInit() {
-      var _this2 = this;
-
-      this._behaviors_comm.onBroadcast(function (id, message) {
-        debug('document', '._behaviors_comm', 'Message received', message, 'from', id);
-        _this2.emit(message.event, message);
-      });
-
-      this._data_comm.onBroadcast(function (id, message) {
-        debug('document', '._data_comm', 'Message received', message, 'from', id);
-        _this2.emit(message.event, message);
-      });
-
-      this._data_comm.onUnicast(function (id, message) {
-        debug('document', '._data_comm unicast', 'Message received', message, 'from', id);
-        _this2.emit(message.event, message);
-      });
-
-      this._data_comm.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {
-        debug('antiEntropy', { id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE });
-        _this2.emit('antiEntropy_Event', {
-          id: id,
-          remoteVVwEJSON: remoteVVwE,
-          localVVwE: localVVwE
-        });
-      });
-
-      //TODO:consider receiving many images
-
-      var content = '';
-      this._data_comm.onStreamBroadcast(function (id, message) {
-        message.on('data', function (data) {
-          content += data;
-        });
-        message.on('end', function () {
-          var packet = JSON.parse(content);
-          content = '';
-          debug('document', '._data_comm', 'Message received', packet, 'from', id);
-          _this2.emit(packet.event, packet);
-        });
-      });
-
-      var content2 = '';
-      this._data_comm.onStreamUnicast(function (id, message) {
-        message.on('data', function (data) {
-          content2 += data;
-        });
-        message.on('end', function () {
-          var packet = JSON.parse(content2);
-          content2 = '';
-          console.log('data received');
-          debug('document', '._data_comm', 'Message received', packet, 'from', id);
-          _this2.emit(packet.event, packet);
-        });
-      });
-    }
   }, {
     key: "setLastChangesTime",
     /**
@@ -53573,27 +53210,13 @@ var doc = function (_EventEmitter) {
       this.sequence._c = local.v;
     }
   }, {
-    key: "loadCommunicationModules",
-    value: function loadCommunicationModules() {
-      var defaultOpts = {
-        document: this,
-        editor: this._view._editor,
-        PingPeriod: 2000,
-        AntiEntropyPeriod: 2000
-      };
-      this._communication = new _Communication.Communication(defaultOpts);
-      this._communication.init();
+    key: "saveDocument",
 
-      this._communication.markerManager.addMarker(this.uid, true);
-    }
 
     /**
      * saveDocument save the document in local storage
      * @return {[type]} [description]
      */
-
-  }, {
-    key: "saveDocument",
     value: function saveDocument() {
       try {
         var timeNow = new Date().getTime();
@@ -53674,24 +53297,24 @@ var doc = function (_EventEmitter) {
   }, {
     key: "refreshDocument",
     value: function refreshDocument(sequence) {
-      var _this3 = this;
+      var _this2 = this;
 
       clearTimeout(this.refreshDocumentTimeout);
 
       this.refreshDocumentTimeout = setTimeout(function () {
-        var delta = _this3.getDeltaFromSequence(sequence);
+        var delta = _this2.getDeltaFromSequence(sequence);
         console.log(delta);
-        var range = _this3._view._editor.viewEditor.getSelection();
+        var range = _this2._view._editor.viewEditor.getSelection();
 
-        _this3._view._editor.viewEditor.setContents(delta, 'silent');
-        _this3._view._editor.viewEditor.setSelection(range, 'silent');
+        _this2._view._editor.viewEditor.setContents(delta, 'silent');
+        _this2._view._editor.viewEditor.setSelection(range, 'silent');
         session.default.openIn();
       }, 10);
     }
   }, {
     key: "testAntientropy",
     value: function testAntientropy() {
-      var _this4 = this;
+      var _this3 = this;
 
       var sequenceNodes = this.getLSEQNodes1(this.sequence);
       console.log('getSequenceNodes result ', { sequenceNodes: sequenceNodes });
@@ -53701,7 +53324,7 @@ var doc = function (_EventEmitter) {
       sequenceNodes.forEach(function (node) {
         var pair = {
           elem: node.e,
-          id: _this4.fromNode(node),
+          id: _this3.fromNode(node),
           antientropy: true // this to prevent the caret movement in the case of anti-entropy
         };
         lseqTreeTest.applyInsert(pair, false);
@@ -53752,7 +53375,7 @@ var doc = function (_EventEmitter) {
   }, {
     key: "close",
     value: function close() {
-      var _this5 = this;
+      var _this4 = this;
 
       this._foglet.unshare();
       this._foglet._networkManager._rps.network._rps.disconnect();
@@ -53765,9 +53388,9 @@ var doc = function (_EventEmitter) {
       this._communication.close();
 
       setTimeout(function () {
-        _this5._foglet._networkManager._rps.network._rps.disconnect();
-        _this5._document = null;
-        _this5._foglet = null;
+        _this4._foglet._networkManager._rps.network._rps.disconnect();
+        _this4._document = null;
+        _this4._foglet = null;
       }, 2000);
     }
   }]);
@@ -53817,7 +53440,7 @@ var _store2 = _interopRequireDefault(_store);
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
-var _marker = __webpack_require__(/*! ./communication/MarkerManager/marker */ "./src/communication/MarkerManager/marker.js");
+var _marker = __webpack_require__(/*! ./view/marker */ "./src/view/marker.js");
 
 var _marker2 = _interopRequireDefault(_marker);
 
@@ -53986,7 +53609,8 @@ var session = function (_EventEmitter) {
       var _this2 = this;
 
       this._documents = [];
-      var doc = new _document2.default(this._options, this._foglet);
+      var doc = new _document2.default(_extends({ _foglet: this._foglet }, this._options));
+
       this._documents.push(doc);
 
       doc.init().then(function () {
@@ -54504,6 +54128,152 @@ session.Marker = _marker2.default;
 
 /***/ }),
 
+/***/ "./src/view/MarkerViewManager.js":
+/*!***************************************!*\
+  !*** ./src/view/MarkerViewManager.js ***!
+  \***************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MarkerViewManager = undefined;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _marker = __webpack_require__(/*! ./marker */ "./src/view/marker.js");
+
+var _marker2 = _interopRequireDefault(_marker);
+
+var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:View:MarkerViewManager');
+/**
+ * This class manages markers,pings,cursors of the different users
+ */
+
+var MarkerViewManager = exports.MarkerViewManager = function (_EventEmitter) {
+  _inherits(MarkerViewManager, _EventEmitter);
+
+  function MarkerViewManager(MarkerManager, editor) {
+    _classCallCheck(this, MarkerViewManager);
+
+    /**
+     * markers contains all marks of the users: carets, avatars...
+     * @type {Marker[]}
+     */
+    var _this = _possibleConstructorReturn(this, (MarkerViewManager.__proto__ || Object.getPrototypeOf(MarkerViewManager)).call(this));
+
+    _this._markerManager = MarkerManager;
+    _this._editor = editor;
+    _this._markers = {};
+
+    _this.addMarker(_this._markerManager._document.uid, true);
+    _this._markerManager.on("Ping_received", function (msg) {
+      _this.receivePing(msg);
+    });
+
+    _this._markerManager.on("Caret_received", function (msg) {
+      _this.receiveCaret("Caret_received", msg);
+    });
+
+    return _this;
+  }
+
+  _createClass(MarkerViewManager, [{
+    key: 'addMarker',
+    value: function addMarker(id) {
+      var isItMe = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+      var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
+      var options = Object.assign(_extends({}, this._defaultOptions, {
+        isItMe: isItMe
+      }), opts);
+
+      if (!this._markers.hasOwnProperty(id)) {
+
+        this._markers[id] = new _marker2.default(id, options, this._editor);
+
+        if (isItMe) {
+          if (store.get('myId')) {
+            this._markers[id].setPseudo(store.get('myId').pseudo);
+          } else {
+            store.set('myId', {
+              id: id,
+              pseudo: this._markers[id].pseudoName
+            });
+          }
+        }
+      }
+      return this._markers[id];
+    }
+  }, {
+    key: 'getMarker',
+    value: function getMarker(id) {
+      return this._markers[id];
+    }
+  }, {
+    key: 'receivePing',
+    value: function receivePing(_ref) {
+      var id = _ref.id,
+          pseudo = _ref.pseudo;
+
+      debug('Ping Received', id, pseudo);
+      if (this.getMarker(id)) {
+        this.getMarker(id).update(null, false) // to keep avatar
+        .setPseudo(pseudo);
+      } else {
+        // to create the avatar
+        this.addMarker(id, false).setPseudo(pseudo);
+      }
+    }
+    /**
+       *  At the reception of CARET position
+       * @param  {[type]} range  [description]
+       * @param  {[type]} id [description]
+       * @return {[type]}        [description]
+       */
+
+  }, {
+    key: 'receiveCaret',
+    value: function receiveCaret(_ref2) {
+      var range = _ref2.range,
+          id = _ref2.id;
+
+      if (!id) return;
+
+      if (this.getMarker(id)) {
+        this.getMarker(id).update(range, true); // to keep avatar
+      } else {
+        this.addMarker(id, false, {
+          range: range
+        });
+      }
+    }
+  }, {
+    key: 'removeMarker',
+    value: function removeMarker() {}
+  }]);
+
+  return MarkerViewManager;
+}(_events.EventEmitter);
+
+/***/ }),
+
 /***/ "./src/view/QuillManger.js":
 /*!*********************************!*\
   !*** ./src/view/QuillManger.js ***!
@@ -54752,7 +54522,7 @@ var Comments = exports.Comments = function () {
 			this._authorId = this._editor._document.uid;
 			this._editorContainerID = this._editor._editorContainerID;
 			this._viewEditor = this._editor.viewEditor;
-			this._markerManager = this._editor.markerManager;
+			this._markerManager = this._editor._MarkerViewManager;
 
 			this.setSelectors();
 			return this;
@@ -54996,6 +54766,8 @@ var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js
 
 var _QuillManger = __webpack_require__(/*! ./QuillManger */ "./src/view/QuillManger.js");
 
+var _MarkerViewManager = __webpack_require__(/*! ./MarkerViewManager */ "./src/view/MarkerViewManager.js");
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -55072,7 +54844,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
     value: function initCommunicationModules() {
       this.markerManager = this._document._communication.markerManager;
       this.textManager = this._document._communication.textManager;
-      this.markerManager.addMarker(this._document.uid, true);
+      this._MarkerViewManager = new _MarkerViewManager.MarkerViewManager(this.markerManager, this);
     }
 
     /**
@@ -55636,6 +55408,363 @@ var LinkView = exports.LinkView = function () {
 
     return LinkView;
 }();
+
+/***/ }),
+
+/***/ "./src/view/marker.js":
+/*!****************************!*\
+  !*** ./src/view/marker.js ***!
+  \****************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _animals = __webpack_require__(/*! animals */ "./node_modules/animals/index.js");
+
+var _animals2 = _interopRequireDefault(_animals);
+
+var _stringHash = __webpack_require__(/*! string-hash */ "./node_modules/string-hash/index.js");
+
+var _stringHash2 = _interopRequireDefault(_stringHash);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Communication:MarkerManager:Marker');
+
+/**
+ * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
+ */
+
+var Marker = function () {
+  /**
+   * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
+   * @param {[string]}  origin the id of the the user
+   * @param {Number}  lifeTime After this time, if no ping or Caret position is received => 
+   * remove caret and avatar. if lifetime is -1 we didn't add the avatar
+   * @param {[{index: index,length: 0}]}  range  range stars from index with the specified length
+   * @param {[cursor module]}  cursorsp the used cursor module for quilljs
+   * @param {[Boolean]}  cursor  create the caret or not. If it is from ping, it will be false else true
+   * @param {Boolean} isItME  is it my caret ? true or false to disable the time if it is true
+   */
+
+  function Marker(origin, options, editor) {
+    _classCallCheck(this, Marker);
+
+    //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
+
+
+    if (origin === undefined) {
+      console.error("origin not defined", origin);
+    }
+    if (editor === undefined) {
+      console.error("editor not defined", editor);
+    }
+
+    if (Object.keys(editor).length === 0 && editor.constructor === Object) {
+      console.error("editor is empty", editor);
+    }
+
+    if (options == null) {
+      var options = {
+        lifeTime: -1,
+        range: {},
+        cursor: false,
+        isItME: false
+      };
+    }
+    /**
+     *  origin the id of the the user
+     * @type {[type]}
+     */
+
+    this.options = options;
+    this.origin = origin;
+
+    /**
+     * lifeTime After this time, if no ping or Caret position is received => 
+     * remove caret and avatar. if lifetime is -1 we don't add the avatar
+     * @type {[type]}
+     */
+    this.lifeTime = options.lifeTime;
+
+    /**
+     * used to store last update time to detected outdated users
+     * @type {Date}
+     */
+    this.time = new Date().getTime();
+
+    /**
+     * color rgb(r,g,b)
+     * @type {String}
+     */
+    this.colorRGB = this.constructor.getColor(this.origin, 'rgb');
+
+    /**
+     *  color rgba(r,g,b,0.5)
+     * @type {String}
+     */
+    this.colorRGBLight = this.constructor.getColor(this.origin, 'rgba');
+
+    /**
+     * auto generated pseudo name (from animals list)
+     * @type {[type]}
+     */
+    this.animal = this.constructor.getPseudoname(this.origin, null);
+
+    /**
+     * Anonymous + auto generated pseudo name
+     * @type {String}
+     */
+    this.pseudoName = this.constructor.getPseudoname(this.origin);
+
+    /**
+     * add or not the avatar 
+     * @type {Boolean}
+     */
+    this.avatarAdd = false;
+
+    /**
+     * true for an editor, false if it is from a ping
+     * @type {[type]}
+     */
+    this.cursor = options.cursor;
+
+    this._editor = editor;
+
+    if (editor) {
+      this._editorContainerID = editor._editorContainerID;
+    }
+
+    if (this.lifeTime != -1) {
+      // -1 => created without timer avatar cursor 
+      if (options.isItMe) {
+        this.addAvatar();
+      } else if (this.cursor) {
+        this.addCursor(options.range);
+      }
+    }
+  }
+
+  /**
+   * capitalize uppercase the first letter
+   * @param  {[string]} s [string]
+   * @return {[string]}   [String the first letter is in uppercase]
+   */
+
+
+  _createClass(Marker, [{
+    key: "update",
+
+    /**
+     * update the time to keep the avatar and cursor if it exist
+     * @param  {[{index: index,length: 0}]} range  [description]
+     * @param  {[boolean]} cursor [if it is true add update the caret position]
+     */
+    value: function update(range, cursor) {
+      this.time = new Date().getTime();
+      var editor = $("#" + this._editorContainerID);
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+
+      if (!avatar.length && editor.length) {
+        this.addAvatar();
+      }
+
+      if (this.avatarAdd) {
+        avatar.attr('data-toggle', 'tooltip');
+        avatar.attr('title', this.pseudoName);
+      }
+      if (this.cursor == true && cursor == true) {
+        // in the case of update, make sure that ping updates don't change the range
+
+        this._editor.viewEditor.getModule('cursors').moveCursor(this.origin, range);
+      } else if (cursor == true) {
+        this.cursor = cursor;
+        this.addCursor(range);
+      }
+      return this;
+    }
+  }, {
+    key: "checkIfOutdated",
+
+
+    /**
+     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
+     */
+    value: function checkIfOutdated() {
+      var timeNow = new Date().getTime();
+      var dff = timeNow - this.time;
+      // if  cursor  is outdated 
+      if (timeNow - this.time >= this.lifeTime) {
+        // Remve cursor and avatar
+        if (this.cursor) {
+          this._editor.viewEditor.getModule('cursors').removeCursor(this.origin);
+          this.cursor = false;
+        }
+        this.removeAvatar();
+        return true;
+      } else {
+        // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
+        return false;
+      }
+    }
+
+    /*
+     * addAvatar addAvatar of the user to the editor with corresponding divID
+     * @param {String} divID [the id of the div where the avatars are placed]
+     */
+
+  }, {
+    key: "addAvatar",
+    value: function addAvatar() {
+      var _this = this;
+
+      var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "#users";
+
+
+      jQuery("#" + this._editorContainerID + " " + divID).append(this.getAvatar());
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      avatar.attr('data-toggle', 'tooltip');
+      avatar.attr('title', this.pseudoName);
+      this.avatarAdd = true;
+
+      if (!this.options.isItMe) {
+        /**
+         * a timer that is used to check if the user is Outdated
+         * @return {[type]}   [description]
+         */
+
+        this.timer = setInterval(function () {
+          return _this.checkIfOutdated();
+        }, 1000);
+      }
+      return this;
+    }
+  }, {
+    key: "getAvatar",
+
+
+    /**
+     * getAvatar return a div that contains this user id
+     * @return {[type]} [description]
+     */
+    value: function getAvatar() {
+      return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="./icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
+    }
+  }, {
+    key: "removeAvatar",
+
+
+    /**
+     * removeAvatar remove the avatar of the user from the interface
+     * @return {[type]} [description]
+     */
+    value: function removeAvatar() {
+
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      avatar.remove();
+      this.avatarAdd = false;
+      clearInterval(this.timer);
+      return this;
+    }
+  }, {
+    key: "setPseudo",
+
+
+    /**
+     * setPseudo set pseudo  for the user
+     * @param {[type]} Pseudo [description]
+     */
+
+    value: function setPseudo(Pseudo) {
+      this.pseudoName = Pseudo;
+      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      if (avatar.length) {
+        avatar.attr('title', this.pseudoName);
+      }
+      return this;
+    }
+  }, {
+    key: "addCursor",
+
+
+    /**
+     * addCursor add the cursor to the editor
+     * @param {[{index: index,length: 0}]} range [description]
+     */
+    value: function addCursor(range) {
+      this.cursor = true;
+      this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
+      return this;
+    }
+  }], [{
+    key: "capitalize",
+    value: function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+  }, {
+    key: "getColor",
+
+
+    /**
+     * getColor for a specific id, get a unique color
+     * @param  {[string]} str [the id of the user]
+     * @return {[(r,g,b))]}     [the corresponding rgb color]
+     */
+    value: function getColor(str) {
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'rgb';
+
+      var h1 = (0, _stringHash2.default)(str) % 206;
+      var h2 = h1 * 7 % 206;
+      var h3 = h1 * 11 % 206;
+      var color = Math.floor(h1 + 50) + ", " + Math.floor(h2 + 50) + ", " + Math.floor(h3 + 50);
+      if (format === 'rgb') {
+        return 'rgb(' + color + ')';
+      }
+
+      if (format === 'rgba') {
+        return 'rgba(' + color + ')';
+      }
+
+      return color;
+    }
+  }, {
+    key: "getPseudoname",
+    value: function getPseudoname(id) {
+      var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'Anonymous';
+
+
+      if (format === 'Anonymous') {
+        return 'Anonymous ' + this.capitalize(_animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length]);
+      }
+      return _animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length];
+    }
+  }, {
+    key: "getAvatar",
+
+
+    /**
+     * getAvatar return the div that contains this user id
+     * @return {[type]} [description]
+     */
+    value: function getAvatar(id) {
+      return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
+    }
+  }]);
+
+  return Marker;
+}();
+
+exports.default = Marker;
 
 /***/ }),
 

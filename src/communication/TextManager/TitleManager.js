@@ -3,8 +3,9 @@ var debug = require('debug')('CRATE:Communication:TextManager:TitleManager')
 
 export class TitleManager extends TextEvent {
     constructor(opts) {
-        const name = opts.name || 'Title'
-        super({name,...opts})
+        const EventName = opts.EventName || 'Title'
+        super({EventName,...opts})
+        
         this._textManager=opts.TextManager
         this.action = this.sendChangeTitle
     }

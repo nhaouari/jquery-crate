@@ -5,8 +5,10 @@ var debug = require('debug')('CRATE:Communication:TextManager:AntiEntropyManager
 
 export class AntiEntropyManager extends TextEvent {
     constructor(opts) {
-        const name = opts.name || 'antiEntropy'
-        super({name,...opts})
+        const EventName = opts.EventName || 'antiEntropy'
+        super({EventName,...opts})
+
+    
         this._antiEntropyPeriod= opts.AntiEntropyPeriod 
         this._textManager=opts.TextManager
     }

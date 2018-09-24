@@ -9,8 +9,8 @@ var debug = require('debug')('CRATE:Communication:TextManager:TextManager')
 
 export class TextManager extends TextEvent {
     constructor(opts) {
-        const name = opts.name || 'TextManager'
-        super({name,...opts})
+        const EventName = opts.EventName || 'TextManager'
+        super({EventName,...opts})
 
         this._insertManager = new InsertManager({TextManager:this,...opts})
         this._removeManager = new RemoveManager({TextManager:this,...opts})

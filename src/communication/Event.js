@@ -5,11 +5,8 @@ export class Event extends EventEmitter {
     constructor(opts) {
       super()
       this._document = opts.document
-      this._editor = opts.editor
-
-      this._communicationChannel = this._document._data_comm
-      this._name=opts.name
-
+      this._communicationChannel = this._document._communication._data_comm
+      this._name=opts.EventName
       this._document.on(this.getType(), (msg) => {
         debug("receive",this.getType(),msg)
         this.receive(msg)
@@ -40,7 +37,8 @@ export class Event extends EventEmitter {
         return {event: this.getType(),...message}
     }
 
-    broadcast(message,lastSentMsgId=null){
+    broadcast(message){
+      
     const msg = this.getPacket(message)
     if(this.getSize(msg)>=20000) {
         this.broadcastStream(msg)
@@ -58,6 +56,8 @@ export class Event extends EventEmitter {
     }
     sendBroadcast(msg){
           //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
+    // this brodcast will not change the id the causal broadcast
+   // const id = this._document._communication.causality.vector.local
     const messageId=  this._communicationChannel.sendBroadcast(msg)  
     return messageId
     }
@@ -71,7 +71,6 @@ export class Event extends EventEmitter {
 
     unicast(id,message){
         const msg = this.getPacket(message)
-
         if(this.getSize(msg)>=20000) {
             this.unicastStream(id,msg)
         } else {

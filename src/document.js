@@ -1,7 +1,4 @@
-import {
-  Foglet,
-  communication
-} from "foglet-core"
+
 import {
   EventEmitter
 } from "events"
@@ -11,146 +8,68 @@ import {
   Communication
 } from './communication/Communication'
 import BI  from "BigInt"
+import VVwE from "version-vector-with-exceptions"
 
 var debug = require('debug')('CRATE:Document')
 
 export default class doc extends EventEmitter {
-  constructor(options, foglet) {
+  constructor(options) {
     super();
-    this._foglet = foglet
+
     this._options = options
+    this._foglet = this._options._foglet
 
     this._lastChanges = new Date()
 
     this.name = options.name;
     this.date = new Date(); // (TODO) change
-
     //User ID
     this.user = options.user;
     this.uid = this.user.id;
-
     /**
      * connect to the session of the document
      */
-
   }
   async init() {
     let options = this._options
 
-    if (options.display) {
-      const {
-        View
-      } = await import( /* webpackMode: "eager", webpackChunkName: "Crate-View" */ "./View.js")
+    this._communication= new Communication({document:this,...this._options})
+   
+    await this._communication.initConnection()
+
+    if (options.display) { 
+      const {View} = await import( /* webpackMode: "eager", webpackChunkName: "Crate-View" */ "./View.js")
       this._view = new View(options, this, options.containerID);
-      this.emit("ViewIsReady");
-    }
-
-    if (options.foglet) {
-      await this._foglet.connection(options.foglet);
-    } else {
-      this._foglet.share();
-      await this._foglet.connection();
     }
 
 
-
-    console.log("application connected!");
-
-
-    this._data_comm = new communication(
-      this._foglet.overlay().network,
-      "_data_comm"
-    );
-    this._behaviors_comm = new communication(
-      this._foglet.overlay().network,
-      "_behaviors_comm"
-    );
+    
 
     this.sequence = new LSEQTree(options.editingSessionID);
-    // #1B if it is imported from an existing object, initialize it with these
 
+    /* TODO:Think about the creation of modules without view */
+        this._communication.initModules()
+
+    // #1B if it is imported from an existing object, initialize it with these
+  
    
     // #2 grant fast access
 
-    this.broadcast = this._data_comm.broadcast;
-    this.broadcastCaret = this._behaviors_comm.broadcast;
-    this.rps = this._data_comm.network.rps;
-
-    this.causality = this.broadcast._causality;
+    this.broadcast = this._communication._data_comm.broadcast;
+    this.broadcastCaret = this._communication._behaviors_comm.broadcast;
+    this.rps = this._communication._data_comm.network.rps;
+    this.causality =  this._communication.causality
     this.signalingOptions = options.signalingOptions;
     
-    this.loadCommunicationModules()
-
     if (options.importFromJSON) {
       this.loadFromJSON(options.importFromJSON);
     } 
-    this.routersInit()
-
+    
     if (options.display) {
       this._view.init()
-    }
+    } 
 
-    this._foglet.emit("connected");
     this.emit("connected");
-
-
-  }
-
-  routersInit() {
-
-    this._behaviors_comm.onBroadcast((id, message) => {
-      debug('document', '._behaviors_comm', 'Message received', message, 'from', id)
-      this.emit(message.event, message)
-      
-    })
-
-    this._data_comm.onBroadcast((id, message) => {
-      debug('document', '._data_comm', 'Message received', message, 'from', id)
-      this.emit(message.event, message)
-
-    })
-
-
-    this._data_comm.onUnicast((id, message) => {
-      debug('document', '._data_comm unicast', 'Message received', message, 'from', id)
-      this.emit(message.event, message)
-    })
-
-    this._data_comm.broadcast.on('antiEntropy', (id, remoteVVwE, localVVwE) => {
-      debug('antiEntropy',{id, remoteVVwE, localVVwE})
-      this.emit('antiEntropy_Event', {
-        id,
-        remoteVVwEJSON: remoteVVwE,
-        localVVwE
-      })
-    })
-
-    //TODO:consider receiving many images
-
-    let content=''
-    this._data_comm.onStreamBroadcast((id, message) => {
-      message.on('data', data => { content += data})
-      message.on('end', () => {
-        const packet= JSON.parse(content)  
-        content = ''
-        debug('document', '._data_comm', 'Message received', packet, 'from', id)
-        this.emit(packet.event, packet)
-      })    
-     
-    })
-
-    let content2=''
-    this._data_comm.onStreamUnicast((id, message) => {
-      message.on('data', data => { content2 += data;})
-      message.on('end', () => {
-        const packet= JSON.parse(content2)  
-        content2 = ''
-        console.log('data received');
-        debug('document', '._data_comm', 'Message received', packet, 'from', id)
-        this.emit(packet.event, packet)
-      })    
-     
-    })
   }
 
 
@@ -184,18 +103,7 @@ export default class doc extends EventEmitter {
 
   };
 
-  loadCommunicationModules() {
-    const defaultOpts = {
-      document: this,
-      editor: this._view._editor,
-      PingPeriod: 2000, 
-      AntiEntropyPeriod: 2000
-    }
-    this._communication = new Communication(defaultOpts)
-    this._communication.init()
-
-    this._communication.markerManager.addMarker(this.uid, true)
-  }
+  
 
   /**
    * saveDocument save the document in local storage

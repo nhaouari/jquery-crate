@@ -2,12 +2,10 @@ import {MarkerEvent} from './MarkerEvent';
 
 var debug = require('debug')('CRATE:Communication:MarkerManager:PingManger')
 
-export class PingManger extends MarkerEvent {
+export class PingManager extends MarkerEvent {
     constructor(opts) {
-  
-      const name = opts.name || 'Ping'
-      super({name,...opts})
-  
+      const EventName = opts.EventName || 'Ping'
+      super({EventName,...opts})
       /**
        * startimer A timer used for sending pings
        * @type {Timer}
@@ -21,7 +19,6 @@ export class PingManger extends MarkerEvent {
        */
       this.startPing(this._pingPeriod)
   
-      
     }
   
   
@@ -33,10 +30,7 @@ export class PingManger extends MarkerEvent {
      */
     startPing(interval) {
       this._startTimer = setInterval(() => {
-        const id=this._document.uid
-        const pseudo = this.getMarker(id).pseudoName
-        this.broadcast({id,pseudo});
-  
+        this.broadcast(this._document.user);
       }, interval)
     }
   
@@ -56,17 +50,7 @@ export class PingManger extends MarkerEvent {
      * @return {[type]}        [description]
      */
     receive({id,pseudo} ) {
-      debug('Ping Received',id,pseudo)
-  
-      if (this.getMarker(id)) {
-        this.getMarker(id)
-          .update(null, false) // to keep avatar
-          .setPseudo(pseudo)
-  
-      } else { // to create the avatar
-        this.addMarker(id, false)
-          .setPseudo(pseudo)
-      }
+      this.emit('Ping_received',{id,pseudo})
     }
 
     close(){

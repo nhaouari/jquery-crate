@@ -1,5 +1,5 @@
-import {PingManger} from './PingManager'
-import {CaretManger} from './CaretManager'
+import {PingManager} from './PingManager'
+import {CaretManager} from './CaretManager'
 import {MarkerEvent} from './MarkerEvent';
 var debug = require('debug')('CRATE:Communication:MarkerManager:MarkerManager')
 /**
@@ -7,24 +7,23 @@ var debug = require('debug')('CRATE:Communication:MarkerManager:MarkerManager')
  */
 export class MarkerManager extends MarkerEvent {
     constructor(opts) {
-      const markers = {}
-      opts.markers=markers
-      const name = opts.name || 'MarkerManager'
-      super({name,...opts})
-      /**
-       * markers contains all marks of the users: carets, avatars...
-       * @type {Marker[]}
-       */
+
+      const EventName = opts.EventName || 'MarkerManager'
+      super({EventName,...opts})
   
-      this._markers = markers
-  
-      this._pingManager = new PingManger({ ...opts})
-  
-      this._caretManger = new CaretManger({ ...opts})
-  
-  
+      this._pingManager = new PingManager({ ...opts})
+      this._caretManger = new CaretManager({ ...opts})
+     
+      this._pingManager.on("Ping_received",(msg)=>{
+        this.emit("Ping_received",msg)
+      })
+      this._caretManger.on("Caret_received",(msg)=>{
+        this.emit("Caret_received",msg)
+      })
+
     }
   
+   
     /**
      * Set the current caret position
      * @param {*} range the current caret position 

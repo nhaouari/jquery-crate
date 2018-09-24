@@ -8,7 +8,7 @@ import store from "store"
 import {
   EventEmitter
 } from "events"
-import Marker from "./communication/MarkerManager/marker"
+import Marker from "./view/marker"
 import fetch from 'node-fetch'
 
 
@@ -105,7 +105,8 @@ async setOptions() {
 
   buildDocument(){
     this._documents = [];
-    const doc = new Document(this._options, this._foglet);
+    const doc = new Document({_foglet:this._foglet,...this._options});
+
     this._documents.push(doc);
 
     doc.init().then(() => {
