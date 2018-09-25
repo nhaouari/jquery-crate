@@ -21,7 +21,7 @@
         "brace": "0.5.x",
         "clone": "^1.0.3",
         "dateformat": "^3.0.3",
-        "foglet-core": "git+https://github.com/RAN3D/foglet-core.git#9daa88ca46d4b4991e77901d49b6ca080974fec9",
+        "foglet-core": "5.0.1",
         "isomorphic-fetch": "^2.2.1",
         "jquery-qrcode": "git+https://github.com/lrsjng/jquery-qrcode.git#master",
         "lodash": "^4.17.4",

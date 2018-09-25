@@ -270,8 +270,8 @@ async setOptions() {
           b:5,
           protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
           webrtc:  this._options.webRTCOptions,
-          timeout: 12000 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
-          pendingTimeout: 12000 * 1000,
+          timeout: 5 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          pendingTimeout: 5 * 1000,
           delta: 12000 * 1000, // spray-wrtc shuffle interval
           signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
         }

@@ -27,19 +27,21 @@
          this.networkState = jQuery(`#${this._editorContainerID} #state`)
 
          this.setNetworkState("connected");
-         model.rps.on("statechange", (state) => {
-             switch (state) {
-                 case 'connected':
-                     this.setNetworkState('connected')
-                     break
-                 case 'partially connected':
-                     this.setNetworkState('partiallyConnected')
-                     break
-                 case 'disconnected':
-                     this.setNetworkState('disconnected')
-                     break
-             }
-         })
+         model.rps.on("open", () => {
+                    this.setNetworkState('connected')
+            }
+        )
+
+        model.rps.on("close", (id) => {
+                    console.log('close id==> ',id,model._foglet.getNeighbours(Infinity).length)
+                    setTimeout(()=>{
+                        console.log('TimeOut ===> ',id,model._foglet.getNeighbours(Infinity).length)
+                        if(model._foglet.getNeighbours(Infinity).length<=0)
+                        this.setNetworkState('disconnected')
+                    }
+                    ,5000) 
+                }
+            )
 
          shareView.click(() => {
              var address = (window.location.href).split('?')[0]
