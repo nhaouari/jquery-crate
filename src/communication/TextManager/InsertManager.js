@@ -5,14 +5,10 @@ var debug = require('debug')('CRATE:Communication:TextManager:InsertManager')
 export class InsertManager extends TextEvent {
     constructor(opts) {
         const EventName = opts.EventName || 'Insert'
-        super({EventName,...opts})
-
-        
+        super({EventName,...opts})  
         this._textManager=opts.TextManager
         this.action=this.insert    
         this._lastSentId=null
-        this._pairs=[]
-        this._pairs2=[]
     }
 
 
@@ -23,36 +19,27 @@ export class InsertManager extends TextEvent {
      * \param index the index in the sequence to insert
      * \return the identifier freshly allocated
      */
-    insert({packet, position,source}) {
+    insert({packet, position,source='user'}) {
 
-       // clearTimeout(this._timeout)
-        var pair = this._sequence.insert(packet, position)
-        
-        this._document._communication.causality.incrementFrom(this.getLSEQID({pair}))
-        
-        debug('local Insert', packet, ' Index ', position, 'pair',pair)
-        if (source==='user'){
-            this._pairs.push({
-                        id: this._document.uid,
-                        pair
-                    })
+        if(this.isItConvertibleToJSON(packet)) {
+            var pair = this._sequence.insert(packet, position)
+            
+            this._document._communication.causality.incrementFrom(this.getLSEQID({pair}))
+            
+            debug('local Insert',{packet, position,source})
+            
+            if (source==='user'){
+            {
+                this.broadcast({id: this._document.uid,
+                            pair})
+                        
+                this.setLastChangesTime()
 
-            this._pairs2.push({
-                id: this._document.uid,
-                pair
-            })
-
-        //    this._timeout=setTimeout(()=>{ 
-                if (this.isItConvertibleToJSON(pair)) {
-                    this._lastSentId = this.broadcast({pairs:this._pairs})
-                    
-                    this.setLastChangesTime()
                 }
-                this._pairs=[]
-        //    },10)
-    }
-    };
+        };
 
+    }
+    }
     
     /*!
      * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
@@ -60,12 +47,7 @@ export class InsertManager extends TextEvent {
      * \param ei the result of the remote insert operation
      * \param origin the origin id of the insert operation
      */
-    receive( {pairs} ) {
-        
-        pairs.forEach(elem => {
-         const pair= elem.pair
-         const id = elem.id
-
+    receive( {id,pair} ) {
         const index = this._sequence.applyInsert(pair, false);
         debug('remoteInsert','pair', pair, ' sequence Index ', index)
        
@@ -85,7 +67,7 @@ export class InsertManager extends TextEvent {
             this.Event('Caret', msg)
         }
         }
-    });
+
     }
 
     /**

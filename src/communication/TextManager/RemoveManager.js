@@ -19,30 +19,17 @@ export class RemoveManager extends TextEvent {
      * \param index the index of the element to remove
      * \return the identifier freshly removed
      */
-    remove(index) { 
-       
-       
+    remove(index) {
         const reference = this.removeFromSequence(index)
         debug("Remove",{index,reference})  
         if(reference) {
-        clearTimeout(this._timeout)
-        this._sequence._c += 1;
-        const lseqID= this.getLSEQID({id:reference})
-        //this._document.causality.incrementFrom(lseqID)
-
-        this._pairs.push({
-            id: this._document.uid, 
-            reference
-        })
-
-      //  this._timeout=setTimeout(()=>{ 
-            this._lastSentId = this.broadcast({pairs:this._pairs}, this._lastSentId)     
-            this._pairs=[]
-      //  },10)
+            this._sequence._c += 1;
+            this.broadcast({
+                id: this._document.uid, 
+                reference
+            })     
         }
       this.setLastChangesTime()
-      
-       // return reference;
     };
 
     removeFromSequence(index){
@@ -63,12 +50,8 @@ export class RemoveManager extends TextEvent {
      * \param id the result of the remote insert operation
      * \param origin the origin id of the removal
      */
-    receive({pairs}) {
-        debug("receive remove",{pairs})
-        pairs.forEach(elem => {
-            const reference= elem.reference
-            const id = elem.id
- 
+    receive({id,reference}) {
+        debug("receive remove",{id,reference})
         const index = this._sequence.applyRemove(reference);
         this.emit('remoteRemove', index);
 
@@ -85,7 +68,6 @@ export class RemoveManager extends TextEvent {
         };
         
         this.setLastChangesTime()
-    })
     }
 
 

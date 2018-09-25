@@ -51797,7 +51797,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:Event');
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('CRATE:Event');
 
 var Event = exports.Event = function (_EventEmitter) {
     _inherits(Event, _EventEmitter);
@@ -51807,12 +51807,19 @@ var Event = exports.Event = function (_EventEmitter) {
 
         var _this = _possibleConstructorReturn(this, (Event.__proto__ || Object.getPrototypeOf(Event)).call(this));
 
+        _this._buffer = [];
         _this._document = opts.document;
         _this._communicationChannel = _this._document._communication._data_comm;
         _this._name = opts.EventName;
         _this._document.on(_this.getType(), function (msg) {
-            debug("receive", _this.getType(), msg);
-            _this.receive(msg);
+
+            if (msg && msg.pairs) {
+                _this.receiveBuffer(msg);
+            } else if (msg) {
+                _this.receiveBuffer({ pairs: [msg] });
+            } else {
+                console.error('Receive Event without data', _this.getType());
+            }
         });
 
         _this._document.on(_this._name + '_Action_Event', function (msg) {
@@ -51847,13 +51854,23 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'broadcast',
         value: function broadcast(message) {
+            var _this2 = this;
 
-            var msg = this.getPacket(message);
-            if (this.getSize(msg) >= 20000) {
-                this.broadcastStream(msg);
-            } else {
-                this.sendBroadcast(msg);
-            }
+            clearTimeout(this._timeoutBuffer);
+
+            this._buffer.push(message);
+
+            this._timeoutBuffer = setTimeout(function () {
+                var msg = _this2.getPacket({ pairs: _this2._buffer });
+
+                debug('broadcast buffer', msg);
+                if (_this2.getSize(msg) >= 20000) {
+                    _this2.broadcastStream(msg);
+                } else {
+                    _this2.sendBroadcast(msg);
+                }
+                _this2._buffer = [];
+            }, 1);
         }
     }, {
         key: 'haveBeenReceived',
@@ -51922,10 +51939,23 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'sendLocalBroadcast',
         value: function sendLocalBroadcast(msg) {
-            var _this2 = this;
+            var _this3 = this;
 
             this._document.broadcast._source.getNeighbours().forEach(function (neighbourId) {
-                return _this2.unicast(neighbourId, msg);
+                return _this3.unicast(neighbourId, msg);
+            });
+        }
+    }, {
+        key: 'receiveBuffer',
+        value: function receiveBuffer(_ref) {
+            var _this4 = this;
+
+            var pairs = _ref.pairs;
+
+            debug("receiveBuffer", this.getType(), pairs.length, pairs);
+
+            pairs.forEach(function (elem) {
+                _this4.receive(elem);
             });
         }
     }, {
@@ -52174,6 +52204,7 @@ var MarkerManager = exports.MarkerManager = function (_MarkerEvent) {
     });
     _this._caretManger.on("Caret_received", function (msg) {
       _this.emit("Caret_received", msg);
+      debug("Caret_received", msg);
     });
 
     return _this;
@@ -52558,8 +52589,6 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
         _this._textManager = opts.TextManager;
         _this.action = _this.insert;
         _this._lastSentId = null;
-        _this._pairs = [];
-        _this._pairs2 = [];
         return _this;
     }
 
@@ -52577,39 +52606,27 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
         value: function insert(_ref) {
             var packet = _ref.packet,
                 position = _ref.position,
-                source = _ref.source;
+                _ref$source = _ref.source,
+                source = _ref$source === undefined ? 'user' : _ref$source;
 
 
-            // clearTimeout(this._timeout)
-            var pair = this._sequence.insert(packet, position);
+            if (this.isItConvertibleToJSON(packet)) {
+                var pair = this._sequence.insert(packet, position);
 
-            this._document._communication.causality.incrementFrom(this.getLSEQID({ pair: pair }));
+                this._document._communication.causality.incrementFrom(this.getLSEQID({ pair: pair }));
 
-            debug('local Insert', packet, ' Index ', position, 'pair', pair);
-            if (source === 'user') {
-                this._pairs.push({
-                    id: this._document.uid,
-                    pair: pair
-                });
+                debug('local Insert', { packet: packet, position: position, source: source });
 
-                this._pairs2.push({
-                    id: this._document.uid,
-                    pair: pair
-                });
+                if (source === 'user') {
+                    {
+                        this.broadcast({ id: this._document.uid,
+                            pair: pair });
 
-                //    this._timeout=setTimeout(()=>{ 
-                if (this.isItConvertibleToJSON(pair)) {
-                    this._lastSentId = this.broadcast({ pairs: this._pairs });
-
-                    this.setLastChangesTime();
-                }
-                this._pairs = [];
-                //    },10)
+                        this.setLastChangesTime();
+                    }
+                };
             }
         }
-    }, {
-        key: 'receive',
-
 
         /*!
          * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
@@ -52617,36 +52634,32 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
          * \param ei the result of the remote insert operation
          * \param origin the origin id of the insert operation
          */
+
+    }, {
+        key: 'receive',
         value: function receive(_ref2) {
-            var _this2 = this;
+            var id = _ref2.id,
+                pair = _ref2.pair;
 
-            var pairs = _ref2.pairs;
+            var index = this._sequence.applyInsert(pair, false);
+            debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
 
-
-            pairs.forEach(function (elem) {
-                var pair = elem.pair;
-                var id = elem.id;
-
-                var index = _this2._sequence.applyInsert(pair, false);
-                debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
-
-                if (index >= 0) {
-                    _this2.emit('remoteInsert', pair.elem, index);
-                    _this2.setLastChangesTime();
-                    if (!pair.antientropy) {
-                        var range = {
-                            index: index,
-                            length: 0
-                        };
-                        var msg = {
-                            range: range,
-                            id: id
-                        };
-                        console.log('cursor sent    ');
-                        _this2.Event('Caret', msg);
-                    }
+            if (index >= 0) {
+                this.emit('remoteInsert', pair.elem, index);
+                this.setLastChangesTime();
+                if (!pair.antientropy) {
+                    var range = {
+                        index: index,
+                        length: 0
+                    };
+                    var msg = {
+                        range: range,
+                        id: id
+                    };
+                    console.log('cursor sent    ');
+                    this.Event('Caret', msg);
                 }
-            });
+            }
         }
 
         /**
@@ -52729,28 +52742,16 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
     _createClass(RemoveManager, [{
         key: 'remove',
         value: function remove(index) {
-
             var reference = this.removeFromSequence(index);
             debug("Remove", { index: index, reference: reference });
             if (reference) {
-                clearTimeout(this._timeout);
                 this._sequence._c += 1;
-                var lseqID = this.getLSEQID({ id: reference });
-                //this._document.causality.incrementFrom(lseqID)
-
-                this._pairs.push({
+                this.broadcast({
                     id: this._document.uid,
                     reference: reference
                 });
-
-                //  this._timeout=setTimeout(()=>{ 
-                this._lastSentId = this.broadcast({ pairs: this._pairs }, this._lastSentId);
-                this._pairs = [];
-                //  },10)
             }
             this.setLastChangesTime();
-
-            // return reference;
         }
     }, {
         key: 'removeFromSequence',
@@ -52776,32 +52777,26 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
     }, {
         key: 'receive',
         value: function receive(_ref) {
-            var _this2 = this;
+            var id = _ref.id,
+                reference = _ref.reference;
 
-            var pairs = _ref.pairs;
+            debug("receive remove", { id: id, reference: reference });
+            var index = this._sequence.applyRemove(reference);
+            this.emit('remoteRemove', index);
 
-            debug("receive remove", { pairs: pairs });
-            pairs.forEach(function (elem) {
-                var reference = elem.reference;
-                var id = elem.id;
-
-                var index = _this2._sequence.applyRemove(reference);
-                _this2.emit('remoteRemove', index);
-
-                if (index >= 0) {
-                    var range = {
-                        index: index - 1,
-                        length: 0
-                    };
-                    var msg = {
-                        range: range,
-                        id: id
-                    };
-                    _this2.Event('Caret', msg);
+            if (index >= 0) {
+                var range = {
+                    index: index - 1,
+                    length: 0
                 };
+                var msg = {
+                    range: range,
+                    id: id
+                };
+                this.Event('Caret', msg);
+            };
 
-                _this2.setLastChangesTime();
-            });
+            this.setLastChangesTime();
         }
     }]);
 
@@ -54188,7 +54183,7 @@ var MarkerViewManager = exports.MarkerViewManager = function (_EventEmitter) {
     });
 
     _this._markerManager.on("Caret_received", function (msg) {
-      _this.receiveCaret("Caret_received", msg);
+      _this.receiveCaret(msg);
     });
 
     return _this;

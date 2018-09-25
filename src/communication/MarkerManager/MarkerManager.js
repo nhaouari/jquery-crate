@@ -19,6 +19,7 @@ export class MarkerManager extends MarkerEvent {
       })
       this._caretManger.on("Caret_received",(msg)=>{
         this.emit("Caret_received",msg)
+        debug("Caret_received",msg)
       })
 
     }

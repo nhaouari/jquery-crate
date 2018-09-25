@@ -21,7 +21,7 @@ export class MarkerViewManager extends EventEmitter {
       })
 
       this._markerManager.on("Caret_received",(msg)=>{
-        this.receiveCaret("Caret_received",msg)
+        this.receiveCaret(msg)
       })
 
     
@@ -72,6 +72,8 @@ export class MarkerViewManager extends EventEmitter {
      * @param  {[type]} id [description]
      * @return {[type]}        [description]
      */
+
+     
     receiveCaret({range,id}){
       if (!id) return
   

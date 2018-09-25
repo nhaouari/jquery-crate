@@ -1,16 +1,23 @@
 import {EventEmitter} from "events"
 import { Foglet } from 'foglet-core';
-var debug = require('debug')('crate:Event')
+var debug = require('debug')('CRATE:Event')
 export class Event extends EventEmitter {
     constructor(opts) {
       super()
+      this._buffer = []
       this._document = opts.document
       this._communicationChannel = this._document._communication._data_comm
       this._name=opts.EventName
       this._document.on(this.getType(), (msg) => {
-        debug("receive",this.getType(),msg)
-        this.receive(msg)
-      })
+
+        if(msg&&msg.pairs){
+        this.receiveBuffer(msg)
+        } else if(msg) {
+        this.receiveBuffer({pairs:[msg]})
+        } else {
+            console.error('Receive Event without data',this.getType() )
+        }
+    })
 
       this._document.on(`${this._name}_Action_Event`, (msg) => {
         debug(`on "${this._name}_Action_Event"`);
@@ -27,7 +34,7 @@ export class Event extends EventEmitter {
     
     getType(){
         if(this._name) {
-        return `${this._name}_Event`
+            return `${this._name}_Event`
         } else {
             console.error("Event without name")
         }
@@ -38,13 +45,23 @@ export class Event extends EventEmitter {
     }
 
     broadcast(message){
-      
-    const msg = this.getPacket(message)
-    if(this.getSize(msg)>=20000) {
-        this.broadcastStream(msg)
-    } else {
-        this.sendBroadcast(msg)
-    }
+    clearTimeout(this._timeoutBuffer)
+
+    this._buffer.push(message)
+    
+   
+    this._timeoutBuffer=setTimeout(()=>{
+        const msg = this.getPacket({pairs:this._buffer})
+
+        debug('broadcast buffer',msg)
+        if(this.getSize(msg)>=20000) {
+            this.broadcastStream(msg)
+        } else {
+            this.sendBroadcast(msg)
+        }
+        this._buffer=[]
+    },1)
+    
     }
 
     haveBeenReceived(element){
@@ -104,6 +121,15 @@ export class Event extends EventEmitter {
         this._document.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
     }
 
+    receiveBuffer({pairs} ) {
+        debug("receiveBuffer",this.getType(),pairs.length,pairs)
+
+        pairs.forEach(elem => {
+            this.receive(elem)
+        }) 
+     }
+         
+
     receive(msg) {
         
         debug("default receive",msg)
@@ -116,6 +142,7 @@ export class Event extends EventEmitter {
     sendAction(name,args){
         this.Event(`${name}_Action`,args)
     }
+
 
     Event(name,args) {
 
