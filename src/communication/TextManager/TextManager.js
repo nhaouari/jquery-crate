@@ -16,8 +16,9 @@ export class TextManager extends TextEvent {
         this._removeManager = new RemoveManager({TextManager:this,...opts})
         this._titleManager = new TitleManager({TextManager:this,...opts})
         this._antiEntropyManager = new AntiEntropyManager({TextManager:this,...opts}) 
-       // this._antiEntropyManager.sendAntiEntropyRequest()
-       this._antiEntropyManager.start()
+        this._antiEntropyManager.sendAntiEntropyRequest()
+       //this._antiEntropyManager.start()
+
         this.on('sendChangeTitle',()=> {
             this._titleManager.sendChangeTitle()
             

@@ -82,7 +82,7 @@ export default class doc extends EventEmitter {
     const n = d.getTime()
     this._lastChanges = n
     this.refreshDocument(this.sequence)
-    //this.testAntientropy()
+   // this.testAntientropy()
   }
 
 
@@ -134,46 +134,9 @@ export default class doc extends EventEmitter {
   }
   }
 
- 
-
-  getLSEQNodes1(sequence){
-    let sequenceNodes = []
-    for (let i = 0; i < sequence.root.subCounter; i++) {
-        let tempNode = sequence._get(i);
-        while (tempNode.children.length > 0) {
-            tempNode = tempNode.children[0];
-        };
-        
-        if(tempNode.e&&tempNode.e!=""){
-        sequenceNodes.push(tempNode) 
-        }
-    }
-    
-return sequenceNodes
-}
-
-  getLSEQNodes2(){
-    let LSEQNodeArray=[]
-    const root=this.sequence.root
-
-    let preorder=(node)=>{
-      if(node.e&&node.e!=""){
-      LSEQNodeArray.push(node)
-      }
-      const children = node.children
-      children.forEach(child => {
-        preorder(child)
-      });
-    
-    }
-
-    preorder(root,true)
-    return LSEQNodeArray
-  }
-
 
   getDeltaFromSequence(sequence){
-    let LSEQNodes=this.getLSEQNodes1(sequence)
+    let LSEQNodes=this.getLSEQNodes(sequence)
     let ops=[]
     
     LSEQNodes.forEach((node)=>{
@@ -185,7 +148,6 @@ return sequenceNodes
     if(length>=2&&ops[length-1].insert==="\n"&&ops[length-2].insert!="\n") {
       ops.push({insert:"\n"})
     }
-
     return {ops}
   }
 
@@ -203,67 +165,23 @@ return sequenceNodes
     },10)
   
   }
-
-  testAntientropy() {
-  
-    const sequenceNodes= this.getLSEQNodes1(this.sequence)
-    console.log('getSequenceNodes result ',{sequenceNodes})
-
-    let lseqTreeTest= new LSEQTree(this._options.editingSessionID)
-
-
-    sequenceNodes.forEach((node)=>{ 
-            const pair = {
-                elem: node.e,
-                id: this.fromNode(node),
-                antientropy: true // this to prevent the caret movement in the case of anti-entropy
-            }
-            lseqTreeTest.applyInsert(pair, false);
-
-    })
-
+  getLSEQNodes(sequence,all=false){
+    let sequenceNodes = []
     
-    this.refreshDocument(lseqTreeTest)
-       
+    for (let i = 0; i < sequence.root.subCounter; i++) {
+        let tempNode = sequence._get(i);
+        while (tempNode.children.length > 0) {
+            tempNode = tempNode.children[0];
+        };
+        
+        if(all||tempNode.e&&tempNode.e!=""){
+        sequenceNodes.push(tempNode) 
+        }
+    }
+    return sequenceNodes
   }
-/**
-      * Set the d,s,c values according to the node in argument
-      * @param {LSeqNode} node The lseqnode containing the path in the tree
-      * structure.
-      * @return {Identifier} This identifier modified.
-      */
-     fromNode (node) {
-      let _base = this.sequence._base
-      let _s = []
-      let _c= []
 
-
-       // #1 process the length of the path
-       let length = 1, tempNode = node
-       
-       while (!tempNode.isLeaf) {
-       ++length;
-           tempNode = tempNode.child
-       };
-       // #2 copy the values contained in the path
-       let _d = BI.int2bigInt(0, _base.getSumBit(length - 1))
-       
-       for (let i = 0; i < length ; ++i) {
-           // #1a copy the site id
-          _s.push(node.t.s)
-           // #1b copy the counter
-          _c.push(node.t.c)
-           // #1c copy the digit
-           BI.addInt_(_d, node.t.p)
-           if (i !== length - 1) {
-               BI.leftShift_(_d, _base.getBitBase(i+1))
-           };
-           node = node.child;
-       };
-       
-       return {_base,_d,_s,_c}
-   }
-
+ 
   close() {
     this._foglet.unshare();
     this._foglet._networkManager._rps.network._rps.disconnect();

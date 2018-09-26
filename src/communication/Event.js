@@ -118,7 +118,7 @@ export class Event extends EventEmitter {
     }
 
     sendLocalBroadcast(msg){ 
-        this._document.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
+        this._communicationChannel.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
     }
 
     receiveBuffer({pairs} ) {
