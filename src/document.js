@@ -146,7 +146,7 @@ export default class doc extends EventEmitter {
 
       this._view._editor.viewEditor.setContents(delta,'silent')
       this._view._editor.viewEditor.setSelection(range,'silent')
-      session.default.openIn()
+      this._view._editor.updateCommentsLinks()
     },10)
   
   }

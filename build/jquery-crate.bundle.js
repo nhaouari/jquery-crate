@@ -55687,7 +55687,7 @@ var doc = function (_EventEmitter) {
 
         _this2._view._editor.viewEditor.setContents(delta, 'silent');
         _this2._view._editor.viewEditor.setSelection(range, 'silent');
-        session.default.openIn();
+        _this2._view._editor.updateCommentsLinks();
       }, 10);
     }
   }, {
