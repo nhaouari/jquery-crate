@@ -22,11 +22,14 @@ export class InsertManager extends TextEvent {
     insert({packet, position,source='user'}) {
 
         if(this.isItConvertibleToJSON(packet)) {
-            var pair = this._sequence.insert(packet, position)
+            var pair = this.insertLSEQ(packet, position) 
+            const causalID= this.getLSEQID({pair})
+                
+                
+
+            //this._document._communication.causality.increment()
             
-            this._document._communication.causality.incrementFrom(this.getLSEQID({pair}))
-            
-            debug('local Insert',{packet, position,source})
+            debug('local Insert',{packet,causalID,position,source})
             
             if (source==='user'){
             {
@@ -40,6 +43,40 @@ export class InsertManager extends TextEvent {
 
     }
     }
+
+    
+    /**
+     * Insert a value at the targeted index.
+     * @param {Object} element The element to insert, e.g. a character if the
+     * sequence is a string.
+     * @param {Number} index The position in the array.
+     * @return {Object} {_e: element of Object type, _i: Identifier}
+     */
+    insertLSEQ (element, index) {
+        const pei = this._sequence._get(index), // #1a previous bound
+              qei = this._sequence._get(index+1); // #1b next bound
+
+         // #2a incrementing the local counter
+         this._sequence._c += 1;
+        // #2b generating the id inbetween the bounds
+        const id =  this._sequence.alloc(pei, qei);
+
+        // #3 add it to the structure and return value
+        const pair = {elem: {id,...element}, id: id};
+
+        this._sequence.applyInsert(pair);
+        return pair;
+    };
+
+    getIDBeforeInsert(sequence){
+        const pei = sequence._get(index), // #1a previous bound
+        qei = sequence._get(index+1); // #1b next bound
+          // #2a incrementing the local counter
+        this._c += 1;
+            // #2b generating the id inbetween the bounds
+        const id = sequence.alloc(pei, qei);
+        return id
+    }
     
     /*!
      * \brief insertion of an element from a remote site. It emits 'remoteInsert' 
@@ -47,14 +84,14 @@ export class InsertManager extends TextEvent {
      * \param ei the result of the remote insert operation
      * \param origin the origin id of the insert operation
      */
-    receive( {id,pair} ) {
+    receive( {id,pair,antientropy=false} ) {
         const index = this._sequence.applyInsert(pair, false);
         debug('remoteInsert','pair', pair, ' sequence Index ', index)
        
         if (index >= 0) {
-            this.emit('remoteInsert', pair.elem, index);
+          //  this.emit('remoteInsert', pair.elem, index);
             this.setLastChangesTime()
-          if(!pair.antientropy) {
+          if(!antientropy) {
             const range = {
                 index: index,
                 length: 0
@@ -63,11 +100,9 @@ export class InsertManager extends TextEvent {
                 range,
                 id
             }
-            console.log('cursor sent    ')
             this.Event('Caret', msg)
         }
         }
-
     }
 
     /**

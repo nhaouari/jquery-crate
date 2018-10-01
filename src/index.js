@@ -272,7 +272,7 @@ async setOptions() {
           webrtc:  this._options.webRTCOptions,
           timeout: 5 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
           pendingTimeout: 5 * 1000,
-          delta: 12000 * 1000, // spray-wrtc shuffle interval
+          delta: 120 * 1000, // spray-wrtc shuffle interval
           signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
         }
       }

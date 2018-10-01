@@ -50,7 +50,7 @@ export class Event extends EventEmitter {
     this._buffer.push(message)
     
    
-    this._timeoutBuffer=setTimeout(()=>{
+   // this._timeoutBuffer=setTimeout(()=>{
         const msg = this.getPacket({pairs:this._buffer})
 
         debug('broadcast buffer',msg)
@@ -60,7 +60,7 @@ export class Event extends EventEmitter {
             this.sendBroadcast(msg)
         }
         this._buffer=[]
-    },1)
+   // },1)
     
     }
 
@@ -74,9 +74,15 @@ export class Event extends EventEmitter {
     sendBroadcast(msg){
           //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
     // this brodcast will not change the id the causal broadcast
-   // const id = this._document._communication.causality.vector.local
-    const messageId=  this._communicationChannel.sendBroadcast(msg)  
-    return messageId
+    //const id = this._document._communication.causality.vector.local
+
+    let isReady= null
+    
+    if(this._name==="Remove") {isReady=msg.pairs[0].causalId}
+
+    debug("Send Broadcast ",{msg,isReady}  )
+    this._document.lastSentMsgId =  this._communicationChannel.sendBroadcast(msg,null,isReady)  
+    return this._document.lastSentMsgId
     }
 
     broadcastStream(msg) {
@@ -149,6 +155,7 @@ export class Event extends EventEmitter {
         debug('Event: ',`${name}_Event`,args);
         this._document.emit(`${name}_Event`,args);
     }
+
     chunkSubstr(str, size) {
         const numChunks = Math.ceil(str.length / size)
         const chunks = new Array(numChunks)
@@ -159,7 +166,11 @@ export class Event extends EventEmitter {
       
         return chunks
       }
-    
+      getCausalID(lseqNode){
+        const causalId= {e:lseqNode.t.s,c:lseqNode.t.c} 
+        debug("getCausalID",{lseqNode,causalId} )
+        return causalId
+    }
       close(){
 
     }

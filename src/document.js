@@ -7,8 +7,7 @@ import LSEQTree from "LSEQTree"
 import {
   Communication
 } from './communication/Communication'
-import BI  from "BigInt"
-import VVwE from "version-vector-with-exceptions"
+
 
 var debug = require('debug')('CRATE:Document')
 
@@ -21,11 +20,13 @@ export default class doc extends EventEmitter {
 
     this._lastChanges = new Date()
 
-    this.name = options.name;
-    this.date = new Date(); // (TODO) change
+    this.name = options.name
+    this.date = new Date()
     //User ID
-    this.user = options.user;
-    this.uid = this.user.id;
+    this.user = options.user
+    this.uid = this.user.id
+
+    this.lastSentMsgId=null
     /**
      * connect to the session of the document
      */
@@ -135,8 +136,23 @@ export default class doc extends EventEmitter {
   }
 
 
+
+  refreshDocument(sequence){
+    clearTimeout(this.refreshDocumentTimeout)
+    
+    this.refreshDocumentTimeout=setTimeout(()=>{
+      const delta=this.getDeltaFromSequence(sequence)
+      let range=this._view._editor.viewEditor.getSelection()
+
+      this._view._editor.viewEditor.setContents(delta,'silent')
+      this._view._editor.viewEditor.setSelection(range,'silent')
+      session.default.openIn()
+    },10)
+  
+  }
+
   getDeltaFromSequence(sequence){
-    let LSEQNodes=this.getLSEQNodes(sequence)
+    let LSEQNodes=this.getLSEQNodes()
     let ops=[]
     
     LSEQNodes.forEach((node)=>{
@@ -151,37 +167,25 @@ export default class doc extends EventEmitter {
     return {ops}
   }
 
-  refreshDocument(sequence){
-    clearTimeout(this.refreshDocumentTimeout)
-    
-    this.refreshDocumentTimeout=setTimeout(()=>{
-      const delta=this.getDeltaFromSequence(sequence)
-      console.log(delta)
-      let range=this._view._editor.viewEditor.getSelection()
 
-      this._view._editor.viewEditor.setContents(delta,'silent')
-      this._view._editor.viewEditor.setSelection(range,'silent')
-      session.default.openIn()
-    },10)
-  
-  }
-  getLSEQNodes(sequence,all=false){
-    let sequenceNodes = []
-    
-    for (let i = 0; i < sequence.root.subCounter; i++) {
-        let tempNode = sequence._get(i);
-        while (tempNode.children.length > 0) {
-            tempNode = tempNode.children[0];
-        };
-        
-        if(all||tempNode.e&&tempNode.e!=""){
-        sequenceNodes.push(tempNode) 
-        }
+  getLSEQNodes(){
+    let LSEQNodeArray=[]
+    const root=this.sequence.root
+
+    let preorder=(node)=>{
+      if(node.e&&node.e!=""){
+      LSEQNodeArray.push(node)
+     }
+      const children = node.children
+      children.forEach(child => {
+        preorder(child)
+      });
     }
-    return sequenceNodes
+
+    preorder(root)
+    return LSEQNodeArray
   }
 
- 
   close() {
     this._foglet.unshare();
     this._foglet._networkManager._rps.network._rps.disconnect();

@@ -1,8 +1,7 @@
 
 import VVwE from "version-vector-with-exceptions"
 import {TextEvent} from './TextEvent'
-import LSEQTree from "LSEQTree"
-import BI  from "BigInt"
+
 
 var debug = require('debug')('CRATE:Communication:TextManager:AntiEntropyManager')
 
@@ -34,7 +33,6 @@ export class AntiEntropyManager extends TextEvent {
 
 
     receiveRequest({id, causality}){
-        debugger
         const localVVwE=this._document._communication.causality.clone()
         const remoteVVwE = (new VVwE(null)).constructor.fromJSON(causality); // cast
        
@@ -79,13 +77,11 @@ export class AntiEntropyManager extends TextEvent {
 
         for (let j = start; j <= localEntry.v; ++j) {
                     // #B check if not one of the local exceptions
-                 //TODO: Check why it dose not work   if (localEntry.x.indexOf(j) < 0) {
-                        missingLSEQIDs.push({ _e: localEntry.e, _c: j});
-                   // };
-                };
-        
-
-
+                  if (localEntry.x.indexOf(j) < 0) {
+                        missingLSEQIDs.push({ _e: localEntry.e, _c: j})
+                    }
+                }
+    
          // #C handle the exceptions of the remote vector
          if (remoteEntry) {
             for (let j = 0; j < remoteEntry.x.length; ++j) {
@@ -94,8 +90,7 @@ export class AntiEntropyManager extends TextEvent {
                     missingLSEQIDs.push({
                         _e: localEntry.e,
                         _c: except
-                    })
-               
+                    })      
                 }
             }
         }
@@ -110,55 +105,31 @@ export class AntiEntropyManager extends TextEvent {
      * \returns an array of nodes
      */
     getElements(toSearch) {
-        let result = [],
-        found, node, tempNode, i = this._sequence.length,
-        j = 0;
-    // (TODO) improve research by exploiting the fact that if a node is
-    // missing, all its children are missing too.
-    // (TODO) improve the returned representation: either a tree to factorize
-    // common parts of the structure or identifiers to get the polylog size
-    // (TODO) improve the search by using the fact that toSearch is a sorted
-    // array, possibly restructure this argument to be even more efficient
+     
+
+    const lseqNodes= this.getLSEQNodes()
+
+    let elements=[]
+    lseqNodes.forEach((lseqNode)=>{
+        if (this.isIdInSet({id:lseqNode.t.s,clock:lseqNode.t.c,toSearch})){
+            elements.push(lseqNode)
+        }
+
+    })
+
+    return elements
+    }
     
-    while (toSearch.length > 0 && i <= this._sequence.length && i > 0) {
-        node = this._sequence._get(i);
-        tempNode = node;
 
-        while (tempNode.children.length > 0) {
-            tempNode = tempNode.children[0];
-        };
-        j = 0;
-        found = false;
-        while (j < toSearch.length && !found) {
-            if (tempNode.t.s === toSearch[j]._e &&
-                tempNode.t.c === toSearch[j]._c) {
-
-                found = true;
-
-                result.push(this.MAEInsertOperation({
-                    elem: tempNode.e,
-                    id: node,
-                    antientropy: true // this to prevent the caret movement in the case of anti-entropy
-                }, tempNode.t.s.split("-")[0]));
-
-                toSearch.splice(j, 1);
-            } else {
-                ++j;
-            };
-        };
-        --i;
-    };
-    return result.reverse();
-};
  
-     getLSEQNodes(){
+    getLSEQNodes(){
         let LSEQNodeArray=[]
         const root=this._sequence.root
     
         let preorder=(node)=>{
           if(node.e&&node.e!=""){
           LSEQNodeArray.push(node)
-        }
+         }
           const children = node.children
           children.forEach(child => {
             preorder(child)
@@ -170,71 +141,9 @@ export class AntiEntropyManager extends TextEvent {
       }
     
 
-    /**
-      * Set the d,s,c values according to the node in argument
-      * @param {LSeqNode} node The lseqnode containing the path in the tree
-      * structure.
-      * @return {Identifier} This identifier modified.
-      */
-     fromNode (node) {
-        let _base = this._sequence._base
-        let _s = []
-        let _c= []
 
+    isIdInSet({id,clock,toSearch}) {
 
-         // #1 process the length of the path
-         let length = 1, tempNode = node
-         
-         while (!tempNode.isLeaf) {
-         ++length;
-             tempNode = tempNode.child
-         };
-         // #2 copy the values contained in the path
-         let _d = BI.int2bigInt(0, _base.getSumBit(length - 1))
-         
-         for (let i = 0; i < length ; ++i) {
-             // #1a copy the site id
-            _s.push(node.t.s)
-             // #1b copy the counter
-            _c.push(node.t.c)
-             // #1c copy the digit
-             BI.addInt_(_d, node.t.p)
-             if (i !== length - 1) {
-                 BI.leftShift_(_d, _base.getBitBase(i+1))
-             };
-             node = node.child;
-         };
-         
-         return {_base,_d,_s,_c}
-     }
-
-    getSequenceNodes(){
-        let sequenceNodes = []
-
-        for (let i = 0; i < this._sequence.root.subCounter; i++) {
-            let tempNode = this._sequence._get(i);
-            while (tempNode.children.length > 0) {
-                tempNode = tempNode.children[0];
-            };
-
-            sequenceNodes.push(tempNode)    
-        }
-        
-    return sequenceNodes
-    }
-
-    getSequenceNode({id,clock,sequenceNodes}){
-        for (let j = 0; j < sequenceNodes.length; j++) {
-            const tempNode=sequenceNodes[j]
-            if (tempNode.t.s ===id &&
-                tempNode.t.c === clock) {
-                return tempNode        
-             }      
-        
-    }
-    }
-
-    isInToSearch({id,clock,toSearch}) {
 
         for (let j = 0; j < toSearch.length; j++) {
             const {_e,_c}=toSearch[j]
@@ -247,16 +156,25 @@ export class AntiEntropyManager extends TextEvent {
     return false
 
     }
+
+
     receiveResponse({elements,causalityAtReceipt}){
-      
       debug('receiveResponse',{elements,causalityAtReceipt})
         // #1 considere each message in the response independantly     
         let elems=[]
-        elements.forEach((element)=> {
+        elements.forEach((lseqNode)=> {
+            
+            const causalID=this.getCausalID(lseqNode) 
+            const msg={id:causalID}
+            const authorID=lseqNode.t.s.split("-")[0]
+            const pair={elem:lseqNode.e,id:lseqNode.e.id}
             // #2 only check if the message has not been received yet
-            if (!this.haveBeenReceived(element)) {
-              this._document.causality.incrementFrom(element.id)
-              elems.push(element.payload)
+            if (!this.haveBeenReceived(msg)) {
+              this._document.causality.incrementFrom(causalID)
+               
+            // this to prevent the caret movement in the case of anti-entropy
+
+              elems.push({pair,id:authorID, antientropy: true})
             }
           })
         
@@ -266,7 +184,7 @@ export class AntiEntropyManager extends TextEvent {
         this._document.causality.merge(causalityAtReceipt) 
     }
 
-
+    
     /**
    * We started Antientropy mechanism in order to retreive old missed files
    */
@@ -280,7 +198,7 @@ export class AntiEntropyManager extends TextEvent {
   sendAntiEntropyRequest(){
     let id = this._document._options.editingSessionID
     this.sendLocalBroadcast({type:'Request',id,causality:this._document._communication.causality})
-    debug('sendAntiEntropyRequest',{type:'Request',id,causality:this._document.causality})
+    debug('sendAntiEntropyRequest',{type:'Request',id,causality:this._document._communication.causality})
   }
 
    /**
@@ -300,21 +218,6 @@ export class AntiEntropyManager extends TextEvent {
   }
 
 
-  
-
-MAEInsertOperation(pair, id){
-    const packet = {
-    type : "MAEInsertOperation",
-    payload :  {
-        type : "Insert_Event",
-        pair: pair,
-        id : id
-        },
-    id: {e:id},
-     isReady : null
-    }
-    return packet
-};
 
 stopAntiEnropy(){
     if (this._intervalAntiEntropy) {

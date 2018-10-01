@@ -20,12 +20,15 @@ export class RemoveManager extends TextEvent {
      * \return the identifier freshly removed
      */
     remove(index) {
+        const lseqNode= this._sequence._get(index+1)
+        const causalId=this.getCausalID(lseqNode)
         const reference = this.removeFromSequence(index)
         debug("Remove",{index,reference})  
         if(reference) {
             this._sequence._c += 1;
             this.broadcast({
                 id: this._document.uid, 
+                causalId,
                 reference
             })     
         }
@@ -53,7 +56,7 @@ export class RemoveManager extends TextEvent {
     receive({id,reference}) {
         debug("receive remove",{id,reference})
         const index = this._sequence.applyRemove(reference);
-        this.emit('remoteRemove', index);
+       // this.emit('remoteRemove', index);
 
         if (index >= 0) {
             const range = {
