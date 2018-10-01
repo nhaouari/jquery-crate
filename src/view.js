@@ -43,6 +43,10 @@ export class View {
         }
       })
      
+      $(window).resize(function() {
+        $("#comments").height($("#editor").height())
+      });
+      
         // make title editable
     jQuery(`#${this._editorContainerID} #title`).click(() => {
       jQuery(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')

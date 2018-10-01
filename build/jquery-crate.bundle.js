@@ -53563,6 +53563,10 @@ var View = exports.View = function () {
         }
       });
 
+      $(window).resize(function () {
+        $("#comments").height($("#editor").height());
+      });
+
       // make title editable
       jQuery("#" + this._editorContainerID + " #title").click(function () {
         jQuery("#" + _this2._editorContainerID + " #title").attr('contenteditable', 'true');
@@ -55688,6 +55692,7 @@ var doc = function (_EventEmitter) {
         _this2._view._editor.viewEditor.setContents(delta, 'silent');
         _this2._view._editor.viewEditor.setSelection(range, 'silent');
         _this2._view._editor.updateCommentsLinks();
+        $("#comments").height($("#editor").height());
       }, 10);
     }
   }, {

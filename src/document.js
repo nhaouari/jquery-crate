@@ -147,6 +147,7 @@ export default class doc extends EventEmitter {
       this._view._editor.viewEditor.setContents(delta,'silent')
       this._view._editor.viewEditor.setSelection(range,'silent')
       this._view._editor.updateCommentsLinks()
+      $("#comments").height($("#editor").height())
     },10)
   
   }
