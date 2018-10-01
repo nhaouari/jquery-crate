@@ -77,9 +77,9 @@ export class AntiEntropyManager extends TextEvent {
 
         for (let j = start; j <= localEntry.v; ++j) {
                     // #B check if not one of the local exceptions
-                  if (localEntry.x.indexOf(j) < 0) {
+                 // if (localEntry.x.indexOf(j) < 0) {
                         missingLSEQIDs.push({ _e: localEntry.e, _c: j})
-                    }
+                  //  }
                 }
     
          // #C handle the exceptions of the remote vector
@@ -106,8 +106,9 @@ export class AntiEntropyManager extends TextEvent {
      */
     getElements(toSearch) {
      
-
+   
     const lseqNodes= this.getLSEQNodes()
+    debug('getElements',{toSearch,lseqNodes})
 
     let elements=[]
     lseqNodes.forEach((lseqNode)=>{
@@ -141,6 +142,23 @@ export class AntiEntropyManager extends TextEvent {
       }
     
 
+  getLSEQNodes(){
+    let LSEQNodeArray=[]
+    const root=this._sequence.root
+
+    let preorder=(node)=>{
+      if(node.e&&node.e!=""){
+      LSEQNodeArray.push(node)
+     }
+      const children = node.children
+      children.forEach(child => {
+        preorder(child)
+      });
+    }
+
+    preorder(root)
+    return LSEQNodeArray
+  }
 
     isIdInSet({id,clock,toSearch}) {
 

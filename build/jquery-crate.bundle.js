@@ -54728,9 +54728,9 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
 
             for (var j = start; j <= localEntry.v; ++j) {
                 // #B check if not one of the local exceptions
-                if (localEntry.x.indexOf(j) < 0) {
-                    missingLSEQIDs.push({ _e: localEntry.e, _c: j });
-                }
+                // if (localEntry.x.indexOf(j) < 0) {
+                missingLSEQIDs.push({ _e: localEntry.e, _c: j });
+                //  }
             }
 
             // #C handle the exceptions of the remote vector
@@ -54760,6 +54760,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             var _this3 = this;
 
             var lseqNodes = this.getLSEQNodes();
+            debug('getElements', { toSearch: toSearch, lseqNodes: lseqNodes });
 
             var elements = [];
             lseqNodes.forEach(function (lseqNode) {
@@ -54769,6 +54770,25 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             });
 
             return elements;
+        }
+    }, {
+        key: 'getLSEQNodes',
+        value: function getLSEQNodes() {
+            var LSEQNodeArray = [];
+            var root = this._sequence.root;
+
+            var preorder = function preorder(node) {
+                if (node.e && node.e != "") {
+                    LSEQNodeArray.push(node);
+                }
+                var children = node.children;
+                children.forEach(function (child) {
+                    preorder(child);
+                });
+            };
+
+            preorder(root);
+            return LSEQNodeArray;
         }
     }, {
         key: 'getLSEQNodes',
