@@ -31,7 +31,7 @@ export class RemoveManager extends TextEvent {
                 causalId,
                 reference
             })     
-        }
+        } 
       this.setLastChangesTime()
     };
 
@@ -68,7 +68,10 @@ export class RemoveManager extends TextEvent {
                 id
             }
             this.Event('Caret', msg)
-        };
+        } else {
+            debug('Reference not found add to the buffer', reference)
+            this._textManager.addIdToRemoveBuffer(reference)
+        }
         
         this.setLastChangesTime()
     }

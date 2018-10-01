@@ -50,7 +50,7 @@ export class Event extends EventEmitter {
     this._buffer.push(message)
     
    
-   // this._timeoutBuffer=setTimeout(()=>{
+    this._timeoutBuffer=setTimeout(()=>{
         const msg = this.getPacket({pairs:this._buffer})
 
         debug('broadcast buffer',msg)
@@ -60,7 +60,7 @@ export class Event extends EventEmitter {
             this.sendBroadcast(msg)
         }
         this._buffer=[]
-   // },1)
+   },1)
     
     }
 
@@ -78,9 +78,14 @@ export class Event extends EventEmitter {
 
     let isReady= null
     
-    if(this._name==="Remove") {isReady=msg.pairs[0].causalId}
+    //if(this._name==="Remove") {isReady=msg.pairs[0].causalId}
+    
+    let counter = this._document._communication.causality.local.v+msg.pairs.length-1
 
-    debug("Send Broadcast ",{msg,isReady}  )
+    this._document._communication.causality.incrementFrom({e:this._document._communication.causality.local.e,c:counter})
+
+    debug("Send Broadcast ",{msg,isReady})
+    
     this._document.lastSentMsgId =  this._communicationChannel.sendBroadcast(msg,null,isReady)  
     return this._document.lastSentMsgId
     }
@@ -171,6 +176,28 @@ export class Event extends EventEmitter {
         debug("getCausalID",{lseqNode,causalId} )
         return causalId
     }
+
+ /**
+ * Returns a hash code for a string.
+ * (Compatible to Java's String.hashCode())
+ *
+ * The hash code for a string object is computed as
+ *     s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
+ * using number arithmetic, where s[i] is the i th character
+ * of the given string, n is the length of the string,
+ * and ^ indicates exponentiation.
+ * (The hash value of the empty string is zero.)
+ *  @link https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0
+ * @param {string} s a string
+ * @return {number} a hash code value for the given string.
+ */
+hashCode(s) {
+    var h = 0, l = s.length, i = 0;
+    if ( l > 0 )
+      while (i < l)
+        h = (h << 5) - h + s.charCodeAt(i++) | 0;
+    return h;
+  };
       close(){
 
     }

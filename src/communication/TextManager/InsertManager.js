@@ -85,6 +85,8 @@ export class InsertManager extends TextEvent {
      * \param origin the origin id of the insert operation
      */
     receive( {id,pair,antientropy=false} ) {
+      
+      if(!this._textManager.IsItInRemoveBuffer(pair.id)){
         const index = this._sequence.applyInsert(pair, false);
         debug('remoteInsert','pair', pair, ' sequence Index ', index)
        
@@ -103,6 +105,9 @@ export class InsertManager extends TextEvent {
             this.Event('Caret', msg)
         }
         }
+    } else {
+        this._textManager.removeFromRemoveBuffer(pair.id)
+    }
     }
 
     /**

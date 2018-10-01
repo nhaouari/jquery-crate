@@ -54070,21 +54070,23 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'broadcast',
         value: function broadcast(message) {
+            var _this2 = this;
+
             clearTimeout(this._timeoutBuffer);
 
             this._buffer.push(message);
 
-            // this._timeoutBuffer=setTimeout(()=>{
-            var msg = this.getPacket({ pairs: this._buffer });
+            this._timeoutBuffer = setTimeout(function () {
+                var msg = _this2.getPacket({ pairs: _this2._buffer });
 
-            debug('broadcast buffer', msg);
-            if (this.getSize(msg) >= 20000) {
-                this.broadcastStream(msg);
-            } else {
-                this.sendBroadcast(msg);
-            }
-            this._buffer = [];
-            // },1)
+                debug('broadcast buffer', msg);
+                if (_this2.getSize(msg) >= 20000) {
+                    _this2.broadcastStream(msg);
+                } else {
+                    _this2.sendBroadcast(msg);
+                }
+                _this2._buffer = [];
+            }, 1);
         }
     }, {
         key: 'haveBeenReceived',
@@ -54106,11 +54108,14 @@ var Event = exports.Event = function (_EventEmitter) {
 
             var isReady = null;
 
-            if (this._name === "Remove") {
-                isReady = msg.pairs[0].causalId;
-            }
+            //if(this._name==="Remove") {isReady=msg.pairs[0].causalId}
+
+            var counter = this._document._communication.causality.local.v + msg.pairs.length - 1;
+
+            this._document._communication.causality.incrementFrom({ e: this._document._communication.causality.local.e, c: counter });
 
             debug("Send Broadcast ", { msg: msg, isReady: isReady });
+
             this._document.lastSentMsgId = this._communicationChannel.sendBroadcast(msg, null, isReady);
             return this._document.lastSentMsgId;
         }
@@ -54161,23 +54166,23 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'sendLocalBroadcast',
         value: function sendLocalBroadcast(msg) {
-            var _this2 = this;
+            var _this3 = this;
 
             this._communicationChannel.broadcast._source.getNeighbours().forEach(function (neighbourId) {
-                return _this2.unicast(neighbourId, msg);
+                return _this3.unicast(neighbourId, msg);
             });
         }
     }, {
         key: 'receiveBuffer',
         value: function receiveBuffer(_ref) {
-            var _this3 = this;
+            var _this4 = this;
 
             var pairs = _ref.pairs;
 
             debug("receiveBuffer", this.getType(), pairs.length, pairs);
 
             pairs.forEach(function (elem) {
-                _this3.receive(elem);
+                _this4.receive(elem);
             });
         }
     }, {
@@ -54221,6 +54226,32 @@ var Event = exports.Event = function (_EventEmitter) {
             var causalId = { e: lseqNode.t.s, c: lseqNode.t.c };
             debug("getCausalID", { lseqNode: lseqNode, causalId: causalId });
             return causalId;
+        }
+
+        /**
+        * Returns a hash code for a string.
+        * (Compatible to Java's String.hashCode())
+        *
+        * The hash code for a string object is computed as
+        *     s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
+        * using number arithmetic, where s[i] is the i th character
+        * of the given string, n is the length of the string,
+        * and ^ indicates exponentiation.
+        * (The hash value of the empty string is zero.)
+        *  @link https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0
+        * @param {string} s a string
+        * @return {number} a hash code value for the given string.
+        */
+
+    }, {
+        key: 'hashCode',
+        value: function hashCode(s) {
+            var h = 0,
+                l = s.length,
+                i = 0;
+            if (l > 0) while (i < l) {
+                h = (h << 5) - h + s.charCodeAt(i++) | 0;
+            }return h;
         }
     }, {
         key: 'close',
@@ -55007,23 +55038,28 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                 _ref2$antientropy = _ref2.antientropy,
                 antientropy = _ref2$antientropy === undefined ? false : _ref2$antientropy;
 
-            var index = this._sequence.applyInsert(pair, false);
-            debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
 
-            if (index >= 0) {
-                //  this.emit('remoteInsert', pair.elem, index);
-                this.setLastChangesTime();
-                if (!antientropy) {
-                    var range = {
-                        index: index,
-                        length: 0
-                    };
-                    var msg = {
-                        range: range,
-                        id: id
-                    };
-                    this.Event('Caret', msg);
+            if (!this._textManager.IsItInRemoveBuffer(pair.id)) {
+                var _index = this._sequence.applyInsert(pair, false);
+                debug('remoteInsert', 'pair', pair, ' sequence Index ', _index);
+
+                if (_index >= 0) {
+                    //  this.emit('remoteInsert', pair.elem, index);
+                    this.setLastChangesTime();
+                    if (!antientropy) {
+                        var range = {
+                            index: _index,
+                            length: 0
+                        };
+                        var msg = {
+                            range: range,
+                            id: id
+                        };
+                        this.Event('Caret', msg);
+                    }
                 }
+            } else {
+                this._textManager.removeFromRemoveBuffer(pair.id);
             }
         }
 
@@ -55162,7 +55198,10 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
                     id: id
                 };
                 this.Event('Caret', msg);
-            };
+            } else {
+                debug('Reference not found add to the buffer', reference);
+                this._textManager.addIdToRemoveBuffer(reference);
+            }
 
             this.setLastChangesTime();
         }
@@ -55285,6 +55324,8 @@ var TextManager = exports.TextManager = function (_TextEvent) {
         _this._titleManager = new _TitleManager.TitleManager(_extends({ TextManager: _this }, opts));
         _this._antiEntropyManager = new _AntiEntropyManager.AntiEntropyManager(_extends({ TextManager: _this }, opts));
         _this._antiEntropyManager.sendAntiEntropyRequest();
+
+        _this._removeBuffer = new Map();
         //this._antiEntropyManager.start()
 
         _this.on('sendChangeTitle', function () {
@@ -55299,6 +55340,21 @@ var TextManager = exports.TextManager = function (_TextEvent) {
     }
 
     _createClass(TextManager, [{
+        key: 'addIdToRemoveBuffer',
+        value: function addIdToRemoveBuffer(id) {
+            this._removeBuffer.set(this.hashCode(JSON.stringify(id)), id);
+        }
+    }, {
+        key: 'IsItInRemoveBuffer',
+        value: function IsItInRemoveBuffer(id) {
+            return this._removeBuffer.has(JSON.stringify(id));
+        }
+    }, {
+        key: 'removeFromRemoveBuffer',
+        value: function removeFromRemoveBuffer(id) {
+            this._removeBuffer.delete(JSON.stringify(id));
+        }
+    }, {
         key: 'close',
         value: function close() {
 

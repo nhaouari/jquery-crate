@@ -17,6 +17,9 @@ export class TextManager extends TextEvent {
         this._titleManager = new TitleManager({TextManager:this,...opts})
         this._antiEntropyManager = new AntiEntropyManager({TextManager:this,...opts}) 
         this._antiEntropyManager.sendAntiEntropyRequest()
+
+
+        this._removeBuffer=new Map()
        //this._antiEntropyManager.start()
 
         this.on('sendChangeTitle',()=> {
@@ -30,6 +33,18 @@ export class TextManager extends TextEvent {
         })
 
 
+    }
+
+    addIdToRemoveBuffer(id){
+        this._removeBuffer.set(this.hashCode(JSON.stringify(id)),id)
+    }
+
+    IsItInRemoveBuffer(id) {
+        return this._removeBuffer.has(JSON.stringify(id))
+    }
+
+    removeFromRemoveBuffer(id) {
+    this._removeBuffer.delete(JSON.stringify(id))
     }
 
     close(){
