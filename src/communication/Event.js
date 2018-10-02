@@ -51,8 +51,10 @@ export class Event extends EventEmitter {
     
    
     this._timeoutBuffer=setTimeout(()=>{
-        const msg = this.getPacket({pairs:this._buffer})
-
+        let msg = this.getPacket({pairs:this._buffer})
+        
+        msg=this.setBatchCounter(this._communicationChannel.broadcast._causality.local.e,msg)
+    
         debug('broadcast buffer',msg)
         if(this.getSize(msg)>=20000) {
             this.broadcastStream(msg)
@@ -64,8 +66,21 @@ export class Event extends EventEmitter {
     
     }
 
+    setBatchCounter(id,msg){
+        const start = this._communicationChannel.broadcast._causality.local.v
+        const counter = start+msg.pairs.length-1
+        const e = id
+
+        for (let c = start; c <= counter; c++) {
+            const causalId= {e,c}
+            msg.pairs[c-start].causalId=causalId
+            this._communicationChannel.broadcast._causality.incrementFrom(causalId)  
+        }
+        return msg
+    }
+
     haveBeenReceived(element){
-       return (this._communicationChannel.broadcast._shouldStopPropagation(element))
+        return (this._communicationChannel.broadcast._shouldStopPropagation(element))
     }
     getSize(msg) {
         const string = JSON.stringify(msg)
@@ -78,15 +93,11 @@ export class Event extends EventEmitter {
 
     let isReady= null
     
-    //if(this._name==="Remove") {isReady=msg.pairs[0].causalId}
+    if(this._name==="Remove") {isReady=msg.pairs[0].causalId}
     
-    let counter = this._document._communication.causality.local.v+msg.pairs.length-1
-
-    this._document._communication.causality.incrementFrom({e:this._document._communication.causality.local.e,c:counter})
-
     debug("Send Broadcast ",{msg,isReady})
     
-    this._document.lastSentMsgId =  this._communicationChannel.sendBroadcast(msg,null,isReady)  
+    this._document.lastSentMsgId =  this._communicationChannel.sendBroadcast({...msg,isReady},null,isReady)  
     return this._document.lastSentMsgId
     }
 
@@ -129,14 +140,24 @@ export class Event extends EventEmitter {
     }
 
     sendLocalBroadcast(msg){ 
+        msg=this.setBatchCounter(this._communicationChannel.broadcast._causality.local.e,{pairs:[msg]})
         this._communicationChannel.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
     }
 
     receiveBuffer({pairs} ) {
         debug("receiveBuffer",this.getType(),pairs.length,pairs)
 
-        pairs.forEach(elem => {
+        pairs.forEach(elem => {    
+            const causalId=elem.pair&& elem.pair.causalId || elem.causalId
+            
+            if(causalId){
+            this._communicationChannel.broadcast._causality.incrementFrom(causalId)
+            this._communicationChannel.broadcast._reviewBuffer()
+            }
+            
+
             this.receive(elem)
+           
         }) 
      }
          

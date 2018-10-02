@@ -24,11 +24,7 @@ export class InsertManager extends TextEvent {
         if(this.isItConvertibleToJSON(packet)) {
             var pair = this.insertLSEQ(packet, position) 
             const causalID= this.getLSEQID({pair})
-                
-                
-
-            //this._document._communication.causality.increment()
-            
+                           
             debug('local Insert',{packet,causalID,position,source})
             
             if (source==='user'){
@@ -86,7 +82,7 @@ export class InsertManager extends TextEvent {
      */
     receive( {id,pair,antientropy=false} ) {
       
-      if(!this._textManager.IsItInRemoveBuffer(pair.id)){
+  
         const index = this._sequence.applyInsert(pair, false);
         debug('remoteInsert','pair', pair, ' sequence Index ', index)
        
@@ -105,9 +101,7 @@ export class InsertManager extends TextEvent {
             this.Event('Caret', msg)
         }
         }
-    } else {
-        this._textManager.removeFromRemoveBuffer(pair.id)
-    }
+   
     }
 
     /**

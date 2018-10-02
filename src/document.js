@@ -137,27 +137,32 @@ export default class doc extends EventEmitter {
 
 
 
-  refreshDocument(sequence){
+  refreshDocument(sequence,WhoWriteIt=false){
     clearTimeout(this.refreshDocumentTimeout)
     
     this.refreshDocumentTimeout=setTimeout(()=>{
-      const delta=this.getDeltaFromSequence(sequence)
+      const delta=this.getDeltaFromSequence(sequence,WhoWriteIt)
       let range=this._view._editor.viewEditor.getSelection()
 
       this._view._editor.viewEditor.setContents(delta,'silent')
       this._view._editor.viewEditor.setSelection(range,'silent')
-      this._view._editor.updateCommentsLinks()
-      $("#comments").height($("#editor").height())
+      this._view._editor.updateCommentsLinks()    
+      
     },10)
   
   }
 
-  getDeltaFromSequence(sequence){
+  getDeltaFromSequence(sequence,WhoWriteIt=false){
     let LSEQNodes=this.getLSEQNodes()
     let ops=[]
     
     LSEQNodes.forEach((node)=>{
-      ops.push({insert:node.e.content,attributes:node.e.attributes})
+      let op ={insert:node.e.content,attributes:node.e.attributes}
+      if(WhoWriteIt){
+        const id = node.t.s 
+        op.attributes.color=session.default.Marker.getColor(id)
+      }
+      ops.push(op)
     })
 
     const length = ops.length

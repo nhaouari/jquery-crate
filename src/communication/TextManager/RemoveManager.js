@@ -53,7 +53,7 @@ export class RemoveManager extends TextEvent {
      * \param id the result of the remote insert operation
      * \param origin the origin id of the removal
      */
-    receive({id,reference}) {
+    receive({id,reference,isReady}) {
         debug("receive remove",{id,reference})
         const index = this._sequence.applyRemove(reference);
        // this.emit('remoteRemove', index);
@@ -68,10 +68,7 @@ export class RemoveManager extends TextEvent {
                 id
             }
             this.Event('Caret', msg)
-        } else {
-            debug('Reference not found add to the buffer', reference)
-            this._textManager.addIdToRemoveBuffer(reference)
-        }
+       } 
         
         this.setLastChangesTime()
     }

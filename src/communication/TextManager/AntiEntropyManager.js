@@ -77,9 +77,9 @@ export class AntiEntropyManager extends TextEvent {
 
         for (let j = start; j <= localEntry.v; ++j) {
                     // #B check if not one of the local exceptions
-                 // if (localEntry.x.indexOf(j) < 0) {
-                        missingLSEQIDs.push({ _e: localEntry.e, _c: j})
-                  //  }
+                  if (localEntry.x.indexOf(j) < 0) {
+                    missingLSEQIDs.push({ _e: localEntry.e, _c: j})
+                    }
                 }
     
          // #C handle the exceptions of the remote vector

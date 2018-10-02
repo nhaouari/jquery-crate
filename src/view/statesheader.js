@@ -33,9 +33,7 @@
         )
 
         model.rps.on("close", (id) => {
-                    console.log('close id==> ',id,model._foglet.getNeighbours(Infinity).length)
                     setTimeout(()=>{
-                        console.log('TimeOut ===> ',id,model._foglet.getNeighbours(Infinity).length)
                         if(model._foglet.getNeighbours(Infinity).length<=0)
                         this.setNetworkState('disconnected')
                     }

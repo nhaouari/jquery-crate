@@ -264,8 +264,9 @@ async setOptions() {
       id: this._options.editingSessionID,
       verbose: true, // want some logs ? switch to false otherwise
       rps: {
-        type: "spray-wrtc",
+        type: "cyclon",
         options: {
+          maxPeers:10,
           a:1,
           b:5,
           protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
