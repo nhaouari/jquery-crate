@@ -11,6 +11,7 @@ export class AntiEntropyManager extends TextEvent {
         super({EventName,...opts})
         this._antiEntropyPeriod= opts.AntiEntropyPeriod 
         this._textManager=opts.TextManager
+        this._communicationChannel = this._document._communication._behaviors_comm
 
         this.on('Request',(msg)=>{
             this.receiveRequest(msg)
@@ -182,21 +183,21 @@ export class AntiEntropyManager extends TextEvent {
         let elems=[]
         elements.forEach((lseqNode)=> {
             
-            const causalID=this.getCausalID(lseqNode) 
-            const msg={id:causalID}
+            const causalId=this.getCausalID(lseqNode) 
+            const msg={id:causalId}
             const authorID=lseqNode.t.s.split("-")[0]
             const pair={elem:lseqNode.e,id:lseqNode.e.id}
             // #2 only check if the message has not been received yet
             if (!this.haveBeenReceived(msg)) {
-              this._document.causality.incrementFrom(causalID)
+             // this._document.causality.incrementFrom(causalID)
                
             // this to prevent the caret movement in the case of anti-entropy
 
-              elems.push({pair,id:authorID, antientropy: true})
+              elems.push({pair,id:authorID,causalId, antientropy: true})
             }
           })
         
-        this.Event('Insert', {pairs:elems})
+        this.Event('Insert', {pairs:elems,stream:true})
  
           // #3 merge causality structures
         this._document.causality.merge(causalityAtReceipt) 

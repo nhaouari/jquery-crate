@@ -96,7 +96,8 @@ export class InsertManager extends TextEvent {
             }
             const msg = {
                 range,
-                id
+                id,
+                stream:false,
             }
             this.Event('Caret', msg)
         }

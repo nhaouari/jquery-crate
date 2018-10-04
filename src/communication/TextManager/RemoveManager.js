@@ -21,14 +21,14 @@ export class RemoveManager extends TextEvent {
      */
     remove(index) {
         const lseqNode= this._sequence._get(index+1)
-        const causalId=this.getCausalID(lseqNode)
+        const isReady=this.getCausalID(lseqNode)
         const reference = this.removeFromSequence(index)
         debug("Remove",{index,reference})  
         if(reference) {
             this._sequence._c += 1;
             this.broadcast({
                 id: this._document.uid, 
-                causalId,
+                isReady,
                 reference
             })     
         } 

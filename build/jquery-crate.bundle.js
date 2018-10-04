@@ -23870,14 +23870,14 @@ var DEFAULT_OPTIONS = function DEFAULT_OPTIONS() {
   return {
     verbose: true, // want some logs ? switch to false otherwise
     rps: {
-      type: 'spray-wrtc',
+      type: 'cyclon',
       options: {
         protocol: 'foglet-example-rps', // foglet running on the protocol foglet-example, defined for spray-wrtc
         webrtc: { // add WebRTC options
           trickle: true, // enable trickle (divide offers in multiple small offers sent by pieces)
           config: { iceServers: [] // define iceServers in non local instance
           } },
-        timeout: 60 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+        timeout: 5 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
         pendingTimeout: 60 * 1000,
         delta: 60 * 1000, // spray-wrtc shuffle interval
         maxPeers: 5,
@@ -23892,6 +23892,7 @@ var DEFAULT_OPTIONS = function DEFAULT_OPTIONS() {
     },
     overlays: [
       // {
+      //   name: 'yourOverlayName' // required to the network using the overlay function of the foglet instance
       //   class: YourOverlayClass,
       //   options: {
       //     delta: 10 * 1000,
@@ -23930,7 +23931,7 @@ var DEFAULT_OPTIONS = function DEFAULT_OPTIONS() {
 * // let's create a simple application that send message in broadcast
 * const foglet = new Foglet({
 *   rps: {
-*     type: 'spray-wrtc', // we choose Spray as a our RPS
+*     type: 'cyclon', // we choose Spray as a our RPS
 *     options: {
 *       protocol: 'my-awesome-broadcast-application', // the name of the protocol run by our app
 *       webrtc: { // some WebRTC options
@@ -26518,13 +26519,11 @@ var Broadcast = function (_AbstractBroadcast) {
       var _this2 = this;
 
       var n = this._source.getNeighbours(Infinity);
-      if (n.length > 0) {
-        n.forEach(function (p) {
-          _this2._unicast.send(p, message).catch(function (e) {
-            debug(e);
-          });
+      if (n.length > 0) n.forEach(function (p) {
+        return _this2._unicast.send(p, message).catch(function (e) {
+          return debug('Error: It seems there is not a receiver', e);
         });
-      }
+      });
     }
 
     /**
@@ -26544,7 +26543,6 @@ var Broadcast = function (_AbstractBroadcast) {
       var broadcastMessage = messages.BroadcastMessage(this._protocol, a, isReady, message);
       // #2 register the message in the structure
       this._causality.incrementFrom(a);
-
       // #3 send the message to the neighborhood
       this._sendAll(broadcastMessage);
       return a;
@@ -26625,6 +26623,9 @@ var Broadcast = function (_AbstractBroadcast) {
     key: '_receive',
     value: function _receive(id, message) {
       // if not present, add the issuer of the message in the message
+      // 
+      // 
+      console.log({ id: id, message: message });
       if (!('issuer' in message)) {
         message.issuer = id;
       }
@@ -26673,6 +26674,7 @@ var Broadcast = function (_AbstractBroadcast) {
               // #1 register the operation
               // maintain `this._buffer` sorted to search in O(log n)
               var index = sortedIndexBy(this._buffer, message, formatID);
+
               this._buffer.splice(index, 0, message);
               // #2 deliver
               this._reviewBuffer();
@@ -26741,6 +26743,7 @@ var Broadcast = function (_AbstractBroadcast) {
       var found = false;
       for (var index = this._buffer.length - 1; index >= 0; --index) {
         message = this._buffer[index];
+
         if (this._causality.isLower(message.id)) {
           this._buffer.splice(index, 1);
         } else {
@@ -53353,12 +53356,11 @@ var Communication = exports.Communication = function () {
               case 8:
 
                 this.setCommunicationChannels();
-                this.InitRouters();
 
                 this._foglet.emit("connected");
                 console.log("application connected!");
 
-              case 12:
+              case 11:
               case "end":
                 return _context.stop();
             }
@@ -53376,65 +53378,54 @@ var Communication = exports.Communication = function () {
     key: "setCommunicationChannels",
     value: function setCommunicationChannels() {
       this._data_comm = new _fogletCore.communication(this._foglet.overlay().network, "_data_comm");
+      this.routeMsgToEvents(this._data_comm);
+
       this._behaviors_comm = new _fogletCore.communication(this._foglet.overlay().network, "_behaviors_comm");
+      this.routeMsgToEvents(this._behaviors_comm);
     }
   }, {
-    key: "InitRouters",
-    value: function InitRouters() {
+    key: "routeMsgToEvents",
+    value: function routeMsgToEvents(communicatioChannel) {
       var _this = this;
 
-      this._behaviors_comm.onBroadcast(function (id, message) {
-        debug('document', '._behaviors_comm', 'Message received', message, 'from', id);
+      communicatioChannel.onBroadcast(function (id, message) {
         _this._document.emit(message.event, message);
       });
 
-      this._data_comm.onBroadcast(function (id, message) {
-        debug('document', '._data_comm', 'Message received', message, 'from', id);
+      communicatioChannel.onUnicast(function (id, message) {
+
         _this._document.emit(message.event, message);
       });
 
-      this._data_comm.onUnicast(function (id, message) {
-        debug('document', '._data_comm unicast', 'Message received', message, 'from', id);
-        _this._document.emit(message.event, message);
+      communicatioChannel.onStreamBroadcast(function (id, message) {
+        _this.receiveStream(id, message);
       });
 
-      this._data_comm.broadcast.on('antiEntropy', function (id, remoteVVwE, localVVwE) {
-        debug('antiEntropy', { id: id, remoteVVwE: remoteVVwE, localVVwE: localVVwE });
-        _this._document.emit('antiEntropy_Event', {
-          id: id,
-          remoteVVwEJSON: remoteVVwE,
-          localVVwE: localVVwE
-        });
+      communicatioChannel.onStreamUnicast(function (id, message) {
+        _this.receiveStream(id, message);
       });
-
-      //TODO:consider receiving many images
+    }
+  }, {
+    key: "receiveStream",
+    value: function receiveStream(id, stream) {
+      var _this2 = this;
 
       var content = '';
-      this._data_comm.onStreamBroadcast(function (id, message) {
-        message.on('data', function (data) {
-          content += data;
-        });
-        message.on('end', function () {
-          var packet = JSON.parse(content);
-          content = '';
-          debug('document', '._data_comm', 'Message received', packet, 'from', id);
-          _this._document.emit(packet.event, packet);
-        });
+      stream.on('data', function (data) {
+        content += data;
       });
-
-      var content2 = '';
-      this._data_comm.onStreamUnicast(function (id, message) {
-        message.on('data', function (data) {
-          content2 += data;
-        });
-        message.on('end', function () {
-          var packet = JSON.parse(content2);
-          content2 = '';
-          console.log('data received');
-          debug('document', '._data_comm', 'Message received', packet, 'from', id);
-          _this._document.emit(packet.event, packet);
-        });
+      stream.on('end', function () {
+        var packet = JSON.parse(content);
+        content = '';
+        debug('document', 'Message received', packet, 'from', id);
+        _this2.receive(packet.event, packet);
       });
+    }
+  }, {
+    key: "receive",
+    value: function receive(event, packet) {
+      debug('communication receive ', event, packet);
+      this._document.emit(event, packet);
     }
   }, {
     key: "close",
@@ -53544,30 +53535,32 @@ var Event = exports.Event = function (_EventEmitter) {
             this._timeoutBuffer = setTimeout(function () {
                 var msg = _this2.getPacket({ pairs: _this2._buffer });
 
-                msg = _this2.setBatchCounter(_this2._communicationChannel.broadcast._causality.local.e, msg);
-
+                msg = _this2.setBatchCounter(msg);
+                _this2.broadcastStream(_extends({}, msg, { stream: true }));
                 debug('broadcast buffer', msg);
-                if (_this2.getSize(msg) >= 20000) {
-                    _this2.broadcastStream(msg);
-                } else {
-                    _this2.sendBroadcast(msg);
-                }
+                /* if(this.getSize(msg)>=20000) {
+                     this.broadcastStream({...msg,stream:true})
+                 } else {
+                     this.sendBroadcast({...msg,stream:false})
+                 }*/
                 _this2._buffer = [];
             }, 1);
         }
     }, {
         key: 'setBatchCounter',
-        value: function setBatchCounter(id, msg) {
-            var start = this._communicationChannel.broadcast._causality.local.v;
-            var counter = start + msg.pairs.length - 1;
-            var e = id;
+        value: function setBatchCounter(msg) {
+            var _this3 = this;
 
-            for (var c = start; c <= counter; c++) {
-                var causalId = { e: e, c: c };
-                msg.pairs[c - start].causalId = causalId;
-                this._communicationChannel.broadcast._causality.incrementFrom(causalId);
+            if (msg.pairs) {
+                msg.pairs.forEach(function (pair) {
+                    var causalId = _this3._communicationChannel.broadcast._causality.increment();
+                    pair.causalId = causalId;
+                });
+
+                return msg;
+            } else {
+                console.error("sending empty msg");
             }
-            return msg;
         }
     }, {
         key: 'haveBeenReceived',
@@ -53583,25 +53576,24 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'sendBroadcast',
         value: function sendBroadcast(msg) {
+            var isReady = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
             //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
             // this brodcast will not change the id the causal broadcast
             //const id = this._document._communication.causality.vector.local
 
-            var isReady = null;
-
             if (this._name === "Remove") {
-                isReady = msg.pairs[0].causalId;
+                isReady = msg.pairs[0].isReady;
             }
 
             debug("Send Broadcast ", { msg: msg, isReady: isReady });
 
-            this._document.lastSentMsgId = this._communicationChannel.sendBroadcast(_extends({}, msg, { isReady: isReady }), null, isReady);
+            this._document.lastSentMsgId = this._communicationChannel.broadcast.send(_extends({}, msg, { isReady: isReady }), msg.pairs[0].causalId, isReady, false);
             return this._document.lastSentMsgId;
         }
     }, {
         key: 'broadcastStream',
         value: function broadcastStream(msg) {
-            debug('message sent on stream');
             var stream = this._communicationChannel.streamBroadcast();
             this.sendStream(stream, msg);
             this.setLastChangesTime();
@@ -53611,9 +53603,9 @@ var Event = exports.Event = function (_EventEmitter) {
         value: function unicast(id, message) {
             var msg = this.getPacket(message);
             if (this.getSize(msg) >= 20000) {
-                this.unicastStream(id, msg);
+                this.unicastStream(id, _extends({}, msg, { stream: true }));
             } else {
-                this.sendUnicast(id, msg);
+                this.sendUnicast(id, _extends({}, msg, { stream: false }));
             }
         }
     }, {
@@ -53645,32 +53637,55 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'sendLocalBroadcast',
         value: function sendLocalBroadcast(msg) {
-            var _this3 = this;
+            var _this4 = this;
 
-            msg = this.setBatchCounter(this._communicationChannel.broadcast._causality.local.e, { pairs: [msg] });
+            msg = this.setBatchCounter({ pairs: [msg] });
             this._communicationChannel.broadcast._source.getNeighbours().forEach(function (neighbourId) {
-                return _this3.unicast(neighbourId, msg);
+                return _this4.unicast(neighbourId, msg);
             });
         }
     }, {
         key: 'receiveBuffer',
         value: function receiveBuffer(_ref) {
-            var _this4 = this;
+            var _this5 = this;
 
-            var pairs = _ref.pairs;
+            var pairs = _ref.pairs,
+                stream = _ref.stream;
 
             debug("receiveBuffer", this.getType(), pairs.length, pairs);
 
-            pairs.forEach(function (elem) {
-                var causalId = elem.pair && elem.pair.causalId || elem.causalId;
+            // remove the first element since it has passed by _receive 
 
-                if (causalId) {
-                    _this4._communicationChannel.broadcast._causality.incrementFrom(causalId);
-                    _this4._communicationChannel.broadcast._reviewBuffer();
+            if (pairs.length >= 1) {
+                if (stream) {
+                    this.passMsgByBroadcast(pairs[0]);
+                } else {
+                    this.receive(pairs[0]);
                 }
 
-                _this4.receive(elem);
-            });
+                pairs.shift();
+
+                pairs.forEach(function (elem) {
+                    _this5.passMsgByBroadcast(elem);
+                });
+            } else {
+                console.error("Receiving empty message");
+            }
+        }
+    }, {
+        key: 'passMsgByBroadcast',
+        value: function passMsgByBroadcast(elem) {
+            //no causal id : it is an internal event, we use our own id
+            var causalId = elem.pair && elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e;
+            debugger;
+            var broadcast = this._communicationChannel.broadcast;
+            // stream false to avoid to have a loop in the case of a stream
+
+            var packet = this.getPacket({ pairs: [elem], stream: false });
+            var isReady = elem.isReady;
+            var message = this.getBroadcastMessageFormat(broadcast._protocol, causalId, isReady, packet);
+
+            broadcast._receive(causalId.e + '-O', message);
         }
     }, {
         key: 'receive',
@@ -53713,6 +53728,16 @@ var Event = exports.Event = function (_EventEmitter) {
             var causalId = { e: lseqNode.t.s, c: lseqNode.t.c };
             debug("getCausalID", { lseqNode: lseqNode, causalId: causalId });
             return causalId;
+        }
+    }, {
+        key: 'getBroadcastMessageFormat',
+        value: function getBroadcastMessageFormat(protocol, id, isReady, payload) {
+            return {
+                protocol: protocol,
+                id: id,
+                isReady: isReady,
+                payload: payload
+            };
         }
 
         /**
@@ -54140,6 +54165,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
 
         _this._antiEntropyPeriod = opts.AntiEntropyPeriod;
         _this._textManager = opts.TextManager;
+        _this._communicationChannel = _this._document._communication._behaviors_comm;
 
         _this.on('Request', function (msg) {
             _this.receiveRequest(msg);
@@ -54329,21 +54355,21 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
             var elems = [];
             elements.forEach(function (lseqNode) {
 
-                var causalID = _this4.getCausalID(lseqNode);
-                var msg = { id: causalID };
+                var causalId = _this4.getCausalID(lseqNode);
+                var msg = { id: causalId };
                 var authorID = lseqNode.t.s.split("-")[0];
                 var pair = { elem: lseqNode.e, id: lseqNode.e.id
                     // #2 only check if the message has not been received yet
                 };if (!_this4.haveBeenReceived(msg)) {
-                    _this4._document.causality.incrementFrom(causalID);
+                    // this._document.causality.incrementFrom(causalID)
 
                     // this to prevent the caret movement in the case of anti-entropy
 
-                    elems.push({ pair: pair, id: authorID, antientropy: true });
+                    elems.push({ pair: pair, id: authorID, causalId: causalId, antientropy: true });
                 }
             });
 
-            this.Event('Insert', { pairs: elems });
+            this.Event('Insert', { pairs: elems, stream: true });
 
             // #3 merge causality structures
             this._document.causality.merge(causalityAtReceipt);
@@ -54557,7 +54583,8 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
                     };
                     var msg = {
                         range: range,
-                        id: id
+                        id: id,
+                        stream: false
                     };
                     this.Event('Caret', msg);
                 }
@@ -54645,14 +54672,14 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
         key: 'remove',
         value: function remove(index) {
             var lseqNode = this._sequence._get(index + 1);
-            var causalId = this.getCausalID(lseqNode);
+            var isReady = this.getCausalID(lseqNode);
             var reference = this.removeFromSequence(index);
             debug("Remove", { index: index, reference: reference });
             if (reference) {
                 this._sequence._c += 1;
                 this.broadcast({
                     id: this._document.uid,
-                    causalId: causalId,
+                    isReady: isReady,
                     reference: reference
                 });
             }

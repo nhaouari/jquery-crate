@@ -32,7 +32,6 @@ var debug = require('debug')('CRATE:Communication')
       }
 
       this.setCommunicationChannels()
-      this.InitRouters()
 
       this._foglet.emit("connected");
       console.log("application connected!");
@@ -43,71 +42,55 @@ var debug = require('debug')('CRATE:Communication')
       this._data_comm = new communication(
         this._foglet.overlay().network,
         "_data_comm"
-      );
+      )
+      this.routeMsgToEvents(this._data_comm)
+
       this._behaviors_comm = new communication(
         this._foglet.overlay().network,
         "_behaviors_comm"
-      );
+      )
+      this.routeMsgToEvents(this._behaviors_comm)
     }
 
 
-    InitRouters() {
 
-        this._behaviors_comm.onBroadcast((id, message) => {
-          debug('document', '._behaviors_comm', 'Message received', message, 'from', id)
-          this._document.emit(message.event, message)
-          
-        })
-    
-        this._data_comm.onBroadcast((id, message) => {
-          debug('document', '._data_comm', 'Message received', message, 'from', id)
+    routeMsgToEvents(communicatioChannel) {
+        communicatioChannel.onBroadcast((id, message) => {
           this._document.emit(message.event, message)
     
         })
     
-    
-        this._data_comm.onUnicast((id, message) => {
-          debug('document', '._data_comm unicast', 'Message received', message, 'from', id)
+        communicatioChannel.onUnicast((id, message) => {
+        
           this._document.emit(message.event, message)
         })
-    
-        this._data_comm.broadcast.on('antiEntropy', (id, remoteVVwE, localVVwE) => {
-          debug('antiEntropy',{id, remoteVVwE, localVVwE})
-          this._document.emit('antiEntropy_Event', {
-            id,
-            remoteVVwEJSON: remoteVVwE,
-            localVVwE
-          })
+  
+        communicatioChannel.onStreamBroadcast((id, message) => {
+          this.receiveStream(id,message)  
         })
     
-        //TODO:consider receiving many images
-    
-        let content=''
-        this._data_comm.onStreamBroadcast((id, message) => {
-          message.on('data', data => { content += data})
-          message.on('end', () => {
-            const packet= JSON.parse(content)  
-            content = ''
-            debug('document', '._data_comm', 'Message received', packet, 'from', id)
-            this._document.emit(packet.event, packet)
-          })    
-         
-        })
-    
-        let content2=''
-        this._data_comm.onStreamUnicast((id, message) => {
-          message.on('data', data => { content2 += data;})
-          message.on('end', () => {
-            const packet= JSON.parse(content2)  
-            content2 = ''
-            console.log('data received');
-            debug('document', '._data_comm', 'Message received', packet, 'from', id)
-            this._document.emit(packet.event, packet)
-          })    
-         
+       
+        communicatioChannel.onStreamUnicast((id, message) => {
+         this.receiveStream(id,message)
         })
       }
 
+    receiveStream(id,stream){
+      let content=''
+      stream.on('data', data => { content += data;})
+      stream.on('end', () => {
+        const packet= JSON.parse(content)  
+        content = ''
+        debug('document', 'Message received', packet, 'from', id)
+        this.receive(packet.event, packet)
+      })    
+     
+    }  
+
+    receive(event,packet){
+      debug('communication receive ',event,packet)
+      this._document.emit(event, packet)
+    }
     close() {
         this.markerManager.close()
         this.textManager.close()
