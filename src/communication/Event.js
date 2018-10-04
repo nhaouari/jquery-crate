@@ -1,5 +1,5 @@
 import {EventEmitter} from "events"
-import { Foglet } from 'foglet-core';
+
 var debug = require('debug')('CRATE:Event')
 export class Event extends EventEmitter {
     constructor(opts) {
@@ -49,18 +49,12 @@ export class Event extends EventEmitter {
 
     this._buffer.push(message)
     
-   
     this._timeoutBuffer=setTimeout(()=>{
         let msg = this.getPacket({pairs:this._buffer})
-        
         msg=this.setBatchCounter(msg)
         this.broadcastStream({...msg,stream:true})
-        debug('broadcast buffer',msg)
-       /* if(this.getSize(msg)>=20000) {
-            this.broadcastStream({...msg,stream:true})
-        } else {
-            this.sendBroadcast({...msg,stream:false})
-        }*/
+        
+        debug('broadcast message',msg)
         this._buffer=[]
    },1)
     
@@ -80,25 +74,6 @@ export class Event extends EventEmitter {
         }
     }
 
-    haveBeenReceived(element){
-        return (this._communicationChannel.broadcast._shouldStopPropagation(element))
-    }
-    getSize(msg) {
-        const string = JSON.stringify(msg)
-        return string.length
-    }
-    sendBroadcast(msg,isReady= null){
-          //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
-    // this brodcast will not change the id the causal broadcast
-    //const id = this._document._communication.causality.vector.local
-        
-        if(this._name==="Remove") {isReady=msg.pairs[0].isReady}
-        
-        debug("Send Broadcast ",{msg,isReady})
-        
-        this._document.lastSentMsgId =  this._communicationChannel.broadcast.send({...msg,isReady},msg.pairs[0].causalId,isReady,false)  
-        return this._document.lastSentMsgId
-    }
 
     broadcastStream(msg) {
             const stream= this._communicationChannel.streamBroadcast()
@@ -108,12 +83,7 @@ export class Event extends EventEmitter {
 
     unicast(id,message){
         const msg = this.getPacket(message)
-        if(this.getSize(msg)>=20000) {
-            this.unicastStream(id,{...msg,stream:true})
-        } else {
-            this.sendUnicast(id,{...msg,stream:false})
-        }
-       
+        this.unicastStream(id,{...msg,stream:true})  
     }
 
     unicastStream(id,msg){
@@ -121,10 +91,6 @@ export class Event extends EventEmitter {
         const stream= this._communicationChannel.streamUnicast(id)
         this.sendStream(stream,msg)
         this.setLastChangesTime()
-    }
-
-    sendUnicast(id,msg){
-        this._communicationChannel.sendUnicast(id,msg) 
     }
 
     sendStream(stream,msg,maxSize=10000) {
@@ -137,10 +103,13 @@ export class Event extends EventEmitter {
         stream.end()
     }
 
+    
     sendLocalBroadcast(msg){ 
         msg=this.setBatchCounter({pairs:[msg]})
         this._communicationChannel.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
     }
+
+       
 
     receiveBuffer({pairs,stream} ) {
         debug("receiveBuffer",this.getType(),pairs.length,pairs)
@@ -167,7 +136,7 @@ export class Event extends EventEmitter {
      }
        
      
-     passMsgByBroadcast(elem){
+    passMsgByBroadcast(elem){
         //no causal id : it is an internal event, we use our own id
         const causalId=elem.pair&& elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e
         debugger
@@ -180,7 +149,27 @@ export class Event extends EventEmitter {
        
         broadcast._receive(causalId.e+'-O',message)
      }
+
+    sendBroadcast(msg,isReady= null){
+        debug("Send Broadcast ",{msg,isReady})
+        this._document.lastSentMsgId =  this._communicationChannel.broadcast.send({...msg,isReady},null,isReady,false)  
+        return this._document.lastSentMsgId
+    }
+
+
+    sendUnicast(id,msg){
+        this._communicationChannel.sendUnicast(id,msg) 
+    }
+
+
     
+    haveBeenReceived(element){
+        return (this._communicationChannel.broadcast._shouldStopPropagation(element))
+    }
+    getSize(msg) {
+        const string = JSON.stringify(msg)
+        return string.length
+    }
     receive(msg) {
         
         debug("default receive",msg)
@@ -218,7 +207,7 @@ export class Event extends EventEmitter {
     }
 
 
-getBroadcastMessageFormat (protocol, id, isReady, payload) {
+    getBroadcastMessageFormat (protocol, id, isReady, payload) {
         return {
           protocol,
           id:id,
@@ -226,31 +215,4 @@ getBroadcastMessageFormat (protocol, id, isReady, payload) {
           payload
         }
       }
-
-
- /**
- * Returns a hash code for a string.
- * (Compatible to Java's String.hashCode())
- *
- * The hash code for a string object is computed as
- *     s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
- * using number arithmetic, where s[i] is the i th character
- * of the given string, n is the length of the string,
- * and ^ indicates exponentiation.
- * (The hash value of the empty string is zero.)
- *  @link https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0
- * @param {string} s a string
- * @return {number} a hash code value for the given string.
- */
-hashCode(s) {
-    var h = 0, l = s.length, i = 0;
-    if ( l > 0 )
-      while (i < l)
-        h = (h << 5) - h + s.charCodeAt(i++) | 0;
-    return h;
-  };
-      close(){
-
     }
-}
-  

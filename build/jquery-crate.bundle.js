@@ -53461,8 +53461,6 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
-var _fogletCore = __webpack_require__(/*! foglet-core */ "./node_modules/foglet-core/foglet-core.js");
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -53534,15 +53532,10 @@ var Event = exports.Event = function (_EventEmitter) {
 
             this._timeoutBuffer = setTimeout(function () {
                 var msg = _this2.getPacket({ pairs: _this2._buffer });
-
                 msg = _this2.setBatchCounter(msg);
                 _this2.broadcastStream(_extends({}, msg, { stream: true }));
-                debug('broadcast buffer', msg);
-                /* if(this.getSize(msg)>=20000) {
-                     this.broadcastStream({...msg,stream:true})
-                 } else {
-                     this.sendBroadcast({...msg,stream:false})
-                 }*/
+
+                debug('broadcast message', msg);
                 _this2._buffer = [];
             }, 1);
         }
@@ -53563,35 +53556,6 @@ var Event = exports.Event = function (_EventEmitter) {
             }
         }
     }, {
-        key: 'haveBeenReceived',
-        value: function haveBeenReceived(element) {
-            return this._communicationChannel.broadcast._shouldStopPropagation(element);
-        }
-    }, {
-        key: 'getSize',
-        value: function getSize(msg) {
-            var string = JSON.stringify(msg);
-            return string.length;
-        }
-    }, {
-        key: 'sendBroadcast',
-        value: function sendBroadcast(msg) {
-            var isReady = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-            //TODO: const messageId=  this._communicationChannel.sendBroadcast({type: this.getType(),...msg},null,lastSentMsgId)  
-            // this brodcast will not change the id the causal broadcast
-            //const id = this._document._communication.causality.vector.local
-
-            if (this._name === "Remove") {
-                isReady = msg.pairs[0].isReady;
-            }
-
-            debug("Send Broadcast ", { msg: msg, isReady: isReady });
-
-            this._document.lastSentMsgId = this._communicationChannel.broadcast.send(_extends({}, msg, { isReady: isReady }), msg.pairs[0].causalId, isReady, false);
-            return this._document.lastSentMsgId;
-        }
-    }, {
         key: 'broadcastStream',
         value: function broadcastStream(msg) {
             var stream = this._communicationChannel.streamBroadcast();
@@ -53602,11 +53566,7 @@ var Event = exports.Event = function (_EventEmitter) {
         key: 'unicast',
         value: function unicast(id, message) {
             var msg = this.getPacket(message);
-            if (this.getSize(msg) >= 20000) {
-                this.unicastStream(id, _extends({}, msg, { stream: true }));
-            } else {
-                this.sendUnicast(id, _extends({}, msg, { stream: false }));
-            }
+            this.unicastStream(id, _extends({}, msg, { stream: true }));
         }
     }, {
         key: 'unicastStream',
@@ -53615,11 +53575,6 @@ var Event = exports.Event = function (_EventEmitter) {
             var stream = this._communicationChannel.streamUnicast(id);
             this.sendStream(stream, msg);
             this.setLastChangesTime();
-        }
-    }, {
-        key: 'sendUnicast',
-        value: function sendUnicast(id, msg) {
-            this._communicationChannel.sendUnicast(id, msg);
         }
     }, {
         key: 'sendStream',
@@ -53688,6 +53643,31 @@ var Event = exports.Event = function (_EventEmitter) {
             broadcast._receive(causalId.e + '-O', message);
         }
     }, {
+        key: 'sendBroadcast',
+        value: function sendBroadcast(msg) {
+            var isReady = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            debug("Send Broadcast ", { msg: msg, isReady: isReady });
+            this._document.lastSentMsgId = this._communicationChannel.broadcast.send(_extends({}, msg, { isReady: isReady }), null, isReady, false);
+            return this._document.lastSentMsgId;
+        }
+    }, {
+        key: 'sendUnicast',
+        value: function sendUnicast(id, msg) {
+            this._communicationChannel.sendUnicast(id, msg);
+        }
+    }, {
+        key: 'haveBeenReceived',
+        value: function haveBeenReceived(element) {
+            return this._communicationChannel.broadcast._shouldStopPropagation(element);
+        }
+    }, {
+        key: 'getSize',
+        value: function getSize(msg) {
+            var string = JSON.stringify(msg);
+            return string.length;
+        }
+    }, {
         key: 'receive',
         value: function receive(msg) {
 
@@ -53739,35 +53719,6 @@ var Event = exports.Event = function (_EventEmitter) {
                 payload: payload
             };
         }
-
-        /**
-        * Returns a hash code for a string.
-        * (Compatible to Java's String.hashCode())
-        *
-        * The hash code for a string object is computed as
-        *     s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
-        * using number arithmetic, where s[i] is the i th character
-        * of the given string, n is the length of the string,
-        * and ^ indicates exponentiation.
-        * (The hash value of the empty string is zero.)
-        *  @link https://gist.github.com/hyamamoto/fd435505d29ebfa3d9716fd2be8d42f0
-        * @param {string} s a string
-        * @return {number} a hash code value for the given string.
-        */
-
-    }, {
-        key: 'hashCode',
-        value: function hashCode(s) {
-            var h = 0,
-                l = s.length,
-                i = 0;
-            if (l > 0) while (i < l) {
-                h = (h << 5) - h + s.charCodeAt(i++) | 0;
-            }return h;
-        }
-    }, {
-        key: 'close',
-        value: function close() {}
     }]);
 
     return Event;
