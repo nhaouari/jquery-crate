@@ -46,7 +46,8 @@ export default class doc extends EventEmitter {
 
     
 
-    this.sequence = new LSEQTree(options.editingSessionID);
+    this.sequence = new LSEQTree(options.editingSessionID)
+    this.delta= {ops:[]}
 
     /* TODO:Think about the creation of modules without view */
         this._communication.initModules()
@@ -141,10 +142,9 @@ export default class doc extends EventEmitter {
     clearTimeout(this.refreshDocumentTimeout)
     
     this.refreshDocumentTimeout=setTimeout(()=>{
-      const delta=this.getDeltaFromSequence(sequence,WhoWriteIt)
       let range=this._view._editor.viewEditor.getSelection()
 
-      this._view._editor.viewEditor.setContents(delta,'silent')
+      this._view._editor.viewEditor.setContents(this.delta,'silent')
       this._view._editor.viewEditor.setSelection(range,'silent')
       this._view._editor.updateCommentsLinks()    
       
@@ -152,7 +152,7 @@ export default class doc extends EventEmitter {
   
   }
 
-  getDeltaFromSequence(sequence,WhoWriteIt=false){
+  getDeltaFromSequence(WhoWriteIt=false){
     let LSEQNodes=this.getLSEQNodes()
     let ops=[]
     
@@ -170,6 +170,7 @@ export default class doc extends EventEmitter {
     if(length>=2&&ops[length-1].insert==="\n"&&ops[length-2].insert!="\n") {
       ops.push({insert:"\n"})
     }
+    this.delta={ops}
     return {ops}
   }
 

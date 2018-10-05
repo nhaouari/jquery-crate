@@ -53632,7 +53632,6 @@ var Event = exports.Event = function (_EventEmitter) {
         value: function passMsgByBroadcast(elem) {
             //no causal id : it is an internal event, we use our own id
             var causalId = elem.pair && elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e;
-            debugger;
             var broadcast = this._communicationChannel.broadcast;
             // stream false to avoid to have a loop in the case of a stream
 
@@ -54452,7 +54451,7 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
             if (this.isItConvertibleToJSON(packet)) {
                 var pair = this.insertLSEQ(packet, position);
                 var causalID = this.getLSEQID({ pair: pair });
-
+                this._document.delta.ops.splice(position, 0, { insert: packet.content, attributes: packet.attributes });
                 debug('local Insert', { packet: packet, causalID: causalID, position: position, source: source });
 
                 if (source === 'user') {
@@ -54523,7 +54522,7 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
 
             var index = this._sequence.applyInsert(pair, false);
             debug('remoteInsert', 'pair', pair, ' sequence Index ', index);
-
+            this._document.delta.ops.splice(index - 1, 0, { insert: pair.elem.content, attributes: pair.elem.attributes });
             if (index >= 0) {
                 //  this.emit('remoteInsert', pair.elem, index);
                 this.setLastChangesTime();
@@ -54625,6 +54624,7 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
             var lseqNode = this._sequence._get(index + 1);
             var isReady = this.getCausalID(lseqNode);
             var reference = this.removeFromSequence(index);
+            this._document.delta.ops.splice(index, 1);
             debug("Remove", { index: index, reference: reference });
             if (reference) {
                 this._sequence._c += 1;
@@ -54667,6 +54667,7 @@ var RemoveManager = exports.RemoveManager = function (_TextEvent) {
             debug("receive remove", { id: id, reference: reference });
             var index = this._sequence.applyRemove(reference);
             // this.emit('remoteRemove', index);
+            this._document.delta.ops.splice(index - 1, 1);
 
             if (index >= 0) {
                 var range = {
@@ -55029,9 +55030,10 @@ var doc = function (_EventEmitter) {
               case 10:
 
                 this.sequence = new _LSEQTree2.default(options.editingSessionID);
+                this.delta = { ops: []
 
-                /* TODO:Think about the creation of modules without view */
-                this._communication.initModules();
+                  /* TODO:Think about the creation of modules without view */
+                };this._communication.initModules();
 
                 // #1B if it is imported from an existing object, initialize it with these
 
@@ -55054,7 +55056,7 @@ var doc = function (_EventEmitter) {
 
                 this.emit("connected");
 
-              case 20:
+              case 21:
               case "end":
                 return _context.stop();
             }
@@ -55141,18 +55143,17 @@ var doc = function (_EventEmitter) {
       clearTimeout(this.refreshDocumentTimeout);
 
       this.refreshDocumentTimeout = setTimeout(function () {
-        var delta = _this2.getDeltaFromSequence(sequence, WhoWriteIt);
         var range = _this2._view._editor.viewEditor.getSelection();
 
-        _this2._view._editor.viewEditor.setContents(delta, 'silent');
+        _this2._view._editor.viewEditor.setContents(_this2.delta, 'silent');
         _this2._view._editor.viewEditor.setSelection(range, 'silent');
         _this2._view._editor.updateCommentsLinks();
       }, 10);
     }
   }, {
     key: "getDeltaFromSequence",
-    value: function getDeltaFromSequence(sequence) {
-      var WhoWriteIt = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    value: function getDeltaFromSequence() {
+      var WhoWriteIt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
 
       var LSEQNodes = this.getLSEQNodes();
       var ops = [];
@@ -55171,6 +55172,7 @@ var doc = function (_EventEmitter) {
       if (length >= 2 && ops[length - 1].insert === "\n" && ops[length - 2].insert != "\n") {
         ops.push({ insert: "\n" });
       }
+      this.delta = { ops: ops };
       return { ops: ops };
     }
   }, {

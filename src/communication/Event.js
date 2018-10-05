@@ -139,7 +139,6 @@ export class Event extends EventEmitter {
     passMsgByBroadcast(elem){
         //no causal id : it is an internal event, we use our own id
         const causalId=elem.pair&& elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e
-        debugger
         const broadcast=  this._communicationChannel.broadcast
         // stream false to avoid to have a loop in the case of a stream
 

@@ -24,7 +24,7 @@ export class InsertManager extends TextEvent {
         if(this.isItConvertibleToJSON(packet)) {
             var pair = this.insertLSEQ(packet, position) 
             const causalID= this.getLSEQID({pair})
-                           
+            this._document.delta.ops.splice(position,0,{insert:packet.content,attributes:packet.attributes})               
             debug('local Insert',{packet,causalID,position,source})
             
             if (source==='user'){
@@ -85,7 +85,7 @@ export class InsertManager extends TextEvent {
   
         const index = this._sequence.applyInsert(pair, false);
         debug('remoteInsert','pair', pair, ' sequence Index ', index)
-       
+        this._document.delta.ops.splice(index-1,0,{insert:pair.elem.content,attributes:pair.elem.attributes})  
         if (index >= 0) {
           //  this.emit('remoteInsert', pair.elem, index);
             this.setLastChangesTime()

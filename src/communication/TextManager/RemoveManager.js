@@ -23,6 +23,7 @@ export class RemoveManager extends TextEvent {
         const lseqNode= this._sequence._get(index+1)
         const isReady=this.getCausalID(lseqNode)
         const reference = this.removeFromSequence(index)
+        this._document.delta.ops.splice(index,1)   
         debug("Remove",{index,reference})  
         if(reference) {
             this._sequence._c += 1;
@@ -57,6 +58,7 @@ export class RemoveManager extends TextEvent {
         debug("receive remove",{id,reference})
         const index = this._sequence.applyRemove(reference);
        // this.emit('remoteRemove', index);
+       this._document.delta.ops.splice(index-1,1)   
 
         if (index >= 0) {
             const range = {
