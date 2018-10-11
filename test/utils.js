@@ -1,12 +1,7 @@
-import {
-    session
-} from "../src/index";
-
-import {
-    Tarjan
-} from "./tarjan"
-
-import wrtc from "wrtc";
+import session from './../src/index'
+import {Tarjan} from "./tarjan"
+import wrtc from "wrtc"
+var debug = require('debug')('CRATE:test:utils')
 export class Simulation {
     constructor() {
 
@@ -14,18 +9,16 @@ export class Simulation {
 
     async init(options, startSessionId = 0) {
         this.setSimulationOptions(options)
+        this._crateOptions
+        
         this._unuglifySessionIDs = {};
         // const s = new session(this._crateOptions)
         this._sessions = []
 
         let waitingSessions = []
         for (let i = 0; i < this._nbSessions; i++) {
-            waitingSessions.push(this.startSession().then(async (session) => {
-                if(!session) {
-                    await this.wait(10000)
-                }
-
-                console.log(`session ${i}`);
+            waitingSessions.push(this.startSession(i).then( (session) => {
+                debug(`session ${i}`);
                 session.id=i
                 this._sessions.push(session);
                 this._unuglifySessionIDs[
@@ -38,31 +31,24 @@ export class Simulation {
         const LoadSessions = await Promise.all(waitingSessions)
     }
 
-    async startSession() {
-        console.log("pushed options",this._crateOptions);
-        const s = new session(this._crateOptions)
-
-        const sessionT = await new Promise((resolve, reject) => {
-
-            let promiseResolved = false;
-
-            s.on("new_document", () => {
-                resolve(s)
-                promiseResolved = true
-            })
-
-            setTimeout(() => {
-                if (promiseResolved === false) {
-                    resolve(null)
-                }
-            }, 10000)
 
 
-        })
+    async startSession(id){							
+		let  s =  new session({...this._options.crateOptions})
+		await this.documentLoaded(s)
+		debug("Foglet %f connected.", id)
+		return s
+    }   
 
-
-        return sessionT
+    documentLoaded(session){
+    return new Promise((resolve, reject) => {
+       session.on("new_document",  (doc) => {
+            resolve()
+       })
+    })
     }
+
+
 
     setSimulationOptions(options) {
         this._options = Object.assign(this.constructor.defaultOptions, options);
@@ -78,6 +64,7 @@ export class Simulation {
     }
 
 
+        
     getRandomTime() {
         return this.random() * this._maxRandomTime;
     }
@@ -110,16 +97,16 @@ export class Simulation {
             return this.unuglifyID(uglyID);
         });
 
-      //  console.log("CRATE " + session.id + " : " + Neighbors.length, Neighbors,session._foglet.getNeighbours(), this._unuglifySessionIDs);
+      //  debug("CRATE " + session.id + " : " + Neighbors.length, Neighbors,session._foglet.getNeighbours(), this._unuglifySessionIDs);
         return Neighbors;
     }
 
     getText(i) {
-        console.log("CRATE " + i);
+        debug("CRATE " + i);
         let text = this._sessions[
             i
         ]._documents[0]._view._editor.viewEditor.getText();
-        console.log(text);
+        debug(text);
         return text;
     }
 
@@ -137,7 +124,7 @@ export class Simulation {
 
     pickRandomNodeID() {
         const chosenNode = Math.floor(this.random() * this._nbSessions);
-        console.log(`Node ${chosenNode} is chosen`);
+        debug(`Node ${chosenNode} is chosen`);
         return chosenNode;
     }
     random() {
@@ -181,6 +168,25 @@ export class Simulation {
   wait(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     } 
+
+    /**
+ * Convert array of arrays to array of objects using a specific prototype
+ * @param {*} array  array of arrays [[1,2,3],[4,5,6]...]
+ * @param {*} prototype the protototype of each element in the array {ele1:0,ele2:0,ele3:0}
+ * @returns [{ele1:1,ele2:2,ele3:3},{ele1:4,ele2:5,ele3:6}...]
+ */
+ static structureArray(array,prototype){
+    let structuredArray=[]
+    const keys=Object.keys(prototype)
+    array.forEach((ele)=>{
+        let structuedElement={}
+        ele.forEach((value,index)=>{
+            structuedElement[keys[index]]=value
+        })   
+        structuredArray.push(structuedElement)
+    })
+    return structuredArray
+}
 }
 
 
@@ -188,6 +194,17 @@ export class Simulation {
 export function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+
+
+var configuration = {
+    //    signalingServer: "https://172.16.9.236:3000",
+    signalingServer: "https://carteserver.herokuapp.com",
+    ICEsURL: "https://carteserver.herokuapp.com/ice",
+    storageServer: "https://storagecrate.herokuapp.com",
+    stun: "23.21.150.121" // default google ones if xirsys not
+  };
+
 
 // default options
 let simulationOptions = {
@@ -200,18 +217,25 @@ let simulationOptions = {
     preSimulationTime: 2 * 1000,
     useSignalingServer: true,
     crateOptions: {
-        ICEsURL: "https://carteserver.herokuapp.com",
-        storageServer: "https://storagecrate.herokuapp.com",
-        stun: "23.21.150.121",
-        containerID: "content-default",
-        signalingOptions:{
-            address: "https://carteserver.herokuapp.com",
-            session: "test"
+            signalingOptions:{
+              session:'test',
+              address:configuration.signalingServer
             },
-        display: false,
-        webRTCOptions:{wrtc:wrtc}
+            storageServer: configuration.storageServer,
+            stun: configuration.stun, // default google ones if xirsys not
+            ICEsURL:configuration.ICEsURL,
+            containerID: "content-default",
+            display: false,
+            PingPeriod: 100000, 
+            AntiEntropyPeriod: 100000,
+            wrtc:wrtc
+          } 
+         
     }
-}
 
+
+session.config= simulationOptions.crateOptions
 Simulation.defaultOptions = simulationOptions
+
+
 

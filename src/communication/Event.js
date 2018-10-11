@@ -130,7 +130,7 @@ export class Event extends EventEmitter {
             }) 
     
         } else {
-            console.error("Receiving empty message")
+            console.warn("Receiving empty message")
         }
 
      }
@@ -213,5 +213,8 @@ export class Event extends EventEmitter {
           isReady,
           payload
         }
+      }
+      close(){
+          
       }
     }

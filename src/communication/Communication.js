@@ -34,7 +34,7 @@ var debug = require('debug')('CRATE:Communication')
       this.setCommunicationChannels()
 
       this._foglet.emit("connected");
-      console.log("application connected!");
+      debug("application connected!");
     }
 
     

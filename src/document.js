@@ -139,8 +139,8 @@ export default class doc extends EventEmitter {
 
 
   refreshDocument(sequence,WhoWriteIt=false){
-    clearTimeout(this.refreshDocumentTimeout)
-    
+    if(this._options.display){
+    clearTimeout(this.refreshDocumentTimeout)  
     this.refreshDocumentTimeout=setTimeout(()=>{
       let range=this._view._editor.viewEditor.getSelection()
 
@@ -149,6 +149,7 @@ export default class doc extends EventEmitter {
       this._view._editor.updateCommentsLinks()    
       
     },10)
+  }
   
   }
 

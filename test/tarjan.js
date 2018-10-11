@@ -1,3 +1,5 @@
+
+var debug = require('debug')('CRATE:test:Tarjan')
 export class Vertex {
   constructor(name) {
     this.name = name || null;
@@ -40,10 +42,10 @@ export class Tarjan {
       this.run()
 
       if(this.scc[0].length=== neighbors.length) {
-        console.log("the graph is fully connected",this.scc)
+       debug("the graph is fully connected",this.scc)
         return true
       } else {
-        console.log("there graph is not fully connected", this.scc)
+        debug("there graph is not fully connected", this.scc)
       }
   }
   importGraph(Neighbors,undirected) {
@@ -70,7 +72,7 @@ export class Tarjan {
   }
   convertGraphToUndirected(Neighbors) {
     let neighbors = [...Neighbors]
-    console.log(neighbors)
+    debug(neighbors)
     neighbors.forEach((itsNeighbors, id) => {
         itsNeighbors.forEach(neighbor => {
             // neighbors of my neighbor

@@ -59,7 +59,6 @@ export default class session extends EventEmitter {
      */
     super();
 
-    console.log(options)
     // use defaultOptions to use them when we open other sessions
     //@todo: make these options global
     this._defaultOptions = { ...options}
@@ -264,14 +263,14 @@ async setOptions() {
       id: this._options.editingSessionID,
       verbose: true, // want some logs ? switch to false otherwise
       rps: {
-        type: "cyclon",
+        type: "spray-wrtc",//spray-wrtc,cyclon
         options: {
           maxPeers:10,
           a:1,
           b:5,
           protocol:this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
           webrtc:  this._options.webRTCOptions,
-          timeout: 5 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          timeout: 10 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
           pendingTimeout: 5 * 1000,
           delta: 120 * 1000, // spray-wrtc shuffle interval
           signaling:{...this._options.signalingOptions,room:this._options.signalingOptions.session} // signaling options
@@ -352,6 +351,7 @@ async setOptions() {
    */
   close() {
     this._documents[0].close()
+    this.constructor.removeSession(this._options.signalingOptions.session)
     }
   
   static getCrateSession(id) {
@@ -381,29 +381,36 @@ async setOptions() {
       this.number = insert
     } 
 
-    if(this.number>=2){
-      jQuery(`#content-default`).css("cssText",`width:calc(53% * ${this.number}) !important`)
-    } else {
-      jQuery(`#content-default`).css("cssText",`width:100% !important`)
-    }
+    if(this.config.display){
+      if(this.number>=2){
+      
+        jQuery(`#content-default`).css("cssText",`width:calc(53% * ${this.number}) !important`)
+    
+      } else {
+        this.emit('FullScreen')
+        jQuery(`#content-default`).css("cssText",`width:100% !important`)
+      }
+  }
   }
   
   
   static updateViews(){
+    if(this.config.display){
     let number= this.number
 
     let sessions=this.getSessions()
 
-    console.log(sessions);
     sessions.forEach((session)=>{
+      
       if(number===1) {
         session._documents[0]._view.fullScreen()
       } else {
         session._documents[0]._view.splitedScreen()
       }
-      
+   
 
     })
+  }
 
   }
   
