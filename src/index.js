@@ -62,6 +62,11 @@ export default class session extends EventEmitter {
     // use defaultOptions to use them when we open other sessions
     //@todo: make these options global
     this._defaultOptions = { ...options}
+   
+    if (!this.constructor.config){
+      session.config={ ...options}
+    }
+
     this._options = { ...options}
     this.openDocument();
   }
@@ -263,7 +268,7 @@ async setOptions() {
       id: this._options.editingSessionID,
       verbose: true, // want some logs ? switch to false otherwise
       rps: {
-        type: "spray-wrtc",//spray-wrtc,cyclon
+        type: "cyclon",//spray-wrtc,cyclon
         options: {
           maxPeers:10,
           a:1,
@@ -383,11 +388,8 @@ async setOptions() {
 
     if(this.config.display){
       if(this.number>=2){
-      
         jQuery(`#content-default`).css("cssText",`width:calc(53% * ${this.number}) !important`)
-    
       } else {
-        this.emit('FullScreen')
         jQuery(`#content-default`).css("cssText",`width:100% !important`)
       }
   }

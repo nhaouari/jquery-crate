@@ -16180,13 +16180,13 @@ function setup(env) {
     var prevTime;
 
     function debug() {
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
       // Disabled?
       if (!debug.enabled) {
         return;
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
       }
 
       var self = debug; // Set `diff` timestamp
@@ -23589,8 +23589,6 @@ module.exports = MUnicast;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -23634,19 +23632,23 @@ var Unicast = function (_EventEmitter) {
     // #1 create the table of registered protocols
     _this.psp = psp;
     // #2 overload the receipt of messages from the peer-sampling protocol
-    var __receive = psp._receive;
-    psp._receive = function (peerId, message) {
+
+    _this.psp.addProtocol(_this);
+
+    /*this.__receive = psp._receive
+        psp._receive = (peerId, message) => {
       try {
-        __receive.call(psp, peerId, message);
+       const rec= this.__receive.call(psp, peerId, message) 
       } catch (e) {
-        if (message.type && message.type === 'MUnicast' && message.pid === _this.options.pid) {
-          _this._emit.apply(_this, [message.event].concat(_toConsumableArray(message.args)));
+        if (message.type && message.type === 'MUnicast' &&
+                    message.pid === this.options.pid) {
+          this._emit(message.event, ...(message.args))
         } else {
-          throw e;
+          throw (e)
         };
       };
-    };
-
+    }
+    */
     // #3 replace the basic behavior of eventemitter.emit
     _this._emit = _this.emit;
     /**
@@ -26438,7 +26440,8 @@ module.exports = CommunicationProtocol;
 "use strict";
 /*
 This broadcast implementation  is clearly inspired from https://github.com/Chat-Wane/CausalBroadcastDefinition
-This is a causal broadcast customizable, if you want to specifiy
+This is a broadcast customizable, if you want to specifiy
+Ensure single delivery and causality between 2 consecutive messages from a single site
 */
 
 
@@ -26489,7 +26492,7 @@ var Broadcast = function (_AbstractBroadcast) {
 
     if (source && protocol) {
       _this.options = {
-        id: source._options.peer,
+        id: source.id,
         delta: 1000 * 30
         // the id is your id, base on the .PEER id in the RPS options
       };_this._causality = new VVwE(_this.options.id);
@@ -26519,11 +26522,13 @@ var Broadcast = function (_AbstractBroadcast) {
       var _this2 = this;
 
       var n = this._source.getNeighbours(Infinity);
-      if (n.length > 0) n.forEach(function (p) {
-        return _this2._unicast.send(p, message).catch(function (e) {
-          return debug('Error: It seems there is not a receiver', e);
+      if (n.length > 0) {
+        n.forEach(function (p) {
+          _this2._unicast.send(p, message).catch(function (e) {
+            debug(e);
+          });
         });
-      });
+      }
     }
 
     /**
@@ -26538,14 +26543,37 @@ var Broadcast = function (_AbstractBroadcast) {
     key: 'send',
     value: function send(message, id) {
       var isReady = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+      var useIsReady = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
 
-      var a = id || this._causality.increment();
-      var broadcastMessage = messages.BroadcastMessage(this._protocol, a, isReady, message);
+      var messageId = id || this._causality.increment();
+      if (messageId.e !== this._causality.local.e) {
+        throw new Error('The id of the identifier need to be equal to: ' + this._causality.local.e);
+      } else if (messageId.c < this._causality.local.v) {
+        throw new Error('Cant send the message because the identifier has a counter lower than our local counter: need to be equal to ' + this._causality.local.v + 1);
+      } else if (messageId.c > this._causality.local.v + 1) {
+        throw new Error('Cant send the message because the identifier has a counter higher than the counter accepted: need to be equal to ' + this._causality.local.v + 1);
+      }
+      var rdy = isReady;
+      if (useIsReady && !rdy) {
+        // if the counter is higher than one, it means that we already send messages on the network
+        if (messageId.c > 1) {
+          rdy = {
+            e: messageId.e,
+            c: messageId.c - 1
+          };
+        }
+      }
+      var broadcastMessage = this._createBroadcastMessage(message, messageId, rdy);
       // #2 register the message in the structure
-      this._causality.incrementFrom(a);
+      this._causality.incrementFrom(messageId);
       // #3 send the message to the neighborhood
       this._sendAll(broadcastMessage);
-      return a;
+      return messageId;
+    }
+  }, {
+    key: '_createBroadcastMessage',
+    value: function _createBroadcastMessage(message, id, isReady) {
+      return messages.BroadcastMessage(this._protocol, id, isReady, message);
     }
 
     /**
@@ -26623,9 +26651,6 @@ var Broadcast = function (_AbstractBroadcast) {
     key: '_receive',
     value: function _receive(id, message) {
       // if not present, add the issuer of the message in the message
-      // 
-      // 
-      console.log({ id: id, message: message });
       if (!('issuer' in message)) {
         message.issuer = id;
       }
@@ -26674,7 +26699,6 @@ var Broadcast = function (_AbstractBroadcast) {
               // #1 register the operation
               // maintain `this._buffer` sorted to search in O(log n)
               var index = sortedIndexBy(this._buffer, message, formatID);
-
               this._buffer.splice(index, 0, message);
               // #2 deliver
               this._reviewBuffer();
@@ -26743,7 +26767,6 @@ var Broadcast = function (_AbstractBroadcast) {
       var found = false;
       for (var index = this._buffer.length - 1; index >= 0; --index) {
         message = this._buffer[index];
-
         if (this._causality.isLower(message.id)) {
           this._buffer.splice(index, 1);
         } else {
@@ -28212,6 +28235,8 @@ module.exports = CyclonAdapter;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -28259,6 +28284,7 @@ module.exports = function (_N2N) {
 
     var _this = _possibleConstructorReturn(this, (Cyclon.__proto__ || Object.getPrototypeOf(Cyclon)).call(this, lmerge(DEFAULT_OPTIONS, options)));
 
+    _this._registredProtocols = new Map();
     _this._partialView = new PV();
     _this._periodic = undefined;
     _this.on('receive', function (id, msg) {
@@ -28277,6 +28303,16 @@ module.exports = function (_N2N) {
   }
 
   _createClass(Cyclon, [{
+    key: 'addProtocol',
+    value: function addProtocol(protocol) {
+      this._registredProtocols.set(protocol.options.pid, protocol);
+    }
+  }, {
+    key: 'getProtocol',
+    value: function getProtocol(pid) {
+      return this._registredProtocols.get(pid);
+    }
+  }, {
     key: 'join',
 
 
@@ -28377,18 +28413,29 @@ module.exports = function (_N2N) {
   }, {
     key: '_receive',
     value: function _receive(peerId, message) {
-      if (message.type && message.type === 'MExchange') {
-        this._onExchange(peerId, message);
-      } else if (message.type && message.type === 'MExchangeBack') {
-        this.emit('MExchangeBack-' + message.id, peerId, message);
-      } else if (message.type && message.type === 'MJoin') {
-        this._onJoin(peerId);
-      } else if (message.type && message.type === 'MLeave') {
-        this._onLeave(peerId);
-      } else if (message.type && message.type === 'MBridge') {
-        this._onBridge(message.from, message.to);
+      if (message.type && message.type === 'MUnicast') {
+        var unicast = this.getProtocol(message.pid);
+        if (unicast) {
+          unicast._emit.apply(unicast, [message.event].concat(_toConsumableArray(message.args)));
+        } else {
+          debugger;
+          throw new Error('_receive, message unhandled');
+        }
       } else {
-        throw new Error('_receive, message unhandled');
+        if (message.type && message.type === 'MExchange') {
+          this._onExchange(peerId, message);
+        } else if (message.type && message.type === 'MExchangeBack') {
+          this.emit('MExchangeBack-' + message.id, peerId, message);
+        } else if (message.type && message.type === 'MJoin') {
+          this._onJoin(peerId);
+        } else if (message.type && message.type === 'MLeave') {
+          this._onLeave(peerId);
+        } else if (message.type && message.type === 'MBridge') {
+          this._onBridge(message.from, message.to);
+        } else {
+          debugger;
+          throw new Error('_receive, message unhandled');
+        }
       }
     }
   }, {
@@ -37534,45 +37581,6 @@ module.exports = INeighborhood;
 
 /***/ }),
 
-/***/ "./node_modules/neighborhood-wrtc/lib/messages/minternalsend.js":
-/*!**********************************************************************!*\
-  !*** ./node_modules/neighborhood-wrtc/lib/messages/minternalsend.js ***!
-  \**********************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Message sent when protocolId wishes to send payload. It is a basic
- * encapsualtion of protocolId.
- */
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var MInternalSend =
-/**
-   * @param {string} peerId The identifier of the peer that sent the message
-   * @param {string} protocolId The identifier of the protocol that sent the
-   * message
-   * @param {object} payload The payload of the message.
-   */
-function MInternalSend(peerId, protocolId, payload) {
-  _classCallCheck(this, MInternalSend);
-
-  this.peer = peerId;
-  this.pid = protocolId;
-  this.payload = payload;
-  this.type = 'MInternalSend';
-};
-
-;
-
-module.exports = MInternalSend;
-
-/***/ }),
-
 /***/ "./node_modules/neighborhood-wrtc/lib/messages/mrequest.js":
 /*!*****************************************************************!*\
   !*** ./node_modules/neighborhood-wrtc/lib/messages/mrequest.js ***!
@@ -37732,7 +37740,6 @@ var INeighborhood = __webpack_require__(/*! ./interfaces/ineighborhood.js */ "./
 var MResponse = __webpack_require__(/*! ./messages/mresponse.js */ "./node_modules/neighborhood-wrtc/lib/messages/mresponse.js");
 var MRequest = __webpack_require__(/*! ./messages/mrequest.js */ "./node_modules/neighborhood-wrtc/lib/messages/mrequest.js");
 var MSend = __webpack_require__(/*! ./messages/msend.js */ "./node_modules/neighborhood-wrtc/lib/messages/msend.js");
-var MInternalSend = __webpack_require__(/*! ./messages/minternalsend.js */ "./node_modules/neighborhood-wrtc/lib/messages/minternalsend.js");
 
 // const ExLateMessage = require('./exceptions/exlatemessage.js')
 var ExProtocolExists = __webpack_require__(/*! ./exceptions/exprotocolexists.js */ "./node_modules/neighborhood-wrtc/lib/exceptions/exprotocolexists.js");
@@ -37765,7 +37772,7 @@ var Neighborhood = function () {
     this.options = {
       socketClass: Socket,
       peer: uuid(),
-      config: { trickle: true, initiator: false },
+      config: { iceServers: [], trickle: true, initiator: false },
       timeout: 1 * 60 * 1000,
       pendingTimeout: 10 * 1000,
       encoding: function encoding(d) {
@@ -37808,7 +37815,7 @@ var Neighborhood = function () {
       if (!this.protocols.has(protocol._pid())) {
         debug('[%s] protocol %s just registered.', this.PEER, protocol._pid());
         this.protocols.set(protocol._pid(), protocol);
-        return new INeighborhood(this.PEER, this._connect.bind(this, protocol._pid()), this._disconnect.bind(this, protocol._pid()), this._send.bind(this, protocol._pid()), this._stream.bind(this, protocol._pid()), this._neighbours.bind(this));
+        return new INeighborhood(this.PEER, this._connect.bind(this, protocol._pid()), this._disconnect.bind(this, protocol._pid()), this._send.bind(this, protocol._pid()));
       } else {
         throw new ExProtocolExists(protocol._pid());
       }
@@ -37908,11 +37915,7 @@ var Neighborhood = function () {
 
       socket.on('data', function (d) {
         var msg = _this.decode(d);
-        if (msg.type === 'MInternalSend') {
-          _this._receiveInternalMessage(msg);
-        } else {
-          _this.protocols.get(msg.pid)._received(msg.peer, msg.payload);
-        }
+        _this.protocols.get(msg.pid)._received(msg.peer, msg.payload);
       });
       socket.on('stream', function (s) {
         _this.protocols.get(entry.pid)._streamed(entry.peer, s);
@@ -37925,8 +37928,8 @@ var Neighborhood = function () {
       });
       // #4 send offer message using sender
       socket.on('signal', function (offer) {
-        if (socket.connected && !socket._isNegociating) {
-          _this._sendRenegociateRequest(new MRequest(entry.tid, _this.PEER, protocolId, offer, 'renegociate'), entry.peer);
+        if (socket.connected && socket._isNegotiating) {
+          sender(new MRequest(entry.tid, _this.PEER, protocolId, offer, 'renegociate'));
         } else {
           sender(new MRequest(entry.tid, _this.PEER, protocolId, offer));
         }
@@ -38001,7 +38004,7 @@ var Neighborhood = function () {
         // #C just signal the offer
         entry.peer = msg.peer;
         if (!msg.offer) {
-          throw new ExIncompleteMessage('_finalize', entry, msg);
+          //throw new ExIncompleteMessage('_finalize', entry, msg)
         } else {
           entry.socket.signal(msg.offer);
         };
@@ -38132,11 +38135,7 @@ var Neighborhood = function () {
 
           socket.on('data', function (d) {
             var msg = _this2.decode(d);
-            if (msg.type === 'MInternalSend') {
-              _this2._receiveInternalMessage(msg);
-            } else {
-              _this2.protocols.get(msg.pid)._received(msg.peer, msg.payload);
-            }
+            _this2.protocols.get(msg.pid)._received(msg.peer, msg.payload);
           });
           socket.on('stream', function (s) {
             _this2.protocols.get(entry.pid)._streamed(entry.peer, s);
@@ -38150,7 +38149,7 @@ var Neighborhood = function () {
           // #4 send offer message using sender
           socket.on('signal', function (offer) {
             if (socket.connected && !socket._isNegotiating) {
-              _this2._sendRenegociateResponse(new MResponse(entry.tid, _this2.PEER, protocolId, offer, 'renegociate'), entry.peer);
+              sender(new MResponse(entry.tid, _this2.PEER, protocolId, offer, 'renegociate'));
             } else {
               sender(new MResponse(entry.tid, _this2.PEER, protocolId, offer));
             }
@@ -38235,13 +38234,21 @@ var Neighborhood = function () {
        * @returns {promise} Resolved when the message is sent, reject
        * otherwise. Note that loss of messages is not handled by default.
        */
-    value: function _send(protocolId, peerId, message) {
+    value: function _send(protocolId, peerIdp, message) {
       var _this4 = this;
 
       var retry = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
       return new Promise(function (resolve, reject) {
         // #1 get the proper entry in the tables
+        var peerId = peerIdp;
+        /* if(peerId===message.from)
+           {
+             peerId=message.to;
+             console.log("Fix works")
+           }
+         */
+
         var entry = null;
         if (_this4.living.contains(peerId)) {
           entry = _this4.living.get(peerId);
@@ -38249,6 +38256,8 @@ var Neighborhood = function () {
           entry = _this4.dying.get(peerId); // (TODO) warn: not safe
         };
         if (entry === null) {
+          // console.log(protocolId, peerId, message, retry, this.living.store.size, this.dying.size)
+          //debugger
           reject(new Error('peer not found: ' + peerId));
         }
         // #2 define the recursive sending function
@@ -38271,146 +38280,6 @@ var Neighborhood = function () {
         // #3 start to send
         __send(0);
       });
-    }
-  }, {
-    key: '_stream',
-    value: function _stream(protocolId, peerId, media) {
-      var _this5 = this;
-
-      var retry = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
-
-      return new Promise(function (resolve, reject) {
-        // #1 get the proper entry in the tables
-        var entry = null;
-        if (_this5.living.contains(peerId)) {
-          entry = _this5.living.get(peerId);
-        } else if (_this5.dying.has(peerId)) {
-          entry = _this5.dying.get(peerId); // (TODO) warn: not safe
-        };
-        if (entry === null) {
-          _this5.living.store.forEach(function (elem) {
-            debug(elem.peer);
-          });
-          reject(new Error('peer not found: ' + peerId));
-        }
-        // #2 define the recursive sending function
-        var __send = function __send(r) {
-          try {
-            entry.socket.addStream(media);
-            debug('[%s] --- MEDIA msg --> %s:%s', _this5.PEER, peerId, protocolId);
-            resolve();
-          } catch (e) {
-            debug('[%s] -X- MEDIA msg -X> %s:%s', _this5.PEER, peerId, protocolId);
-            if (r < retry) {
-              setTimeout(function () {
-                __send(r + 1);
-              }, 1000);
-            } else {
-              reject(e);
-            };
-          };
-        };
-        // #3 start to send
-        __send(0);
-      });
-    }
-  }, {
-    key: '_sendRenegociateRequest',
-    value: function _sendRenegociateRequest(request, to) {
-      var _this6 = this;
-
-      var retry = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      return new Promise(function (resolve, reject) {
-        // #1 get the proper entry in the tables
-        var entry = null;
-        if (_this6.living.contains(to)) {
-          entry = _this6.living.get(to);
-        } else if (_this6.dying.has(to)) {
-          entry = _this6.dying.get(to); // (TODO) warn: not safe
-        };
-        if (entry === null) {
-          _this6.living.store.forEach(function (elem) {
-            debug(elem.peer);
-          });
-          reject(new Error('peer not found: ' + to));
-        }
-        // #2 define the recursive sending function
-        var __send = function __send(r) {
-          try {
-            entry.socket.send(_this6.encode(new MInternalSend(_this6.PEER, null, request)));
-            debug('[%s] --- MEDIA Internal Renegociate msg --> %s:%s', _this6.PEER, to);
-            resolve();
-          } catch (e) {
-            debug('[%s] -X- MEDIA Internal Renegociate msg -X> %s:%s', _this6.PEER, to);
-            if (r < retry) {
-              setTimeout(function () {
-                __send(r + 1);
-              }, 1000);
-            } else {
-              reject(e);
-            };
-          };
-        };
-        // #3 start to send
-        __send(0);
-      });
-    }
-  }, {
-    key: '_sendRenegociateResponse',
-    value: function _sendRenegociateResponse(response, to) {
-      var _this7 = this;
-
-      var retry = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-      return new Promise(function (resolve, reject) {
-        // #1 get the proper entry in the tables
-        var entry = null;
-        if (_this7.living.contains(to)) {
-          entry = _this7.living.get(to);
-        } else if (_this7.dying.has(to)) {
-          entry = _this7.dying.get(to); // (TODO) warn: not safe
-        };
-        if (entry === null) {
-          _this7.living.store.forEach(function (elem) {
-            debug(elem.peer);
-          });
-          reject(new Error('peer not found: ' + to));
-        }
-        // #2 define the recursive sending function
-        var __send = function __send(r) {
-          try {
-            entry.socket.send(_this7.encode(new MInternalSend(_this7.PEER, null, response)));
-            debug('[%s] --- MEDIA Internal Renegociate msg --> %s:%s', _this7.PEER, to);
-            resolve();
-          } catch (e) {
-            debug('[%s] -X- MEDIA Internal Renegociate msg -X> %s:%s', _this7.PEER, to);
-            if (r < retry) {
-              setTimeout(function () {
-                __send(r + 1);
-              }, 1000);
-            } else {
-              reject(e);
-            };
-          };
-        };
-        // #3 start to send
-        __send(0);
-      });
-    }
-  }, {
-    key: '_receiveInternalMessage',
-    value: function _receiveInternalMessage(msg) {
-      this.living.get(msg.peer).socket.signal(msg.payload.offer);
-    }
-  }, {
-    key: '_neighbours',
-    value: function _neighbours() {
-      var neigh = [];
-      this.living.store.forEach(function (elem) {
-        neigh.push(elem);
-      });
-      return neigh;
     }
   }, {
     key: '_checkPendingEntry',
@@ -38709,13 +38578,13 @@ function setup(env) {
     var prevTime;
 
     function debug() {
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
       // Disabled?
       if (!debug.enabled) {
         return;
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
       }
 
       var self = debug; // Set `diff` timestamp
@@ -47871,13 +47740,13 @@ function setup(env) {
     var prevTime;
 
     function debug() {
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
       // Disabled?
       if (!debug.enabled) {
         return;
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
       }
 
       var self = debug; // Set `diff` timestamp
@@ -51590,13 +51459,13 @@ function setup(env) {
     var prevTime;
 
     function debug() {
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
       // Disabled?
       if (!debug.enabled) {
         return;
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
       }
 
       var self = debug; // Set `diff` timestamp
@@ -53358,7 +53227,7 @@ var Communication = exports.Communication = function () {
                 this.setCommunicationChannels();
 
                 this._foglet.emit("connected");
-                console.log("application connected!");
+                debug("application connected!");
 
               case 11:
               case "end":
@@ -53410,6 +53279,7 @@ var Communication = exports.Communication = function () {
     value: function receiveStream(id, stream) {
       var _this2 = this;
 
+      debug('document', 'receiving a stream from ', id);
       var content = '';
       stream.on('data', function (data) {
         content += data;
@@ -53417,7 +53287,7 @@ var Communication = exports.Communication = function () {
       stream.on('end', function () {
         var packet = JSON.parse(content);
         content = '';
-        debug('document', 'Message received', packet, 'from', id);
+        debug('document', 'Message received', packet.pairs[0], 'from', id);
         _this2.receive(packet.event, packet);
       });
     }
@@ -53624,12 +53494,14 @@ var Event = exports.Event = function (_EventEmitter) {
                     _this5.passMsgByBroadcast(elem);
                 });
             } else {
-                console.error("Receiving empty message");
+                console.warn("Receiving empty message");
             }
         }
     }, {
         key: 'passMsgByBroadcast',
         value: function passMsgByBroadcast(elem) {
+
+            debug('passMsgByBroadcast:', elem);
             //no causal id : it is an internal event, we use our own id
             var causalId = elem.pair && elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e;
             var broadcast = this._communicationChannel.broadcast;
@@ -53718,6 +53590,9 @@ var Event = exports.Event = function (_EventEmitter) {
                 payload: payload
             };
         }
+    }, {
+        key: 'close',
+        value: function close() {}
     }]);
 
     return Event;
@@ -54801,7 +54676,9 @@ var TextManager = exports.TextManager = function (_TextEvent) {
         _this._removeManager = new _RemoveManager.RemoveManager(_extends({ TextManager: _this }, opts));
         _this._titleManager = new _TitleManager.TitleManager(_extends({ TextManager: _this }, opts));
         _this._antiEntropyManager = new _AntiEntropyManager.AntiEntropyManager(_extends({ TextManager: _this }, opts));
-        _this._antiEntropyManager.sendAntiEntropyRequest();
+
+        //this._antiEntropyManager.sendAntiEntropyRequest()
+
 
         _this._removeBuffer = new Map();
         //this._antiEntropyManager.start()
@@ -55029,7 +54906,7 @@ var doc = function (_EventEmitter) {
 
               case 10:
 
-                this.sequence = new _LSEQTree2.default(options.editingSessionID);
+                this.sequence = new _LSEQTree2.default(this._communication._data_comm.broadcast._causality.local.e);
                 this.delta = { ops: []
 
                   /* TODO:Think about the creation of modules without view */
@@ -55140,15 +55017,16 @@ var doc = function (_EventEmitter) {
 
       var WhoWriteIt = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-      clearTimeout(this.refreshDocumentTimeout);
+      if (this._options.display) {
+        clearTimeout(this.refreshDocumentTimeout);
+        this.refreshDocumentTimeout = setTimeout(function () {
+          var range = _this2._view._editor.viewEditor.getSelection();
 
-      this.refreshDocumentTimeout = setTimeout(function () {
-        var range = _this2._view._editor.viewEditor.getSelection();
-
-        _this2._view._editor.viewEditor.setContents(_this2.delta, 'silent');
-        _this2._view._editor.viewEditor.setSelection(range, 'silent');
-        _this2._view._editor.updateCommentsLinks();
-      }, 10);
+          _this2._view._editor.viewEditor.setContents(_this2.delta, 'silent');
+          _this2._view._editor.viewEditor.setSelection(range, 'silent');
+          _this2._view._editor.updateCommentsLinks();
+        }, 10);
+      }
     }
   }, {
     key: "getDeltaFromSequence",
@@ -55319,6 +55197,8 @@ var session = function (_EventEmitter) {
   function session(options) {
     _classCallCheck(this, session);
 
+    // use defaultOptions to use them when we open other sessions
+    //@todo: make these options global
     var _this = _possibleConstructorReturn(this, (session.__proto__ || Object.getPrototypeOf(session)).call(this));
     /**
      *      signalingServer: "https://carteserver.herokuapp.com/",
@@ -55330,10 +55210,12 @@ var session = function (_EventEmitter) {
      */
 
 
-    console.log(options);
-    // use defaultOptions to use them when we open other sessions
-    //@todo: make these options global
     _this._defaultOptions = _extends({}, options);
+
+    if (!_this.constructor.config) {
+      session.config = _extends({}, options);
+    }
+
     _this._options = _extends({}, options);
     _this.openDocument();
     return _this;
@@ -55650,14 +55532,14 @@ var session = function (_EventEmitter) {
         id: this._options.editingSessionID,
         verbose: true, // want some logs ? switch to false otherwise
         rps: {
-          type: "cyclon",
+          type: "cyclon", //spray-wrtc,cyclon
           options: {
             maxPeers: 10,
             a: 1,
             b: 5,
             protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
             webrtc: this._options.webRTCOptions,
-            timeout: 5 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+            timeout: 10 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
             pendingTimeout: 5 * 1000,
             delta: 120 * 1000, // spray-wrtc shuffle interval
             signaling: _extends({}, this._options.signalingOptions, { room: this._options.signalingOptions.session // signaling options
@@ -55761,6 +55643,7 @@ var session = function (_EventEmitter) {
     key: "close",
     value: function close() {
       this._documents[0].close();
+      this.constructor.removeSession(this._options.signalingOptions.session);
     }
   }], [{
     key: "getCrateSession",
@@ -55794,27 +55677,31 @@ var session = function (_EventEmitter) {
         this.number = insert;
       }
 
-      if (this.number >= 2) {
-        jQuery("#content-default").css("cssText", "width:calc(53% * " + this.number + ") !important");
-      } else {
-        jQuery("#content-default").css("cssText", "width:100% !important");
+      if (this.config.display) {
+        if (this.number >= 2) {
+          jQuery("#content-default").css("cssText", "width:calc(53% * " + this.number + ") !important");
+        } else {
+          jQuery("#content-default").css("cssText", "width:100% !important");
+        }
       }
     }
   }, {
     key: "updateViews",
     value: function updateViews() {
-      var number = this.number;
+      if (this.config.display) {
+        var number = this.number;
 
-      var sessions = this.getSessions();
+        var sessions = this.getSessions();
 
-      console.log(sessions);
-      sessions.forEach(function (session) {
-        if (number === 1) {
-          session._documents[0]._view.fullScreen();
-        } else {
-          session._documents[0]._view.splitedScreen();
-        }
-      });
+        sessions.forEach(function (session) {
+
+          if (number === 1) {
+            session._documents[0]._view.fullScreen();
+          } else {
+            session._documents[0]._view.splitedScreen();
+          }
+        });
+      }
     }
   }, {
     key: "getSessions",

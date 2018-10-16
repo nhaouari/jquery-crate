@@ -46,7 +46,7 @@ export default class doc extends EventEmitter {
 
     
 
-    this.sequence = new LSEQTree(options.editingSessionID)
+    this.sequence = new LSEQTree(this._communication._data_comm.broadcast._causality.local.e)
     this.delta= {ops:[]}
 
     /* TODO:Think about the creation of modules without view */

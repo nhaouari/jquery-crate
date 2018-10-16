@@ -9,7 +9,7 @@ export class Simulation {
 
     async init(options, startSessionId = 0) {
         this.setSimulationOptions(options)
-        this._crateOptions
+    
         
         this._unuglifySessionIDs = {};
         // const s = new session(this._crateOptions)
@@ -64,7 +64,13 @@ export class Simulation {
     }
 
 
-        
+    getSession(i){
+        return this._sessions[i]
+    }
+
+    getDocument(i){
+        return this._sessions[i]._documents[0]
+    }        
     getRandomTime() {
         return this.random() * this._maxRandomTime;
     }
@@ -205,7 +211,14 @@ var configuration = {
     stun: "23.21.150.121" // default google ones if xirsys not
   };
 
-
+/*var configuration = {
+    //    signalingServer: "https://172.16.9.236:3000",
+    signalingServer: "http://172.16.9.214:3000",
+    ICEsURL: "http://172.16.9.214:3000/ice",
+    storageServer: "https://storagecrate.herokuapp.com",
+    stun: "23.21.150.121" // default google ones if xirsys not
+  };
+*/
 // default options
 let simulationOptions = {
     seed: 3,

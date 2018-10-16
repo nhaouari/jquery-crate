@@ -76,12 +76,13 @@ var debug = require('debug')('CRATE:Communication')
       }
 
     receiveStream(id,stream){
+      debug('document', 'receiving a stream from ', id)
       let content=''
       stream.on('data', data => { content += data;})
       stream.on('end', () => {
         const packet= JSON.parse(content)  
         content = ''
-        debug('document', 'Message received', packet, 'from', id)
+        debug('document', 'Message received', packet.pairs[0], 'from', id)
         this.receive(packet.event, packet)
       })    
      

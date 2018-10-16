@@ -137,6 +137,8 @@ export class Event extends EventEmitter {
        
      
     passMsgByBroadcast(elem){
+       
+       debug('passMsgByBroadcast:', elem)
         //no causal id : it is an internal event, we use our own id
         const causalId=elem.pair&& elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e
         const broadcast=  this._communicationChannel.broadcast
@@ -145,7 +147,7 @@ export class Event extends EventEmitter {
         const packet=this.getPacket({pairs:[elem],stream:false}) 
         const isReady=elem.isReady
         const message=this.getBroadcastMessageFormat(broadcast._protocol,causalId,isReady,packet)
-       
+         
         broadcast._receive(causalId.e+'-O',message)
      }
 
@@ -199,7 +201,8 @@ export class Event extends EventEmitter {
       
         return chunks
       }
-      getCausalID(lseqNode){
+      
+    getCausalID(lseqNode){
         const causalId= {e:lseqNode.t.s,c:lseqNode.t.c} 
         debug("getCausalID",{lseqNode,causalId} )
         return causalId
