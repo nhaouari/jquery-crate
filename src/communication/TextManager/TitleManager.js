@@ -7,6 +7,7 @@ export class TitleManager extends TextEvent {
         super({EventName,...opts})
         
         this._textManager=opts.TextManager
+        this._communicationChannel = this._document._communication._behaviors_comm
         this.action = this.sendChangeTitle
     }
     /**
@@ -14,14 +15,23 @@ export class TitleManager extends TextEvent {
      * @param  {[type]} title [description]
      * @return {[type]}       [description]
      */
-    sendChangeTitle(title) {   
-        console.log('Title sent ');
+    sendChangeTitle(title,id=null) {
+
+        debug('Title sent ',title);
         this._document.name = title
-        this.broadcast({
+        const msg = {
             id:this._document.uid,
             title: title
-        })
+        }
+
+        if(!id) {
+            this.broadcast(msg)
+        } else {
+            debug('send title in unicast')
+            this.unicast(id,msg)
+        }
     };
+
 
     /**
      * [changeTitle At the reception of MTitleChanged ]
@@ -31,6 +41,7 @@ export class TitleManager extends TextEvent {
 
     receive(msg) {
         this.emit('changeTitle', msg.title);
+        this._document.name =  msg.title
     };
 
 }

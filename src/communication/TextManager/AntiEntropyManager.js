@@ -12,7 +12,8 @@ export class AntiEntropyManager extends TextEvent {
         this._antiEntropyPeriod= opts.AntiEntropyPeriod 
         this._textManager=opts.TextManager
         this._communicationChannel = this._document._communication._behaviors_comm
-
+       
+       
         this.on('Request',(msg)=>{
             this.receiveRequest(msg)
         })
@@ -20,6 +21,11 @@ export class AntiEntropyManager extends TextEvent {
         this.on('Response',(msg)=>{
             this.receiveResponse(msg)
         })
+
+        setTimeout(() => {
+            this.sendAntiEntropyRequest() 
+        }, 1000);
+        
     }
 
     start(){
@@ -62,8 +68,8 @@ export class AntiEntropyManager extends TextEvent {
             debug('Receive AntiEntropy And there are differences', id, remoteVVwE, localVVwE, elements)
             this.sendAntiEntropyResponse(id, localVVwE, elements);         
            
-           console.log("sendAction",'Title',this._document.name );
-            this.sendAction('Title',this._document.name) ;
+            console.log("sendAction",'Title',this._document.name );
+            this.sendAction('Title',this._document.name,id) ;
         }
     }
     }
@@ -143,7 +149,7 @@ export class AntiEntropyManager extends TextEvent {
       }
     
 
-  getLSEQNodes(){
+     getLSEQNodes(){
     let LSEQNodeArray=[]
     const root=this._sequence.root
 
@@ -159,7 +165,7 @@ export class AntiEntropyManager extends TextEvent {
 
     preorder(root)
     return LSEQNodeArray
-  }
+     }
 
     isIdInSet({id,clock,toSearch}) {
 
@@ -230,7 +236,6 @@ export class AntiEntropyManager extends TextEvent {
    */
   sendAntiEntropyResponse (origin, causalityAtReceipt, elements) {
     let id = this._document._options.editingSessionID
-    origin = origin + '-I'
     // #1 metadata of the antientropy response
     this.unicast(origin,{type:'Response',id, causalityAtReceipt, elements})  
     debug('sendAntiEntropyResponse',{type:'Response',id, causalityAtReceipt, elements})

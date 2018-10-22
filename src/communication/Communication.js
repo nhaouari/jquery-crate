@@ -82,15 +82,15 @@ var debug = require('debug')('CRATE:Communication')
       stream.on('end', () => {
         const packet= JSON.parse(content)  
         content = ''
-        debug('document', 'Message received', packet.pairs[0], 'from', id)
-        this.receive(packet.event, packet)
+        debug('document', 'Message received', packet.pairs, 'from', id)
+        this.receive(packet.event, packet,id)
       })    
      
     }  
 
-    receive(event,packet){
+    receive(event,packet,originID){
       debug('communication receive ',event,packet)
-      this._document.emit(event, packet)
+      this._document.emit(event, {...packet,originID})
     }
     close() {
         this.markerManager.close()

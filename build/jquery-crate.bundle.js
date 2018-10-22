@@ -23589,6 +23589,8 @@ module.exports = MUnicast;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -23632,23 +23634,19 @@ var Unicast = function (_EventEmitter) {
     // #1 create the table of registered protocols
     _this.psp = psp;
     // #2 overload the receipt of messages from the peer-sampling protocol
-
-    _this.psp.addProtocol(_this);
-
-    /*this.__receive = psp._receive
-        psp._receive = (peerId, message) => {
+    var __receive = psp._receive;
+    psp._receive = function (peerId, message) {
       try {
-       const rec= this.__receive.call(psp, peerId, message) 
+        __receive.call(psp, peerId, message);
       } catch (e) {
-        if (message.type && message.type === 'MUnicast' &&
-                    message.pid === this.options.pid) {
-          this._emit(message.event, ...(message.args))
+        if (message.type && message.type === 'MUnicast' && message.pid === _this.options.pid) {
+          _this._emit.apply(_this, [message.event].concat(_toConsumableArray(message.args)));
         } else {
-          throw (e)
+          throw e;
         };
       };
-    }
-    */
+    };
+
     // #3 replace the basic behavior of eventemitter.emit
     _this._emit = _this.emit;
     /**
@@ -26554,15 +26552,15 @@ var Broadcast = function (_AbstractBroadcast) {
         throw new Error('Cant send the message because the identifier has a counter higher than the counter accepted: need to be equal to ' + this._causality.local.v + 1);
       }
       var rdy = isReady;
-      if (useIsReady && !rdy) {
+      /*if (useIsReady && !rdy) {
         // if the counter is higher than one, it means that we already send messages on the network
         if (messageId.c > 1) {
           rdy = {
             e: messageId.e,
             c: messageId.c - 1
-          };
+          }
         }
-      }
+      }*/
       var broadcastMessage = this._createBroadcastMessage(message, messageId, rdy);
       // #2 register the message in the structure
       this._causality.incrementFrom(messageId);
@@ -28235,8 +28233,6 @@ module.exports = CyclonAdapter;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -28284,7 +28280,6 @@ module.exports = function (_N2N) {
 
     var _this = _possibleConstructorReturn(this, (Cyclon.__proto__ || Object.getPrototypeOf(Cyclon)).call(this, lmerge(DEFAULT_OPTIONS, options)));
 
-    _this._registredProtocols = new Map();
     _this._partialView = new PV();
     _this._periodic = undefined;
     _this.on('receive', function (id, msg) {
@@ -28303,16 +28298,6 @@ module.exports = function (_N2N) {
   }
 
   _createClass(Cyclon, [{
-    key: 'addProtocol',
-    value: function addProtocol(protocol) {
-      this._registredProtocols.set(protocol.options.pid, protocol);
-    }
-  }, {
-    key: 'getProtocol',
-    value: function getProtocol(pid) {
-      return this._registredProtocols.get(pid);
-    }
-  }, {
     key: 'join',
 
 
@@ -28413,29 +28398,18 @@ module.exports = function (_N2N) {
   }, {
     key: '_receive',
     value: function _receive(peerId, message) {
-      if (message.type && message.type === 'MUnicast') {
-        var unicast = this.getProtocol(message.pid);
-        if (unicast) {
-          unicast._emit.apply(unicast, [message.event].concat(_toConsumableArray(message.args)));
-        } else {
-          debugger;
-          throw new Error('_receive, message unhandled');
-        }
+      if (message.type && message.type === 'MExchange') {
+        this._onExchange(peerId, message);
+      } else if (message.type && message.type === 'MExchangeBack') {
+        this.emit('MExchangeBack-' + message.id, peerId, message);
+      } else if (message.type && message.type === 'MJoin') {
+        this._onJoin(peerId);
+      } else if (message.type && message.type === 'MLeave') {
+        this._onLeave(peerId);
+      } else if (message.type && message.type === 'MBridge') {
+        this._onBridge(message.from, message.to);
       } else {
-        if (message.type && message.type === 'MExchange') {
-          this._onExchange(peerId, message);
-        } else if (message.type && message.type === 'MExchangeBack') {
-          this.emit('MExchangeBack-' + message.id, peerId, message);
-        } else if (message.type && message.type === 'MJoin') {
-          this._onJoin(peerId);
-        } else if (message.type && message.type === 'MLeave') {
-          this._onLeave(peerId);
-        } else if (message.type && message.type === 'MBridge') {
-          this._onBridge(message.from, message.to);
-        } else {
-          debugger;
-          throw new Error('_receive, message unhandled');
-        }
+        throw new Error('_receive, message unhandled');
       }
     }
   }, {
@@ -37581,6 +37555,45 @@ module.exports = INeighborhood;
 
 /***/ }),
 
+/***/ "./node_modules/neighborhood-wrtc/lib/messages/minternalsend.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/neighborhood-wrtc/lib/messages/minternalsend.js ***!
+  \**********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Message sent when protocolId wishes to send payload. It is a basic
+ * encapsualtion of protocolId.
+ */
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var MInternalSend =
+/**
+   * @param {string} peerId The identifier of the peer that sent the message
+   * @param {string} protocolId The identifier of the protocol that sent the
+   * message
+   * @param {object} payload The payload of the message.
+   */
+function MInternalSend(peerId, protocolId, payload) {
+  _classCallCheck(this, MInternalSend);
+
+  this.peer = peerId;
+  this.pid = protocolId;
+  this.payload = payload;
+  this.type = 'MInternalSend';
+};
+
+;
+
+module.exports = MInternalSend;
+
+/***/ }),
+
 /***/ "./node_modules/neighborhood-wrtc/lib/messages/mrequest.js":
 /*!*****************************************************************!*\
   !*** ./node_modules/neighborhood-wrtc/lib/messages/mrequest.js ***!
@@ -37740,6 +37753,7 @@ var INeighborhood = __webpack_require__(/*! ./interfaces/ineighborhood.js */ "./
 var MResponse = __webpack_require__(/*! ./messages/mresponse.js */ "./node_modules/neighborhood-wrtc/lib/messages/mresponse.js");
 var MRequest = __webpack_require__(/*! ./messages/mrequest.js */ "./node_modules/neighborhood-wrtc/lib/messages/mrequest.js");
 var MSend = __webpack_require__(/*! ./messages/msend.js */ "./node_modules/neighborhood-wrtc/lib/messages/msend.js");
+var MInternalSend = __webpack_require__(/*! ./messages/minternalsend.js */ "./node_modules/neighborhood-wrtc/lib/messages/minternalsend.js");
 
 // const ExLateMessage = require('./exceptions/exlatemessage.js')
 var ExProtocolExists = __webpack_require__(/*! ./exceptions/exprotocolexists.js */ "./node_modules/neighborhood-wrtc/lib/exceptions/exprotocolexists.js");
@@ -37772,7 +37786,7 @@ var Neighborhood = function () {
     this.options = {
       socketClass: Socket,
       peer: uuid(),
-      config: { iceServers: [], trickle: true, initiator: false },
+      config: { trickle: true, initiator: false },
       timeout: 1 * 60 * 1000,
       pendingTimeout: 10 * 1000,
       encoding: function encoding(d) {
@@ -37815,7 +37829,7 @@ var Neighborhood = function () {
       if (!this.protocols.has(protocol._pid())) {
         debug('[%s] protocol %s just registered.', this.PEER, protocol._pid());
         this.protocols.set(protocol._pid(), protocol);
-        return new INeighborhood(this.PEER, this._connect.bind(this, protocol._pid()), this._disconnect.bind(this, protocol._pid()), this._send.bind(this, protocol._pid()));
+        return new INeighborhood(this.PEER, this._connect.bind(this, protocol._pid()), this._disconnect.bind(this, protocol._pid()), this._send.bind(this, protocol._pid()), this._stream.bind(this, protocol._pid()), this._neighbours.bind(this));
       } else {
         throw new ExProtocolExists(protocol._pid());
       }
@@ -37915,7 +37929,11 @@ var Neighborhood = function () {
 
       socket.on('data', function (d) {
         var msg = _this.decode(d);
-        _this.protocols.get(msg.pid)._received(msg.peer, msg.payload);
+        if (msg.type === 'MInternalSend') {
+          _this._receiveInternalMessage(msg);
+        } else {
+          _this.protocols.get(msg.pid)._received(msg.peer, msg.payload);
+        }
       });
       socket.on('stream', function (s) {
         _this.protocols.get(entry.pid)._streamed(entry.peer, s);
@@ -37928,8 +37946,8 @@ var Neighborhood = function () {
       });
       // #4 send offer message using sender
       socket.on('signal', function (offer) {
-        if (socket.connected && socket._isNegotiating) {
-          sender(new MRequest(entry.tid, _this.PEER, protocolId, offer, 'renegociate'));
+        if (socket.connected && !socket._isNegociating) {
+          _this._sendRenegociateRequest(new MRequest(entry.tid, _this.PEER, protocolId, offer, 'renegociate'), entry.peer);
         } else {
           sender(new MRequest(entry.tid, _this.PEER, protocolId, offer));
         }
@@ -38004,7 +38022,7 @@ var Neighborhood = function () {
         // #C just signal the offer
         entry.peer = msg.peer;
         if (!msg.offer) {
-          //throw new ExIncompleteMessage('_finalize', entry, msg)
+          throw new ExIncompleteMessage('_finalize', entry, msg);
         } else {
           entry.socket.signal(msg.offer);
         };
@@ -38135,7 +38153,11 @@ var Neighborhood = function () {
 
           socket.on('data', function (d) {
             var msg = _this2.decode(d);
-            _this2.protocols.get(msg.pid)._received(msg.peer, msg.payload);
+            if (msg.type === 'MInternalSend') {
+              _this2._receiveInternalMessage(msg);
+            } else {
+              _this2.protocols.get(msg.pid)._received(msg.peer, msg.payload);
+            }
           });
           socket.on('stream', function (s) {
             _this2.protocols.get(entry.pid)._streamed(entry.peer, s);
@@ -38149,7 +38171,7 @@ var Neighborhood = function () {
           // #4 send offer message using sender
           socket.on('signal', function (offer) {
             if (socket.connected && !socket._isNegotiating) {
-              sender(new MResponse(entry.tid, _this2.PEER, protocolId, offer, 'renegociate'));
+              _this2._sendRenegociateResponse(new MResponse(entry.tid, _this2.PEER, protocolId, offer, 'renegociate'), entry.peer);
             } else {
               sender(new MResponse(entry.tid, _this2.PEER, protocolId, offer));
             }
@@ -38234,21 +38256,13 @@ var Neighborhood = function () {
        * @returns {promise} Resolved when the message is sent, reject
        * otherwise. Note that loss of messages is not handled by default.
        */
-    value: function _send(protocolId, peerIdp, message) {
+    value: function _send(protocolId, peerId, message) {
       var _this4 = this;
 
       var retry = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
       return new Promise(function (resolve, reject) {
         // #1 get the proper entry in the tables
-        var peerId = peerIdp;
-        /* if(peerId===message.from)
-           {
-             peerId=message.to;
-             console.log("Fix works")
-           }
-         */
-
         var entry = null;
         if (_this4.living.contains(peerId)) {
           entry = _this4.living.get(peerId);
@@ -38256,8 +38270,6 @@ var Neighborhood = function () {
           entry = _this4.dying.get(peerId); // (TODO) warn: not safe
         };
         if (entry === null) {
-          // console.log(protocolId, peerId, message, retry, this.living.store.size, this.dying.size)
-          //debugger
           reject(new Error('peer not found: ' + peerId));
         }
         // #2 define the recursive sending function
@@ -38280,6 +38292,146 @@ var Neighborhood = function () {
         // #3 start to send
         __send(0);
       });
+    }
+  }, {
+    key: '_stream',
+    value: function _stream(protocolId, peerId, media) {
+      var _this5 = this;
+
+      var retry = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+      return new Promise(function (resolve, reject) {
+        // #1 get the proper entry in the tables
+        var entry = null;
+        if (_this5.living.contains(peerId)) {
+          entry = _this5.living.get(peerId);
+        } else if (_this5.dying.has(peerId)) {
+          entry = _this5.dying.get(peerId); // (TODO) warn: not safe
+        };
+        if (entry === null) {
+          _this5.living.store.forEach(function (elem) {
+            debug(elem.peer);
+          });
+          reject(new Error('peer not found: ' + peerId));
+        }
+        // #2 define the recursive sending function
+        var __send = function __send(r) {
+          try {
+            entry.socket.addStream(media);
+            debug('[%s] --- MEDIA msg --> %s:%s', _this5.PEER, peerId, protocolId);
+            resolve();
+          } catch (e) {
+            debug('[%s] -X- MEDIA msg -X> %s:%s', _this5.PEER, peerId, protocolId);
+            if (r < retry) {
+              setTimeout(function () {
+                __send(r + 1);
+              }, 1000);
+            } else {
+              reject(e);
+            };
+          };
+        };
+        // #3 start to send
+        __send(0);
+      });
+    }
+  }, {
+    key: '_sendRenegociateRequest',
+    value: function _sendRenegociateRequest(request, to) {
+      var _this6 = this;
+
+      var retry = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      return new Promise(function (resolve, reject) {
+        // #1 get the proper entry in the tables
+        var entry = null;
+        if (_this6.living.contains(to)) {
+          entry = _this6.living.get(to);
+        } else if (_this6.dying.has(to)) {
+          entry = _this6.dying.get(to); // (TODO) warn: not safe
+        };
+        if (entry === null) {
+          _this6.living.store.forEach(function (elem) {
+            debug(elem.peer);
+          });
+          reject(new Error('peer not found: ' + to));
+        }
+        // #2 define the recursive sending function
+        var __send = function __send(r) {
+          try {
+            entry.socket.send(_this6.encode(new MInternalSend(_this6.PEER, null, request)));
+            debug('[%s] --- MEDIA Internal Renegociate msg --> %s:%s', _this6.PEER, to);
+            resolve();
+          } catch (e) {
+            debug('[%s] -X- MEDIA Internal Renegociate msg -X> %s:%s', _this6.PEER, to);
+            if (r < retry) {
+              setTimeout(function () {
+                __send(r + 1);
+              }, 1000);
+            } else {
+              reject(e);
+            };
+          };
+        };
+        // #3 start to send
+        __send(0);
+      });
+    }
+  }, {
+    key: '_sendRenegociateResponse',
+    value: function _sendRenegociateResponse(response, to) {
+      var _this7 = this;
+
+      var retry = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+      return new Promise(function (resolve, reject) {
+        // #1 get the proper entry in the tables
+        var entry = null;
+        if (_this7.living.contains(to)) {
+          entry = _this7.living.get(to);
+        } else if (_this7.dying.has(to)) {
+          entry = _this7.dying.get(to); // (TODO) warn: not safe
+        };
+        if (entry === null) {
+          _this7.living.store.forEach(function (elem) {
+            debug(elem.peer);
+          });
+          reject(new Error('peer not found: ' + to));
+        }
+        // #2 define the recursive sending function
+        var __send = function __send(r) {
+          try {
+            entry.socket.send(_this7.encode(new MInternalSend(_this7.PEER, null, response)));
+            debug('[%s] --- MEDIA Internal Renegociate msg --> %s:%s', _this7.PEER, to);
+            resolve();
+          } catch (e) {
+            debug('[%s] -X- MEDIA Internal Renegociate msg -X> %s:%s', _this7.PEER, to);
+            if (r < retry) {
+              setTimeout(function () {
+                __send(r + 1);
+              }, 1000);
+            } else {
+              reject(e);
+            };
+          };
+        };
+        // #3 start to send
+        __send(0);
+      });
+    }
+  }, {
+    key: '_receiveInternalMessage',
+    value: function _receiveInternalMessage(msg) {
+      this.living.get(msg.peer).socket.signal(msg.payload.offer);
+    }
+  }, {
+    key: '_neighbours',
+    value: function _neighbours() {
+      var neigh = [];
+      this.living.store.forEach(function (elem) {
+        neigh.push(elem);
+      });
+      return neigh;
     }
   }, {
     key: '_checkPendingEntry',
@@ -53165,6 +53317,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Communication = undefined;
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _MarkerManager = __webpack_require__(/*! ./MarkerManager/MarkerManager */ "./src/communication/MarkerManager/MarkerManager.js");
@@ -53287,15 +53441,15 @@ var Communication = exports.Communication = function () {
       stream.on('end', function () {
         var packet = JSON.parse(content);
         content = '';
-        debug('document', 'Message received', packet.pairs[0], 'from', id);
-        _this2.receive(packet.event, packet);
+        debug('document', 'Message received', packet.pairs, 'from', id);
+        _this2.receive(packet.event, packet, id);
       });
     }
   }, {
     key: "receive",
-    value: function receive(event, packet) {
+    value: function receive(event, packet, originID) {
       debug('communication receive ', event, packet);
-      this._document.emit(event, packet);
+      this._document.emit(event, _extends({}, packet, { originID: originID }));
     }
   }, {
     key: "close",
@@ -53396,34 +53550,24 @@ var Event = exports.Event = function (_EventEmitter) {
         value: function broadcast(message) {
             var _this2 = this;
 
+            var causal = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
             clearTimeout(this._timeoutBuffer);
 
-            this._buffer.push(message);
+            this._buffer.push(_extends({}, message, { causalId: this.getCausalId() }));
 
             this._timeoutBuffer = setTimeout(function () {
                 var msg = _this2.getPacket({ pairs: _this2._buffer });
-                msg = _this2.setBatchCounter(msg);
-                _this2.broadcastStream(_extends({}, msg, { stream: true }));
-
+                _this2.broadcastStream(_extends({}, msg, { stream: causal }));
                 debug('broadcast message', msg);
                 _this2._buffer = [];
             }, 1);
         }
     }, {
-        key: 'setBatchCounter',
-        value: function setBatchCounter(msg) {
-            var _this3 = this;
-
-            if (msg.pairs) {
-                msg.pairs.forEach(function (pair) {
-                    var causalId = _this3._communicationChannel.broadcast._causality.increment();
-                    pair.causalId = causalId;
-                });
-
-                return msg;
-            } else {
-                console.error("sending empty msg");
-            }
+        key: 'getCausalId',
+        value: function getCausalId() {
+            var causalId = this._communicationChannel.broadcast._causality.increment();
+            return causalId;
         }
     }, {
         key: 'broadcastStream',
@@ -53435,13 +53579,50 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'unicast',
         value: function unicast(id, message) {
-            var msg = this.getPacket(message);
-            this.unicastStream(id, _extends({}, msg, { stream: true }));
+            var causal = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+            var causalId = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+
+            if (!causalId) {
+                causalId = this.getCausalId();
+            }
+            var msg = this.getPacket({ pairs: [_extends({}, message, { causalId: causalId })] });
+            id = this.formatId(id);
+            this.unicastStream(id, _extends({}, msg, { stream: causal }));
+        }
+    }, {
+        key: 'formatId',
+        value: function formatId(id) {
+            debug('Id before formatiting', id);
+            var cleanId = this.cleanId(id);
+            cleanId = cleanId + '-I';
+            debug('Id after formatiting', cleanId);
+            return cleanId;
+        }
+    }, {
+        key: 'cleanId',
+        value: function cleanId(id) {
+
+            var fixedPart = id.slice(0, id.length - 4);
+            var varPart = id.slice(id.length - 4, id.length);
+
+            varPart = this.removeFromString('-I', varPart);
+            varPart = this.removeFromString('-O', varPart);
+            return fixedPart + varPart;
+        }
+    }, {
+        key: 'removeFromString',
+        value: function removeFromString(StringtoBeremove, s) {
+            var indexOfLast = s.lastIndexOf(StringtoBeremove);
+
+            if (indexOfLast >= 0) {
+                s = s.slice(0, indexOfLast) + s.slice(indexOfLast + StringtoBeremove.length);
+            }
+            return s;
         }
     }, {
         key: 'unicastStream',
         value: function unicastStream(id, msg) {
-            debug('message sent on stream');
+            debug('message sent on stream unicast');
             var stream = this._communicationChannel.streamUnicast(id);
             this.sendStream(stream, msg);
             this.setLastChangesTime();
@@ -53462,36 +53643,33 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'sendLocalBroadcast',
         value: function sendLocalBroadcast(msg) {
-            var _this4 = this;
+            var _this3 = this;
 
-            msg = this.setBatchCounter({ pairs: [msg] });
+            //msg=this.setBatchCounter({pairs:[msg]})
             this._communicationChannel.broadcast._source.getNeighbours().forEach(function (neighbourId) {
-                return _this4.unicast(neighbourId, msg);
+                return _this3.unicast(neighbourId, msg, false, _this3.getCausalId());
             });
         }
     }, {
         key: 'receiveBuffer',
         value: function receiveBuffer(_ref) {
-            var _this5 = this;
+            var _this4 = this;
 
             var pairs = _ref.pairs,
-                stream = _ref.stream;
+                stream = _ref.stream,
+                originID = _ref.originID;
 
             debug("receiveBuffer", this.getType(), pairs.length, pairs);
 
             // remove the first element since it has passed by _receive 
 
             if (pairs.length >= 1) {
-                if (stream) {
-                    this.passMsgByBroadcast(pairs[0]);
-                } else {
-                    this.receive(pairs[0]);
-                }
-
-                pairs.shift();
-
                 pairs.forEach(function (elem) {
-                    _this5.passMsgByBroadcast(elem);
+                    if (stream) {
+                        _this4.passMsgByBroadcast(elem, originID);
+                    } else {
+                        _this4.receive(elem);
+                    }
                 });
             } else {
                 console.warn("Receiving empty message");
@@ -53499,19 +53677,23 @@ var Event = exports.Event = function (_EventEmitter) {
         }
     }, {
         key: 'passMsgByBroadcast',
-        value: function passMsgByBroadcast(elem) {
+        value: function passMsgByBroadcast(elem, originID) {
+            var causalId = elem.pair && elem.pair.causalId || elem.causalId;
 
-            debug('passMsgByBroadcast:', elem);
-            //no causal id : it is an internal event, we use our own id
-            var causalId = elem.pair && elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e;
-            var broadcast = this._communicationChannel.broadcast;
+            debug('passMsgByBroadcast:', { elem: elem, originID: originID, causalId: causalId });
+
             // stream false to avoid to have a loop in the case of a stream
-
             var packet = this.getPacket({ pairs: [elem], stream: false });
             var isReady = elem.isReady;
+
+            var broadcast = this._communicationChannel.broadcast;
             var message = this.getBroadcastMessageFormat(broadcast._protocol, causalId, isReady, packet);
 
-            broadcast._receive(causalId.e + '-O', message);
+            if (!(message.id && message.id.e)) {
+                debugger;
+            }
+
+            broadcast._receive(causalId + '-O', message);
         }
     }, {
         key: 'sendBroadcast',
@@ -53552,6 +53734,7 @@ var Event = exports.Event = function (_EventEmitter) {
     }, {
         key: 'sendAction',
         value: function sendAction(name, args) {
+            debug('sendAction', args);
             this.Event(name + '_Action', args);
         }
     }, {
@@ -53999,6 +54182,11 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
         _this.on('Response', function (msg) {
             _this.receiveResponse(msg);
         });
+
+        setTimeout(function () {
+            _this.sendAntiEntropyRequest();
+        }, 1000);
+
         return _this;
     }
 
@@ -54050,7 +54238,7 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
                     this.sendAntiEntropyResponse(id, localVVwE, elements);
 
                     console.log("sendAction", 'Title', this._document.name);
-                    this.sendAction('Title', this._document.name);
+                    this.sendAction('Title', this._document.name, id);
                 }
             }
         }
@@ -54236,7 +54424,6 @@ var AntiEntropyManager = exports.AntiEntropyManager = function (_TextEvent) {
         key: 'sendAntiEntropyResponse',
         value: function sendAntiEntropyResponse(origin, causalityAtReceipt, elements) {
             var id = this._document._options.editingSessionID;
-            origin = origin + '-I';
             // #1 metadata of the antientropy response
             this.unicast(origin, { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
             debug('sendAntiEntropyResponse', { type: 'Response', id: id, causalityAtReceipt: causalityAtReceipt, elements: elements });
@@ -54325,10 +54512,9 @@ var InsertManager = exports.InsertManager = function (_TextEvent) {
 
             if (this.isItConvertibleToJSON(packet)) {
                 var pair = this.insertLSEQ(packet, position);
-                var causalID = this.getLSEQID({ pair: pair });
                 this._document.delta.ops.splice(position, 0, { insert: packet.content, attributes: packet.attributes });
-                debug('local Insert', { packet: packet, causalID: causalID, position: position, source: source });
 
+                debug('local Insert', { packet: packet, position: position, source: source });
                 if (source === 'user') {
                     {
                         this.broadcast({ id: this._document.uid,
@@ -54765,6 +54951,7 @@ var TitleManager = exports.TitleManager = function (_TextEvent) {
         var _this = _possibleConstructorReturn(this, (TitleManager.__proto__ || Object.getPrototypeOf(TitleManager)).call(this, _extends({ EventName: EventName }, opts)));
 
         _this._textManager = opts.TextManager;
+        _this._communicationChannel = _this._document._communication._behaviors_comm;
         _this.action = _this.sendChangeTitle;
         return _this;
     }
@@ -54778,12 +54965,22 @@ var TitleManager = exports.TitleManager = function (_TextEvent) {
     _createClass(TitleManager, [{
         key: 'sendChangeTitle',
         value: function sendChangeTitle(title) {
-            console.log('Title sent ');
+            var id = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+
+            debug('Title sent ', title);
             this._document.name = title;
-            this.broadcast({
+            var msg = {
                 id: this._document.uid,
                 title: title
-            });
+            };
+
+            if (!id) {
+                this.broadcast(msg);
+            } else {
+                debug('send title in unicast');
+                this.unicast(id, msg);
+            }
         }
     }, {
         key: 'receive',
@@ -54797,6 +54994,7 @@ var TitleManager = exports.TitleManager = function (_TextEvent) {
 
         value: function receive(msg) {
             this.emit('changeTitle', msg.title);
+            this._document.name = msg.title;
         }
     }]);
 

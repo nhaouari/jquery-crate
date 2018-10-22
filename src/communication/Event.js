@@ -44,35 +44,27 @@ export class Event extends EventEmitter {
         return {event: this.getType(),...message}
     }
 
-    broadcast(message){
-    clearTimeout(this._timeoutBuffer)
-
-    this._buffer.push(message)
-    
-    this._timeoutBuffer=setTimeout(()=>{
-        let msg = this.getPacket({pairs:this._buffer})
-        msg=this.setBatchCounter(msg)
-        this.broadcastStream({...msg,stream:true})
+    broadcast(message,causal=true){
+        clearTimeout(this._timeoutBuffer)
         
-        debug('broadcast message',msg)
-        this._buffer=[]
-   },1)
+        
+        this._buffer.push({...message,causalId:this.getCausalId()})
+        
+        this._timeoutBuffer=setTimeout(()=>{
+            let msg = this.getPacket({pairs:this._buffer})
+            this.broadcastStream({...msg,stream:causal})
+            debug('broadcast message',msg)
+            this._buffer=[]
+         },1)
     
     }
 
-    setBatchCounter(msg){
-        if(msg.pairs){
-        msg.pairs.forEach((pair)=>{
-            const causalId = this._communicationChannel.broadcast._causality.increment()  
-            pair.causalId=causalId  
-        })
-
-        return msg
-        } else {
-            console.error("sending empty msg")
-            
-        }
+    getCausalId(){
+        const causalId = this._communicationChannel.broadcast._causality.increment() 
+        return causalId 
     }
+
+    
 
 
     broadcastStream(msg) {
@@ -81,13 +73,44 @@ export class Event extends EventEmitter {
             this.setLastChangesTime()
     };
 
-    unicast(id,message){
-        const msg = this.getPacket(message)
-        this.unicastStream(id,{...msg,stream:true})  
+    unicast(id,message,causal=false,causalId=null){
+      if(!causalId) {
+        causalId=this.getCausalId()
+        }
+        const msg =this.getPacket({pairs:[{...message,causalId}]}) 
+        id=this.formatId(id)
+        this.unicastStream(id,{...msg,stream:causal})  
+    }
+
+    formatId(id){
+        debug('Id before formatiting', id)           
+        let cleanId= this.cleanId(id)
+        cleanId=cleanId+'-I'
+        debug('Id after formatiting', cleanId)  
+        return cleanId 
+    }
+
+    cleanId(id){
+           
+        const fixedPart= id.slice(0,id.length-4)
+        let varPart=id.slice(id.length-4,id.length)
+       
+        varPart=this.removeFromString('-I',varPart)
+        varPart=this.removeFromString('-O',varPart)
+         return fixedPart+varPart
+    }
+
+    removeFromString(StringtoBeremove,s) {
+        const indexOfLast=s.lastIndexOf(StringtoBeremove)
+
+        if(indexOfLast>=0) {
+            s= s.slice(0,indexOfLast)+s.slice(indexOfLast+StringtoBeremove.length)
+        }
+        return s
     }
 
     unicastStream(id,msg){
-        debug('message sent on stream');
+        debug('message sent on stream unicast');
         const stream= this._communicationChannel.streamUnicast(id)
         this.sendStream(stream,msg)
         this.setLastChangesTime()
@@ -105,28 +128,24 @@ export class Event extends EventEmitter {
 
     
     sendLocalBroadcast(msg){ 
-        msg=this.setBatchCounter({pairs:[msg]})
-        this._communicationChannel.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg)) 
+        //msg=this.setBatchCounter({pairs:[msg]})
+        this._communicationChannel.broadcast._source.getNeighbours().forEach(neighbourId =>this.unicast(neighbourId, msg,false,this.getCausalId())) 
     }
 
        
 
-    receiveBuffer({pairs,stream} ) {
+    receiveBuffer({pairs,stream,originID} ) {
         debug("receiveBuffer",this.getType(),pairs.length,pairs)
 
         // remove the first element since it has passed by _receive 
 
-        if(pairs.length>=1) {
-            if(stream) {
-                this.passMsgByBroadcast(pairs[0]) 
-            }else {
-                this.receive(pairs[0])
-            }  
-
-            pairs.shift()
-           
-            pairs.forEach(elem => {        
-                this.passMsgByBroadcast(elem)     
+        if(pairs.length>=1) { 
+            pairs.forEach(elem => {
+                if(stream) {
+                    this.passMsgByBroadcast(elem,originID) 
+                }else {
+                    this.receive(elem)
+                }       
             }) 
     
         } else {
@@ -136,19 +155,23 @@ export class Event extends EventEmitter {
      }
        
      
-    passMsgByBroadcast(elem){
-       
-       debug('passMsgByBroadcast:', elem)
-        //no causal id : it is an internal event, we use our own id
-        const causalId=elem.pair&& elem.pair.causalId || elem.causalId || this._communicationChannel.broadcast._causality.local.e
-        const broadcast=  this._communicationChannel.broadcast
-        // stream false to avoid to have a loop in the case of a stream
+    passMsgByBroadcast(elem,originID){
+        const causalId=elem.pair&& elem.pair.causalId || elem.causalId
 
+        debug('passMsgByBroadcast:', {elem,originID,causalId})
+
+        // stream false to avoid to have a loop in the case of a stream
         const packet=this.getPacket({pairs:[elem],stream:false}) 
         const isReady=elem.isReady
+
+        const broadcast=  this._communicationChannel.broadcast
         const message=this.getBroadcastMessageFormat(broadcast._protocol,causalId,isReady,packet)
-         
-        broadcast._receive(causalId.e+'-O',message)
+
+        if(!(message.id&&message.id.e)){
+            debugger
+        }
+
+        broadcast._receive(causalId+'-O',message)
      }
 
     sendBroadcast(msg,isReady= null){
@@ -181,6 +204,7 @@ export class Event extends EventEmitter {
     }
 
     sendAction(name,args){
+        debug('sendAction',args)
         this.Event(`${name}_Action`,args)
     }
 

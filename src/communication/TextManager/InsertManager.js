@@ -23,10 +23,9 @@ export class InsertManager extends TextEvent {
 
         if(this.isItConvertibleToJSON(packet)) {
             var pair = this.insertLSEQ(packet, position) 
-            const causalID= this.getLSEQID({pair})
             this._document.delta.ops.splice(position,0,{insert:packet.content,attributes:packet.attributes})               
-            debug('local Insert',{packet,causalID,position,source})
-            
+           
+            debug('local Insert',{packet,position,source})
             if (source==='user'){
             {
                 this.broadcast({id: this._document.uid,

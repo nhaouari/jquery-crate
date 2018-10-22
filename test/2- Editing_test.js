@@ -31,7 +31,7 @@ const addContext = require('mochawesome/addContext');
 describe('Editing Test ', function () {
     this.timeout(20000)
 
-    const testingValues=[[3,100,20,1],[8,100,20,1]]
+    const testingValues=[[3,100,20,1],[8,100,20,1],[20,100,20,1]]
     const prototype={nbSessions:0,timeBetweenInsertions:0,stringSize:0,times:0}
     const tests=utils.Simulation.structureArray(testingValues,prototype)
    

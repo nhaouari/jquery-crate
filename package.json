@@ -114,9 +114,9 @@
         "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
         "testAll": "karma start --single-run --browsers ChromeHeadless,FirefoxHeadless,IE karma.conf.js",
         "test": "karma start --browsers ChromeHeadless karma.conf.js",
-        "testMocha": "set DEBUG=*test* & mocha --inspect-brk --reporter mochawesome --compilers js:babel-core/register  --require babel-polyfill ./test/**/*test.js",
+        "testMochaDebug": "set DEBUG=*test* & mocha --inspect-brk --reporter mochawesome --compilers js:babel-core/register  --require babel-polyfill ./test/**/*test.js",
+        "testMocha": "mocha --inspect-brk --reporter mochawesome --compilers js:babel-core/register  --require babel-polyfill ./test/**/*test.js",
         "docs": "esdoc -c esdoc.json",
-        "babel": "babel --presets es2015 js/main.js -o build/main.bundle.js",
         "start": "http-server",
         "webpack": "webpack"
     },
