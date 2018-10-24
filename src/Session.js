@@ -1,0 +1,312 @@
+import Document from './document.js'
+import { Foglet } from 'foglet-core'
+import { GUID } from './utils/randomID'
+import merge from 'lodash.merge'
+import store from 'store'
+import { EventEmitter } from 'events'
+import fetch from 'node-fetch'
+
+/*!
+ * \brief transform the selected division into a distributed and decentralized 
+ * collaborative editor.
+ * \param options {
+ *   signalingOptions: configure the signaling service to join or share the
+ *     document. {address: http://example.of.signaling.service.address,
+ *                session: the-session-unique-identifier,
+ *                connect: true|false}
+ *   webRTCOptions: configure the STUN/TURN server to establish WebRTC
+ *     connections.
+ *   styleOptions: change the default styling options of the editor.
+ *   name: the name of the document
+ *   importFromJSON: the json object containing the aformentionned options plus
+ *     the saved sequence. If any of the other above options are specified, the
+ *     option in the json object are erased by them.
+ * }
+ */
+
+export default class Session extends EventEmitter {
+  /**
+  * 
+  * @param {*} options the different options of the document.
+  * @example 
+  const options = {
+  signalingOptions:{
+    session:editingSession,
+    address:configuration.signalingServer
+  },
+  storageServer: configuration.storageServer,
+  stun: configuration.stun, // default google ones if xirsys not
+  containerID: "content-default",
+  display: true
+}
+  */
+  constructor(options, sessionIndex, crate) {
+    /**
+     *      signalingServer: "https://carteserver.herokuapp.com/",
+            storageServer: "https://storagecrate.herokuapp.com",
+            stun: '23.21.150.121' // default google ones if xirsys not
+            editingSession: from URL
+            containerID:
+            you have to generate ID at this point
+     */
+    super()
+
+    this.sessionIndex = sessionIndex
+    this.crate = crate
+    // use defaultOptions to use them when we open other sessions
+    //@todo: make these options global
+    this._defaultOptions = {
+      ...options
+    }
+    this._options = {
+      ...options
+    }
+    this.openDocument()
+  }
+  /**
+   * open the document based on the given parameters
+   */
+  async openDocument() {
+    await this.setOptions()
+
+    this.buildDocument()
+  }
+
+  /**
+   * set the different options for the created document
+   */
+  async setOptions() {
+    this.setSignalingOptions()
+
+    await this.setWebRTCOptions()
+
+    this.setUser()
+
+    this.setDocumentTitle()
+    // This is id to ensure that we can open the same session in different tabs with (id of document + random text)
+    this.setTemporarySessionID()
+
+    this.setFogletOptions()
+  }
+
+  /**
+  * build the document and add it to the list of the documents
+  @description here we considered that one session contains one document.  when we created another document in the same page is in another session, if it is not action's opened it will received the changes. 
+  @todo add the possibility of adding other document in the same session, so all the changes will taken into consideration even if the open document is different. 
+   this is will be an optional choice for the users because it could create a high overhead in the network, 
+   for example in the case of a large number of linked document any change in any document will be broadcasted to all the users. 
+  */
+
+  buildDocument() {
+    this._documents = []
+    const doc = new Document({
+      _foglet: this._foglet,
+      ...this._options
+    })
+
+    this._documents.push(doc)
+
+    doc.init().then(() => {
+      this.emit('new_document', doc)
+    })
+  }
+
+  /**
+   * set Temporary Session ID to be able to open the document in different tabs for the same user.
+   * @description foglet is based on the id of the user, it will not work in the case of having two users with same id, this why we have add to the user id
+   * a random part to consider each tab as separate user in foglet but it will be considerd the same user in CRATE.
+   */
+
+  setTemporarySessionID() {
+    this._editingSessionID = this._options.user.id + '-' + GUID()
+    this._options.editingSessionID = this._editingSessionID
+  }
+
+  /**
+   * set Document Title
+   */
+  setDocumentTitle() {
+    this._options.name =
+      (this._options && this._options.name) ||
+      (this._options &&
+        this._options.importFromJSON &&
+        this._options.importFromJSON.title) ||
+      'Untitled document'
+  }
+
+  /**
+   * set the user information
+   * @description the default user is random if it is not stored in local storage of the browser.
+   */
+  setUser() {
+    let uid = this.GUID()
+    this._options.user = {
+      id: uid,
+      pseudo: 'Anonymous'
+    }
+
+    if (this._options.display && store.get('myId')) {
+      this._options.user = store.get('myId')
+    }
+  }
+
+  /**
+   * set WebRTCOptions
+   * @description  set the default options of ice Servers and replace them by the ice server if it is possible. if it run in node js use wrtc.
+   */
+  async setWebRTCOptions() {
+    if (!this._options.foglet) {
+      const addresses = await this.getICEs()
+
+      this._options.webRTCOptions = merge(
+        this._options.webRTCOptions,
+        {
+          config: {
+            iceServers: [
+              {
+                url: this._options.stun,
+                urls: this._options.stun
+              }
+            ]
+          }
+        },
+        {
+          config: {
+            iceServers: addresses.ice
+          },
+          trickle: true
+        }
+      )
+
+      this._options.webRTCOptions.config.iceServers.forEach(ice => {
+        ice.urls = ice.url
+      })
+    }
+
+    if (this._options.wrtc) {
+      this._options.webRTCOptions.wrtc = this._options.wrtc
+    }
+  }
+
+  /**
+   * Get ICES from signaling server
+   * @description here twillo is used to get list of ICEs servers, the script that generates the list of the servers is in the configuration "https://carteserver.herokuapp.com/ice"
+   */
+  async getICEs() {
+    return new Promise((resolve, reject) => {
+      const url = this._options.ICEsURL
+      fetch(url)
+        .then(resp => resp.json()) // Transform the data into json
+        .then(addresses => {
+          resolve(addresses)
+        })
+    })
+  }
+
+  /**
+   * set Signaling Options this includes the session ID and the signaling server
+   *
+   */
+  setSignalingOptions() {
+    const sessionID = this._options.signalingOptions.session
+    if (store.get('CRATE2-' + sessionID)) {
+      this._options.importFromJSON = store.get('CRATE2-' + sessionID)
+
+      this._options.signalingOptions = this._options.importFromJSON.signalingOptions
+    }
+    // Storage Server
+
+    this._options.storageServer =
+      (this._options && this._options.storageServer) || ''
+  }
+
+  /**
+   *  set Foglet options
+   */
+  setFogletOptions() {
+    const fogletOptions = {
+      id: this._options.editingSessionID,
+      verbose: true, // want some logs ? switch to false otherwise
+      rps: {
+        type: 'cyclon', //spray-wrtc,cyclon
+        options: {
+          maxPeers: 10,
+          a: 1,
+          b: 5,
+          protocol: this._options.signalingOptions.session, // foglet running on the protocol foglet-example, defined for spray-wrtc
+          webrtc: this._options.webRTCOptions,
+          timeout: 10 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
+          pendingTimeout: 5 * 1000,
+          delta: 120 * 1000, // spray-wrtc shuffle interval
+          signaling: {
+            ...this._options.signalingOptions,
+            room: this._options.signalingOptions.session
+          } // signaling options
+        }
+      }
+    }
+
+    this._options = merge(this._options, {
+      fogletOptions
+    })
+
+    this._foglet = new Foglet(this._options.fogletOptions)
+  }
+
+  /**
+   * Function that generates random ID.
+   */
+  GUID() {
+    return shortid.generate()
+  }
+
+  /**
+   *  get the id of the session
+   */
+  getId() {
+    return this._options.signalingOptions.session
+  }
+
+  /*
+   *  get the next session (in the same webpage)
+   */
+  getNext() {
+    return _next
+  }
+
+  /*
+   *  get the previous session (in the same webpage)
+   */
+  getPrevious() {
+    return _previous
+  }
+
+  /**
+   * focus on the next session
+   */
+  moveToNext() {
+    this.crate.moveToNext(this.sessionId)
+  }
+
+  /**
+   * focus on the previous session
+   */
+  moveToPrevious() {
+    this.crate.moveToPrevious(this.sessionId)
+  }
+  /**
+   * focus to a session based on sessionID
+   * @param {*} sessionId
+   */
+  goTo(sessionId) {
+    this.crate.goTo(sessionId)
+  }
+
+  /**
+   * close the session and stop the different timers
+   */
+  close() {
+    this._documents[0].close()
+    this.crate.removeSession(this.sessionId)
+  }
+}

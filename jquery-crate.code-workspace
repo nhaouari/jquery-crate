@@ -1,15 +1,33 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {
-		"workbench.colorCustomizations": {
-			"activityBar.background": "#023802"
-		},
-		"search.exclude": {
-		  },
-		  
-	},	
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "workbench.colorCustomizations": {
+      "activityBar.background": "#023802"
+    },
+    "search.exclude": {},
+    "eslint.autoFixOnSave": true,
+    "editor.formatOnSave": true,
+    "javascript.format.enable": false,
+    "prettier.eslintIntegration": true,
+    "saveAndRun": {
+      "commands": [
+        {
+          "match": "\\.js$",
+          "cmd": "clear",
+          "useShortcut": false,
+          "silent": false
+        },
+        {
+          "match": "\\.js$",
+          "cmd": "npm run test",
+          "useShortcut": false,
+          "silent": false
+        }
+      ]
+    }
+  }
 }
