@@ -1,123 +1,151 @@
 import Marker from './view/marker'
-import { SessionBuilder } from './SessionBuilder'
 import { ErrorHandler } from './helpers/ErrorHandler'
+import DocumentBuilder from './DocumentBuilder'
 
-export class Crate {
-  constructor(options = null, sessionBuilder = null) {
-    if (!sessionBuilder) {
-      sessionBuilder = SessionBuilder
+export default class Crate {
+  constructor(options = null, documentBuilder = null) {
+    if (!documentBuilder) {
+      documentBuilder = DocumentBuilder
     }
-    this.sessionBuilder = new sessionBuilder(options)
+    this.documentBuilder = new documentBuilder(options, this)
     // key=index,value=session
-    this._sessions = new Map()
-    // key=sessionId,value=sessionIndex
-    this._sessionIds = new Map()
+    this._documents = []
+    // key=sessionId,value=documentIndex
+    this._documentsIds = new Map()
     this.actualSessionIndex = -1
   }
 
-  getSessionIndexs() {
-    let keys = Array.from(this._sessions.keys())
+  getDocumentIndexs() {
+    let keys = Array.from(this._documents.keys())
     return keys
   }
 
-  getSession(index) {
-    return this._sessions.get(index)
+  getDocument(index) {
+    return this._documents[index]
   }
 
-  removeSession(sessionIndex) {
-    this._sessionIds.delete(this.getSessionIdFromIndex(sessionIndex))
-    this._sessions.delete(sessionIndex)
+  getNumberOfDocuments() {
+    return this._documents.length
   }
 
-  getNumberOfSessions() {
-    return this._sessions.size
+  //TODO: Prevent creating two session with the same id
+  async createNewDocument(documentId) {
+    let documentIndex = this.getIndexFromDocumentId(documentId)
+    if (!documentIndex && documentIndex != 0) {
+      const documentIndex = this.getNumberOfDocuments()
+      const doc = await this.documentBuilder.buildDocument(
+        documentId,
+        documentIndex
+      )
+      this._documentsIds.set(documentId, documentIndex)
+      this.addDocument(doc)
+      doc.init().then(() => {
+        this.setActualDocument(documentId)
+      })
+      return this
+    } else {
+      throw new Error('The session exist')
+    }
   }
 
-  createNewSession(sessionId) {
-    const session = this.sessionBuilder.buildSession(sessionId)
-    this._sessionIds.set(sessionId, this.getNumberOfSessions())
-    this.addSession(session)
+  addDocument(document) {
+    this._documents.push(document)
+    this.updateView()
+  }
+
+  removeDocument(documentIndex) {
+    if (this.exist(documentIndex)) {
+      //change the index off all the sessuib index more than this
+      this.getDocumentIndexs()
+        .filter(index => index > documentIndex)
+        .map(index => this.getDocument(index))
+        .map(document => {
+          this._documentsIds.set(
+            this.getDocumentIdFromIndex(document.documentIndex),
+            document.documentIndex - 1
+          )
+          document.documentIndex -= 1
+        })
+
+      // if the remove the actualDocument with change it to the prevouis
+      if (this.actualSessionIndex === documentIndex && documentIndex >= 1) {
+        this.setActualDocument(documentIndex - 1)
+      } else if (this.actualSessionIndex > documentIndex) {
+        this.actualSessionIndex--
+      }
+
+      this._documentsIds.delete(this.getDocumentIdFromIndex(documentIndex))
+      //change the new index in  the session
+
+      this._documents.splice(documentIndex, 1)
+      this.updateView()
+    } else {
+      throw new ErrorHandler().SESSION_NOT_FOUND(documentIndex)
+    }
+  }
+  focusInToDocument(documentIndex) {
+    if (this.exist(documentIndex)) {
+      this.getDocument(documentIndex).emit('FocusIn')
+    } else {
+      throw new ErrorHandler().SESSION_NOT_FOUND(documentIndex)
+    }
+  }
+
+  focusOutToDocument(documentIndex) {
+    if (this.exist(documentIndex)) {
+      this.getDocument(documentIndex).emit('FocusOut')
+    } else {
+      throw ErrorHandler().SESSION_NOT_FOUND(documentIndex)
+    }
+  }
+
+  getIndexFromDocumentId(documentId) {
+    return this._documentsIds.get(documentId)
+  }
+
+  getDocumentIdFromIndex(documentIndex) {
+    return this.getDocument(documentIndex).documentId
+  }
+
+  setActualDocument(documentId) {
+    const documentIndex = this.getIndexFromDocumentId(documentId)
+    if (
+      documentIndex !== undefined &&
+      this.actualSessionIndex != documentIndex
+    ) {
+      this.actualSessionIndex = documentIndex
+      this.focusInToDocument(documentIndex)
+
+      //emit FocusOut to all other sessions
+      this.getDocumentIndexs()
+        .filter(index => index != documentIndex)
+        .forEach(documentIndex => this.focusOutToDocument(documentIndex))
+    } else {
+      throw Error('Session ' + documentId + ' dose not exist')
+    }
+  }
+
+  getActualDocument() {
+    return this.getDocument(this.actualSessionIndex)
+  }
+
+  //TODO: remove this function
+  async addNewDocument(sessionId) {
+    let documentIndex = this.getIndexFromDocumentId(sessionId)
+    if (!documentIndex && documentIndex != 0) {
+      await this.createNewDocument(sessionId)
+      documentIndex = this.getIndexFromDocumentId(sessionId)
+    }
     return this
   }
 
-  addSession(session) {
-    this._sessions.set(this.getNumberOfSessions(), session)
-  }
-
-  focusInToSession(sessionIndex) {
-    if (this.getSession(sessionIndex)) {
-      this.getSession(sessionIndex).emit('FocusIn')
-    } else {
-      throw new ErrorHandler().SESSION_NOT_FOUND(sessionIndex)
-    }
-  }
-
-  focusOutToSession(sessionIndex) {
-    if (this.getSession(sessionIndex)) {
-      this.getSession(sessionIndex).emit('FocusOut')
-    } else {
-      throw ErrorHandler().SESSION_NOT_FOUND(sessionIndex)
-    }
-  }
-
-  getIndexFromSessionId(sessionId) {
-    return this._sessionIds.get(sessionId)
-  }
-
-  getSessionIdFromIndex(sessionIndex) {
-    return this.getSession(sessionIndex).sessionId
-  }
-
-  //TODO:add it to session class
-  convertLocalLinks() {
-    const linksToCrate = this.getAllLinksToCrate()
-    linksToCrate.forEach(link => {
-      link.onclick = () => {
-        let sessionId = this.href.split('?')[1]
-        this.openSession(sessionId)
-      }
+  updateView() {
+    this.getDocumentIndexs().forEach(documentIndex => {
+      this.getDocument(documentIndex).emit(
+        'UpdateView',
+        this.getNumberOfDocuments()
+      )
     })
-  }
-  //TODO:Move to session
-  getAllLinksToCrate() {
-    const linksToCrate = []
-    const links = $('#content-default a')
-    for (var link of links) {
-      if (link.href.includes(window.location.href.split('?')[0])) {
-        linksToCrate.push(link)
-      }
-    }
-    return linksToCrate
-  }
-
-  setActualSession(sessionId) {
-    const sessionIndex = this.getIndexFromSessionId(sessionId)
-    if (sessionIndex !== undefined && this.actualSessionIndex != sessionIndex) {
-      this.actualSessionIndex = sessionIndex
-      this.focusInToSession(sessionIndex)
-      this.getSessionIndexs()
-        .filter(index => index != sessionIndex)
-        .forEach(sessionIndex => this.focusOutToSession(sessionIndex))
-    } else {
-      throw Error('Session ' + sessionId + ' dose not exist')
-    }
-  }
-
-  getActualSession() {
-    return this.getSession(this.actualSessionIndex)
-  }
-
-  addNewSession(sessionId) {
-    let sessionIndex = this.getIndexFromSessionId(sessionId)
-    if (!sessionIndex && sessionIndex != 0) {
-      this.createNewSession(sessionId)
-      sessionIndex = this.getIndexFromSessionId(sessionId)
-    }
-    return this
-  }
-
-  updateView(sessionIndex) {
-    this.getSession(sessionIndex).emit('UpdateView', this.getNumberOfSessions())
   }
 
   /**
@@ -134,15 +162,15 @@ export class Crate {
     return this.moveTo(this.actualSessionIndex - 1)
   }
 
-  moveTo(sessionIndex) {
-    if (this.exist(sessionIndex)) {
-      this.setActualSession(this.getSessionIdFromIndex(sessionIndex))
+  moveTo(documentIndex) {
+    if (this.exist(documentIndex)) {
+      this.setActualDocument(this.getDocumentIdFromIndex(documentIndex))
     }
     return this
   }
 
-  exist(sessionIndex) {
-    return this.getSession(sessionIndex) !== undefined
+  exist(documentIndex) {
+    return this.getDocument(documentIndex) !== undefined
   }
 }
 

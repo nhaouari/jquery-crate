@@ -1,22 +1,19 @@
 import { ImageDrop } from 'quill-image-drop-module'
-import { ImageResize } from 'quill-image-resize-module';
+import { ImageResize } from 'quill-image-resize-module'
+import { GUID } from '../helpers/randomID'
 
 export class QuillManager {
-
-  constructor(editorContainerID, comments) {
+  constructor(editorContainerID, comments, editor) {
     this._editorContainerID = editorContainerID
     this._comments = comments
-    
+    this._editor = editor
   }
-  
-  registerModules () {
 
-    
-    Quill.register('modules/cursors', QuillCursors);
-    Quill.register('modules/comment', QuillComment);
-    Quill.register('modules/imageDrop', ImageDrop);
+  registerModules() {
+    Quill.register('modules/cursors', QuillCursors)
+    Quill.register('modules/comment', QuillComment)
+    Quill.register('modules/imageDrop', ImageDrop)
     //Quill.register('modules/imageResize', ImageResize);
-    
   }
 
   getQuill() {
@@ -27,18 +24,18 @@ export class QuillManager {
         toolbar: {
           container: this.getToolbarOptions(),
           handlers: {
-            subdocument: function (value) {
-              let range = this.quill.getSelection();
+            subdocument: function(value) {
+              let range = this.quill.getSelection()
               // let preview = this.quill.getText(range);
-              let preview = window.location.href.split('?')[0] + '?' + session.default.GUID();
-              let tooltip = this.quill.theme.tooltip;
-              tooltip.edit('link', preview);
+              let preview = window.location.href.split('?')[0] + '?' + GUID()
+              let tooltip = this.quill.theme.tooltip
+              tooltip.edit('link', preview)
             },
-            undo: function (value) {
-              this.quill.history.undo();
+            undo: function(value) {
+              this.quill.history.undo()
             },
-            redo: function (value) {
-              this.quill.history.redo();
+            redo: function(value) {
+              this.quill.history.redo()
             }
           }
         },
@@ -49,8 +46,8 @@ export class QuillManager {
       },
 
       theme: 'snow'
-    });
-/** ImageResize: {
+    })
+    /** ImageResize: {
           modules: [ 'Resize', 'DisplaySize', 'Toolbar' ],
           handleStyles: {
             backgroundColor: 'black',
@@ -63,32 +60,41 @@ export class QuillManager {
 
     // hook changing the editor when click on save link ==> open in the document
     quill.theme.tooltip.save2 = quill.theme.tooltip.save
-
-    quill.theme.tooltip.save = function () {
+    const self = this
+    quill.theme.tooltip.save = function() {
       quill.theme.tooltip.save2()
-      session.default.openIn()
+      self._editor.convertLocalLinks()
     }
 
     return quill
   }
   getToolbarOptions() {
     const toolbarOptions = [
-      [{
-        'header': [1, 2, 3, 4, 5, 6, false]
-      }],
-      [{
-        'font': []
-      }],
+      [
+        {
+          header: [1, 2, 3, 4, 5, 6, false]
+        }
+      ],
+      [
+        {
+          font: []
+        }
+      ],
       ['bold', 'italic', 'underline', 'strike'], // toggled buttons
       // custom button values
-      [{
-        'align': []
-      }],
-      [{
-        'list': 'ordered'
-      }, {
-        'list': 'bullet'
-      }],
+      [
+        {
+          align: []
+        }
+      ],
+      [
+        {
+          list: 'ordered'
+        },
+        {
+          list: 'bullet'
+        }
+      ],
       //  [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
       // [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
       /* [{
@@ -99,22 +105,21 @@ export class QuillManager {
                'size': ['small', false, 'large', 'huge']
              }], // custom dropdown*/
 
-      [{
-        'color': []
-      }, {
-        'background': []
-      }], // dropdown with defaults from theme
+      [
+        {
+          color: []
+        },
+        {
+          background: []
+        }
+      ], // dropdown with defaults from theme
       ['clean'], // remove formatting button
       /*['blockquote', 'code-block'],*/
       ['formula', 'image', 'link'],
       ['subdocument'],
       ['comments-toggle'], // comment color on/off
       ['comments-add'] // comment add
-
-    ];
-
-
-
+    ]
 
     return toolbarOptions
   }
@@ -152,20 +157,22 @@ export class QuillManager {
     return opts
   }
   addExtraToolbarOptions() {
-    $(".ql-subdocument .ql-comments-toggle .ql-comments-add").attr('data-toggle', 'tooltip');
-    $(".ql-comments-toggle,.ql-comments-add").css({
-      "position": "relative",
-      "top": "-5px"
-    });
+    $('.ql-subdocument .ql-comments-toggle .ql-comments-add').attr(
+      'data-toggle',
+      'tooltip'
+    )
+    $('.ql-comments-toggle,.ql-comments-add').css({
+      position: 'relative',
+      top: '-5px'
+    })
 
-    $(".ql-subdocument").html('<strong>SUB</strong>');
-    $(".ql-subdocument").attr('title', 'Add subdocument');
+    $('.ql-subdocument').html('<strong>SUB</strong>')
+    $('.ql-subdocument').attr('title', 'Add subdocument')
 
-    $('.ql-comments-toggle').html('<i class="fa fa-comments"></i>');
-    $(".ql-comments-toggle").attr('title', 'Show/hide comments');
+    $('.ql-comments-toggle').html('<i class="fa fa-comments"></i>')
+    $('.ql-comments-toggle').attr('title', 'Show/hide comments')
 
-
-    $('.ql-comments-add').html('<i class="fa fa-comment"></i>');
-    $(".ql-comments-add").attr('title', 'Add comment');
+    $('.ql-comments-add').html('<i class="fa fa-comment"></i>')
+    $('.ql-comments-add').attr('title', 'Add comment')
   }
 }

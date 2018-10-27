@@ -1,18 +1,11 @@
-import {
-  Comments
-} from "../view/comments"
-import {
-  EventEmitter
-} from "events"
+import { Comments } from '../view/comments'
+import { EventEmitter } from 'events'
 
-import {
-  QuillManager
-} from "./QuillManger"
+import { QuillManager } from './QuillManger'
 
-import {MarkerViewManager} from "./MarkerViewManager"
+import { MarkerViewManager } from './MarkerViewManager'
 
 var debug = require('debug')('crate:view:editor')
-
 
 /**
  * EditorController this the link between the core functions and the interface.
@@ -21,7 +14,7 @@ var debug = require('debug')('crate:view:editor')
 export class EditorController extends EventEmitter {
   /**
    * [constructor description]
-   * @param  {[doc]} document  this is the object that contains all proprieties of a document.    
+   * @param  {[doc]} document  this is the object that contains all proprieties of a document.
    * @param  {[string]} sessionID [description]
    */
   constructor(document, sessionID, editorContainerID) {
@@ -32,18 +25,15 @@ export class EditorController extends EventEmitter {
      */
     this._document = document
     /**
-     *  ViewEditor the used editor, here it is Quill editor 
+     *  ViewEditor the used editor, here it is Quill editor
      *  @see  https://quilljs.com/
      * @type {Quill}
      */
-  
+
     this._editorContainerID = editorContainerID
 
     this._comments = {}
     this._sessionID = sessionID
-
-    this.loadDocument()
- 
   }
 
   /**
@@ -51,48 +41,54 @@ export class EditorController extends EventEmitter {
    * @param {string} sessionID the session ID of the document
    * @return {[type]} [description]
    */
-  loadDocument() {   
+  loadDocument() {
     this._comments = new Comments(this)
-    this._quillManager = new QuillManager(this._editorContainerID, this._comments)
+    this._quillManager = new QuillManager(
+      this._editorContainerID,
+      this._comments,
+      this
+    )
     this.viewEditor = this._quillManager.getQuill()
   }
 
-
-  initDocument(){
+  initDocument() {
+    this.loadDocument()
     this.initCommunicationModules()
-    
+
     this.loadLocalContent(this._sessionID)
-    
-    this._comments.init(this).addAuthorInformation().UpdateComments()
+
+    this._comments
+      .init(this)
+      .addAuthorInformation()
+      .UpdateComments()
 
     this.startEventListeners()
   }
 
-  initCommunicationModules(){
-    this.markerManager= this._document._communication.markerManager
-    this.textManager= this._document._communication.textManager
-    this._MarkerViewManager=new MarkerViewManager(this.markerManager,this)
+  initCommunicationModules() {
+    this.markerManager = this._document._communication.markerManager
+    this.textManager = this._document._communication.textManager
+    this._MarkerViewManager = new MarkerViewManager(this.markerManager, this)
   }
 
   /**
    * load content from localStorage if it exist
-   * @param {*} sessionID 
+   * @param {*} sessionID
    */
-  loadLocalContent(){
-    if (store.get("CRATE2-" +  this._sessionID)) {
-    const doc = store.get("CRATE2-" +  this._sessionID)
-    this.viewEditor.setContents(doc.delta, "user")
-    jQuery(`#${this._editorContainerID} #title`).text(doc.title)
-    session.default.openIn(); // this is to convert the links to inside links
+  loadLocalContent() {
+    if (store.get('CRATE2-' + this._sessionID)) {
+      const doc = store.get('CRATE2-' + this._sessionID)
+      this.viewEditor.setContents(doc.delta, 'user')
+      jQuery(`#${this._editorContainerID} #title`).text(doc.title)
+      this.convertLocalLinks() // this is to convert the links to inside links
+    }
   }
-  }
-
 
   /**
    * Start all the event listeners related to the editor
    */
   startEventListeners() {
-    // Local events 
+    // Local events
     this.viewEditor.on('selection-change', (range, oldRange, source) => {
       if (range) {
         this.markerManager.caretMoved(range)
@@ -102,7 +98,6 @@ export class EditorController extends EventEmitter {
     this.viewEditor.on('text-change', (delta, oldDelta, source) => {
       this.textChange(delta, oldDelta, source)
       this.emit('thereAreChanges')
-
     })
 
     // Remote events
@@ -111,18 +106,16 @@ export class EditorController extends EventEmitter {
       this.emit('thereAreChanges')
     })
 
-    this.textManager._removeManager.on('remoteRemove', (index) => {
+    this.textManager._removeManager.on('remoteRemove', index => {
       this.remoteRemove(index)
       this.emit('thereAreChanges')
     })
 
-    //At the reception of Title changed operation 
-    this.textManager._titleManager.on('changeTitle', (title) => {
+    //At the reception of Title changed operation
+    this.textManager._titleManager.on('changeTitle', title => {
       jQuery(`#${this._editorContainerID} #title`).text(title)
       this.emit('thereAreChanges')
     })
-
-
   }
 
   /**
@@ -137,7 +130,6 @@ export class EditorController extends EventEmitter {
     this.applyChanges(delta, 0)
   }
 
-
   /**
    * applyChanges Send delta object with attributes character by character starting from  the position "iniRetain"  ]
    * @param  {[type]} delta     [description]
@@ -145,21 +137,17 @@ export class EditorController extends EventEmitter {
    * @return {[type]}           [description]
    */
   applyChanges(delta, iniRetain) {
-    
-      let start = iniRetain
+    let start = iniRetain
 
-      let Operations = this.getOperations(delta)
+    let Operations = this.getOperations(delta)
 
-      Operations.map(operation=>{
-        start= this.sendIt(operation, start, false)
-      })
-    
-
+    Operations.map(operation => {
+      start = this.sendIt(operation, start, false)
+    })
   }
 
-
   /**
-   * sendIt Send the changes character by character 
+   * sendIt Send the changes character by character
    * @param  {[type]}  text              [description]
    * @param  {[type]}  operation.Attributes               [description]
    * @param  {[type]}  start             [description]
@@ -171,68 +159,66 @@ export class EditorController extends EventEmitter {
    */
   sendIt(operation, start, isItInsertWithAtt) {
     switch (operation.Name) {
-      case "retain":  
-        this.sendFormat(start,operation)  
+      case 'retain':
+        this.sendFormat(start, operation)
         break
 
-      case "insert":
-        this.sendInsert(start,operation) 
+      case 'insert':
+        this.sendInsert(start, operation)
         break
 
-      case "delete":
-        this.sendDelete(start,operation,isItInsertWithAtt)
-      break
+      case 'delete':
+        this.sendDelete(start, operation, isItInsertWithAtt)
+        break
     }
-    return this.getNextIndex(start,operation)
+    return this.getNextIndex(start, operation)
   }
 
+  getNextIndex(index, operation) {
+    debug('getNextIndex', { index, operation })
+    let nextIndex = index
 
- getNextIndex(index,operation) {
-  debug('getNextIndex',{index,operation})
-  let nextIndex=index
-  
-  if (operation.Name==='insert'&&operation.Type==="text") {
-    nextIndex=index+ operation.Value.length
-  }
-
-  if (operation.Name==='insert'&&operation.Type!="text") {
-    nextIndex=index+ 1
-  }
-
-  if (operation.Name==='retain'&&operation.Attributes==="") {
-    nextIndex=index+ operation.Value
-  }
-
-  debug('getNextIndex',{nextIndex})
-  return nextIndex
-}
-
-/**inline operations */
-
-isItBlock(Attributes){
-  const props=['blockquote','header','indent','list','align','direction','code-block']
-  let a=Object.getOwnPropertyNames(Attributes);
-  
-  let found = false
-	a.forEach((att)=>{
-    
-    const index= props.indexOf(att)
-    if(index>-1){
-      found= true
+    if (operation.Name === 'insert' && operation.Type === 'text') {
+      nextIndex = index + operation.Value.length
     }
-  })
-  return found
-}
 
+    if (operation.Name === 'insert' && operation.Type != 'text') {
+      nextIndex = index + 1
+    }
 
-  
+    if (operation.Name === 'retain' && operation.Attributes === '') {
+      nextIndex = index + operation.Value
+    }
 
-  
- 
+    debug('getNextIndex', { nextIndex })
+    return nextIndex
+  }
 
+  /**inline operations */
 
-  
-/**
+  isItBlock(Attributes) {
+    const props = [
+      'blockquote',
+      'header',
+      'indent',
+      'list',
+      'align',
+      'direction',
+      'code-block'
+    ]
+    let a = Object.getOwnPropertyNames(Attributes)
+
+    let found = false
+    a.forEach(att => {
+      const index = props.indexOf(att)
+      if (index > -1) {
+        found = true
+      }
+    })
+    return found
+  }
+
+  /**
  *   the value in this case is the end of format 
 
   insert the changed text with the new attributes
@@ -244,14 +230,14 @@ isItBlock(Attributes){
  * @param {*} start 
  */
 
- sendFormat(start,operation) {
-    if (operation.Attributes != "") {
+  sendFormat(start, operation) {
+    if (operation.Attributes != '') {
       let isItInsertWithAtt = true
-      let s=start
-      let length= operation.Value
+      let s = start
+      let length = operation.Value
 
-      let blocAttributes= null
-     /* if(this.isItBlock(operation.Attributes)&&s>0){
+      let blocAttributes = null
+      /* if(this.isItBlock(operation.Attributes)&&s>0){
         s-=1
         blocAttributes=operation.Attributes
         const range= this.viewEditor.getSelection()
@@ -266,68 +252,67 @@ isItBlock(Attributes){
       }
 */
       // 2 Get delta of the insert text with attributes
-      const delta = this.getDelta(s, s+length)     
-      const operations = this.getOperations(delta) 
-      const insertOperations = operations.filter(op => op.Name==="insert");
-      
-      insertOperations.map((op)=>{  
-        if(this.isItComplete(op.Attributes)) { 
-          let opp= op 
-          if(blocAttributes){
-           opp.Attributes={...opp.Attributes,...blocAttributes}
+      const delta = this.getDelta(s, s + length)
+      const operations = this.getOperations(delta)
+      const insertOperations = operations.filter(op => op.Name === 'insert')
+
+      insertOperations.map(op => {
+        if (this.isItComplete(op.Attributes)) {
+          let opp = op
+          if (blocAttributes) {
+            opp.Attributes = { ...opp.Attributes, ...blocAttributes }
           }
-          this.sendDelete(s,opp,isItInsertWithAtt)
-          s=this.sendInsert(s,opp)
+          this.sendDelete(s, opp, isItInsertWithAtt)
+          s = this.sendInsert(s, opp)
         }
       })
-      
-      } 
-     }
-      
-        /** sometimes we receive the attributes one by one if they are not complete yet we wait
+    }
+  }
+
+  /** sometimes we receive the attributes one by one if they are not complete yet we wait
    * we have to specify the first attrubyte that appears and the their number
    */
   isItComplete(attributes) {
-    if(attributes.hasOwnProperty('commentAuthor') && Object.keys(attributes).length<5) {
+    if (
+      attributes.hasOwnProperty('commentAuthor') &&
+      Object.keys(attributes).length < 5
+    ) {
       return false
     }
     return true
   }
-  sendInsert(index,Operation){
-    if (Operation.Type==="text") {
-      this.sendCharByChar(Operation.Value,index)  
-    } else {     
-      this.insert(Operation.Type,Operation.Value,index)
+  sendInsert(index, Operation) {
+    if (Operation.Type === 'text') {
+      this.sendCharByChar(Operation.Value, index)
+    } else {
+      this.insert(Operation.Type, Operation.Value, index)
     }
-    return index + Operation.Length  
+    return index + Operation.Length
   }
 
-  sendCharByChar(text,index){
-    for (let i = index; i < (index + text.length); ++i) {
-      debug('send [%]',text[i - index])
-      this.insert('char',text[i - index],i)
+  sendCharByChar(text, index) {
+    for (let i = index; i < index + text.length; ++i) {
+      debug('send [%]', text[i - index])
+      this.insert('char', text[i - index], i)
     }
   }
 
-  sendDelete(index,operation,isItInsertWithAtt){
-    console.log('Send delete',index,operation,isItInsertWithAtt );
-    //to ensure that the editor contains just \n without any attributes 
+  sendDelete(index, operation, isItInsertWithAtt) {
+    console.log('Send delete', index, operation, isItInsertWithAtt)
+    //to ensure that the editor contains just \n without any attributes
     if (!isItInsertWithAtt) {
       this._comments.UpdateComments()
     }
     // Delete caracter by caracter
-    for (var i = index; i < (index + operation.Length); ++i) {
+    for (var i = index; i < index + operation.Length; ++i) {
       this.textManager._removeManager.remove(index)
     }
-    
   }
 
-
-  insert(type,content,position) {
+  insert(type, content, position) {
     const attributes = this.viewEditor.getFormat(position, 1)
-    const packet = {type,content,attributes}
-    this.textManager._insertManager.insert({packet, position})
-
+    const packet = { type, content, attributes }
+    this.textManager._insertManager.insert({ packet, position })
   }
 
   /**
@@ -339,29 +324,36 @@ isItBlock(Attributes){
   remoteInsert(element, indexp) {
     var index = indexp - 1
 
-    debug("Remote Insert : ", element, index)
+    debug('Remote Insert : ', element, index)
 
     if (index !== -1) {
+      if (element.type === 'char') {
+        this.viewEditor.insertText(
+          index,
+          element.content,
+          element.attributes,
+          'silent'
+        )
 
-        if(element.type==="char") {
-          this.viewEditor.insertText(index, element.content, element.attributes, 'silent')
-
-          if (element.content != "\n") {
-            this.viewEditor.removeFormat(index, 1, 'silent')
-          }
-        } else {
-          this.viewEditor.insertEmbed(index, element.type, element.content[element.type], 'silent')
+        if (element.content != '\n') {
+          this.viewEditor.removeFormat(index, 1, 'silent')
         }
+      } else {
+        this.viewEditor.insertEmbed(
+          index,
+          element.type,
+          element.content[element.type],
+          'silent'
+        )
+      }
 
-        if (element.attributes) {
-        if (element.text != "\n") {
+      if (element.attributes) {
+        if (element.text != '\n') {
           this.viewEditor.formatLine(index, element.attributes, 'silent')
           this.viewEditor.formatText(index, 1, element.attributes, 'silent')
         }
         this.updateCommentsLinks()
       }
-
-
     }
   }
 
@@ -371,74 +363,96 @@ isItBlock(Attributes){
    * @return {[type]}       [description]
    */
   remoteRemove(index) {
-    debug("Remote remove : ", index)
+    debug('Remote remove : ', index)
     let removedIndex = index - 1
     if (removedIndex !== -1) {
       this.viewEditor.deleteText(removedIndex, 1, 'silent')
-      this.updateCommentsLinks()  
+      this.updateCommentsLinks()
     }
   }
 
-  getDelta(start,end) {
+  getDelta(start, end) {
     return this.viewEditor.editor.delta.slice(start, end)
   }
 
-  updateCommentsLinks(){
+  updateCommentsLinks() {
     clearTimeout(this._timeout)
-    this._timeout = setTimeout(()=>{ 
-      session.default.openIn()
+    this._timeout = setTimeout(() => {
+      this.convertLocalLinks()
       this._comments.UpdateComments()
-    }, 2000);
+    }, 2000)
+  }
+
+  convertLocalLinks() {
+    const linksToCrate = this.getAllLinksToCrate()
+    linksToCrate.forEach(link => {
+      link.onclick = () => {
+        let sessionId = link.href.split('?')[1]
+        this._document.createNewDocument(sessionId)
+      }
+    })
+  }
+
+  getAllLinksToCrate() {
+    const linksToCrate = []
+    const links = $(`#${this._document._view._editorContainerID} a`)
+    for (let link of links) {
+      if (link.href.includes(window.location.href.split('?')[0])) {
+        linksToCrate.push(link)
+      }
+    }
+    return linksToCrate
   }
 
   getOperations(changesDelta) {
-    const operations = changesDelta.ops.map(op=>this.extractOperationInformation(op) )
+    const operations = changesDelta.ops.map(op =>
+      this.extractOperationInformation(op)
+    )
     return operations
   }
 
-  extractOperationInformation(op){
+  extractOperationInformation(op) {
     const operation = Object.keys(op)
-    let Name = ""
-    let Attributes = ""
-    let Value = ""
-    let Length= 1
-
+    let Name = ''
+    let Attributes = ''
+    let Value = ''
+    let Length = 1
 
     // extract attributes from the operation in the case of there existance
     for (let i = operation.length - 1; i >= 0; i--) {
       const v = op[operation[i]]
-      if (operation[i] === "attributes") {
+      if (operation[i] === 'attributes') {
         Attributes = v
       } else {
         Name = operation[i]
         Value = v
       }
     }
-    const Type= this.getTypeOfContent(Value)
+    const Type = this.getTypeOfContent(Value)
 
-    if(Name === 'delete') {
-      Length=Value
-    } else if(Type === 'text') {
-      Length=Value.length
+    if (Name === 'delete') {
+      Length = Value
+    } else if (Type === 'text') {
+      Length = Value.length
     }
 
- 
-    debug('extractOperationInformation',{Name,Value,Attributes,Type,Length})
-    return {Name,Value,Attributes,Type,Length}
+    debug('extractOperationInformation', {
+      Name,
+      Value,
+      Attributes,
+      Type,
+      Length
+    })
+    return { Name, Value, Attributes, Type, Length }
   }
 
-  getTypeOfContent(value){
- 
-      if (value.formula != undefined)
-          return 'formula'
-      
-      if (value.video != undefined)
-          return 'video'
-     
-      if (value.image != undefined)
-          return 'image'
-      
-      return 'text'
-    }
-    
+  getTypeOfContent(value) {
+    if (value.formula != undefined) return 'formula'
+
+    if (value.video != undefined) return 'video'
+
+    if (value.image != undefined) return 'image'
+
+    return 'text'
+  }
 }

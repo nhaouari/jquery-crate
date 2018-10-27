@@ -13,18 +13,20 @@
     "editor.formatOnSave": true,
     "javascript.format.enable": false,
     "prettier.eslintIntegration": true,
-    "saveAndRun": {
+    "saveAndRunExt": {
       "commands": [
         {
           "match": "\\.js$",
-          "cmd": "clear",
-          "useShortcut": false,
+          "isShellCommand": false,
+          "cmd": "workbench.action.terminal.clear",
+          "useShortcut": true,
           "silent": false
         },
         {
           "match": "\\.js$",
+          "isShellCommand": true,
           "cmd": "npm run test",
-          "useShortcut": false,
+          "useShortcut": true,
           "silent": false
         }
       ]

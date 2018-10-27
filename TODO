@@ -3,8 +3,8 @@ Todo:
     ✔ Remove static function of session @done(18-10-23 18:59)
     ✔ creat a new class main.js @done(18-10-23 19:00)
     ✔ create sessionBuilder class @done(18-10-23 19:00)
-    ☐ Do some tests for both class
-    ☐ refactor sessions class
+    ✔ Do some tests for both class @done(18-10-24 19:30)
+    ☐ refactor sessions class @started(18-10-24 19:31)
     ☐ test session class
 
   

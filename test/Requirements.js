@@ -7,7 +7,9 @@ import wrtc from 'wrtc'
 var debug = require('debug')('CRATE:test:RequirementsTester')
 
 export class RequirementsTester {
-  constructor() {}
+  constructor() {
+    this.candidates = []
+  }
 
   async getWorkingICEs(ICEs) {
     let workingICEs = 0
@@ -24,13 +26,16 @@ export class RequirementsTester {
   }
 
   async checkStunTurn(server, timeout = 2000) {
-    /* server = {
+    /*server = {
       url: 'turn:172.16.9.236:3478?transport=udp',
       username: 'username',
       credential: 'password'
     }*/
-    console.log(server)
-    return new Promise(function(resolve, reject) {
+    /*server = {
+      url: 'stun:172.16.9.1:3478'
+    }*/
+
+    return new Promise((resolve, reject) => {
       var promiseResolved = false
 
       var RTCPeerConnection = wrtc.RTCPeerConnection
@@ -44,20 +49,29 @@ export class RequirementsTester {
       let pc = new RTCPeerConnection(opts)
 
       debug('options:' + opts)
-      pc.onicecandidate = function(candidate) {
+
+      const obj = this
+      pc.onicecandidate = candidate => {
         if (candidate.candidate) {
-          if (candidate.candidate.candidate.indexOf('typ relay') > -1) {
-            // sometimes sdp contains the ice candidates...
-            promiseResolved = true
-            resolve(true)
-          }
+          obj.candidates.push(obj.parseCandidate(candidate.candidate.candidate))
+        } else {
+          const result = obj.getFinalResult(server)
+          promiseResolved = true
+          resolve(result)
+        }
+      }
+
+      pc.gatheringStateChange = () => {
+        if (pc.iceGatheringState === 'complete') {
+          const result = obj.getFinalResult(server)
+          resolve(result)
         }
       }
 
       setTimeout(() => {
         if (promiseResolved) return
-        resolve(false)
-        promiseResolved = true
+        const result = obj.getFinalResult(server)
+        resolve(result)
       }, timeout)
 
       pc.createDataChannel('test')
@@ -68,6 +82,44 @@ export class RequirementsTester {
     })
   }
 
+  parseCandidate(text) {
+    const candidateStr = 'candidate:'
+    const pos = text.indexOf(candidateStr) + candidateStr.length
+    let [
+      foundation,
+      component,
+      protocol,
+      priority,
+      address,
+      port,
+      ,
+      type
+    ] = text.substr(pos).split(' ')
+    return {
+      component: component,
+      type: type,
+      foundation: foundation,
+      protocol: protocol,
+      address: address,
+      port: port,
+      priority: priority
+    }
+  }
+
+  // Try to determine authentication failures and unreachable TURN
+  // servers by using heuristics on the candidate types gathered.
+  getFinalResult(server) {
+    // get the candidates types (host, srflx, relay)
+    const types = this.candidates.map(cand => cand.type)
+
+    if (server.urls[0].indexOf('turn:') === 0) {
+      if (types.indexOf('relay') !== -1) {
+        return true
+      }
+    }
+
+    return false
+  }
   async checkSignalingServer(url) {
     const response = await fetch(url)
     if (response.status !== 200) {

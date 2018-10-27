@@ -3,7 +3,7 @@
   "version": "1.0.1",
   "author": "Noureddine HAOUARi <haouarin@gmail.com>",
   "description": "this is the core of CRATEv2 application",
-  "main": "./src/index.js",
+  "main": "./src/main.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/haouarin/jquery-crate.git"
@@ -48,12 +48,14 @@
     "webrtcsupport": "^2.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.0.0-beta.49",
+    "@babel/cli": "^7.1.2",
+    "@babel/core": "^7.1.2",
     "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.49",
     "@babel/plugin-transform-destructuring": "^7.0.0",
     "@babel/preset-env": "^7.0.0-beta.49",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.4",
+    "babel-plugin-add-module-exports": "^1.0.0",
     "babel-plugin-dynamic-import-node": "^1.2.0",
     "babel-plugin-syntax-dynamic-import": "^6.18.0",
     "babel-plugin-transform-builtin-extend": "^1.1.2",
@@ -111,14 +113,10 @@
     ]
   },
   "scripts": {
-    "debug": "browserify lib/session.js --standalone session --debug > build/jquery-crate.bundle.debug.js",
-    "build": "browserify lib/session.js --standalone session > build/jquery-crate.bundle.json",
-    "watch": "watchify lib/session.js --standalone session -o build/jquery-crate.bundle.js -d -v",
     "test": "mocha --compilers js:babel-core/register  --require babel-polyfill ./test/**/*test.js",
     "testMochaDebug": "set DEBUG=*test* & mocha --inspect-brk --reporter mochawesome --compilers js:babel-core/register  --require babel-polyfill ./test/**/*test.js",
     "testMocha": "mocha --inspect-brk --reporter mochawesome --compilers js:babel-core/register  --require babel-polyfill ./test/**/*test.js",
     "docs": "esdoc -c esdoc.json",
-    "start": "http-server",
     "webpack": "webpack"
   },
   "babel": {
