@@ -313,6 +313,9 @@ export class EditorController extends EventEmitter {
     const attributes = this.viewEditor.getFormat(position, 1)
     const packet = { type, content, attributes }
     this.textManager._insertManager.insert({ packet, position })
+    if (Object.keys(attributes).length > 0) {
+      this.updateCommentsLinks()
+    }
   }
 
   /**
@@ -380,14 +383,18 @@ export class EditorController extends EventEmitter {
     this._timeout = setTimeout(() => {
       this.convertLocalLinks()
       this._comments.UpdateComments()
-    }, 2000)
+    }, 500)
   }
 
   convertLocalLinks() {
     const linksToCrate = this.getAllLinksToCrate()
+
     linksToCrate.forEach(link => {
-      link.onclick = () => {
-        let sessionId = link.href.split('?')[1]
+      let sessionId = link.attr('id') || link.attr('href').split('?')[1]
+      link.attr('href', '#')
+      link.attr('id', sessionId)
+      link.addClass('CrateSessionID')
+      link[0].onclick = () => {
         this._document.createNewDocument(sessionId)
       }
     })
@@ -396,8 +403,12 @@ export class EditorController extends EventEmitter {
   getAllLinksToCrate() {
     const linksToCrate = []
     const links = $(`#${this._document._view._editorContainerID} a`)
-    for (let link of links) {
-      if (link.href.includes(window.location.href.split('?')[0])) {
+    for (let l of links) {
+      const link = $(l)
+      if (
+        l.href.includes(window.location.href.split('?')[0]) ||
+        l.className.includes('CrateSessionID')
+      ) {
         linksToCrate.push(link)
       }
     }

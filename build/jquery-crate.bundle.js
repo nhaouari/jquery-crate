@@ -53768,6 +53768,8 @@ var _statesheader = __webpack_require__(/*! ./view/statesheader.js */ "./src/vie
 
 var _editor = __webpack_require__(/*! ./view/editor */ "./src/view/editor.js");
 
+var _CrateDecorator = __webpack_require__(/*! ./view/CrateDecorator */ "./src/view/CrateDecorator.js");
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var View = exports.View = function () {
@@ -53778,6 +53780,8 @@ var View = exports.View = function () {
 
     this._options = options;
     this._document = document;
+    this.crate = this._document.crate;
+
     this._editorsHolderID = editorsContainerID;
     this._editorContainerID = 'container-' + this._options.signalingOptions.session;
 
@@ -53811,6 +53815,8 @@ var View = exports.View = function () {
     //TODO:this.viewEditor.focus()
 
     this._editor = new _editor.EditorController(this._document, this._options.signalingOptions.session, this._editorContainerID);
+
+    _CrateDecorator.CrateDecorator.addMoveShortcuts(crate);
   }
 
   _createClass(View, [{
@@ -53931,20 +53937,34 @@ var View = exports.View = function () {
   }, {
     key: 'focusOut',
     value: function focusOut() {
+      jQuery('#container-' + this._document.documentId).removeClass('activeEditor');
       console.log('FocusOuT', this._document.documentId);
     }
   }, {
     key: 'focusIn',
     value: function focusIn() {
-      console.log('FocusIn', this._document.documentId);
+      jQuery('#container-' + this._document.documentId).addClass('activeEditor');
+
+      var moveToIndex = this._document.documentIndex;
+      if (moveToIndex >= 1) {
+        moveToIndex--;
+      }
+
+      var moveToDocumentId = this._document.crate.getDocumentIdFromIndex(moveToIndex);
+      jQuery('html, body').animate({
+        scrollLeft: jQuery('#container-' + moveToDocumentId).offset().left - 10
+      }, 'slow');
+      this._editor.viewEditor.focus();
     }
   }, {
     key: 'updateView',
     value: function updateView(numberOfDocuments) {
       console.log('uodateView', this._document.documentId);
       if (numberOfDocuments > 1) {
+        jQuery('#content-default').css('cssText', 'width:calc(53% * ' + numberOfDocuments + ') !important');
         this.splitedScreen();
       } else {
+        jQuery('#content-default').css('cssText', 'width:100% !important');
         this.fullScreen();
       }
     }
@@ -53968,11 +53988,11 @@ var View = exports.View = function () {
       // remove it from the browser
       jQuery('#' + this._editorContainerID).remove();
     }
-  }, {
-    key: 'findremote',
-
 
     //TODO:Create a special class for remote session
+
+  }, {
+    key: 'findremote',
     value: function findremote(firsttime) {
       var _this4 = this;
 
@@ -54059,45 +54079,10 @@ var View = exports.View = function () {
         });
       }
     }
-  }], [{
-    key: 'addMoveShortcuts',
-    value: function addMoveShortcuts() {
-      var _this7 = this;
-
-      // custom prev next page event
-
-      var codes = {
-        37: 'prev',
-        39: 'next'
-      };
-
-      document.addEventListener && // Modern browsers only
-      document.addEventListener('keydown', function (e) {
-        var code = codes[e.keyCode];
-        if ((e.ctrlKey || e.metaKey) && code) {
-          var evt = document.createEvent('Event');
-          evt.initEvent(code, true, false);
-          e.target.dispatchEvent(evt); // dispatch on current target. Event will bubble up to window
-          e.preventDefault(); // opera defaut fix
-        }
-      }, false);
-
-      // or using jQuery
-
-      $(document).on('next', function () {
-        _this7._document.moveToNext();
-      });
-
-      $(document).on('prev', function () {
-        _this7._document.moveToPrevious();
-      });
-    }
   }]);
 
   return View;
 }();
-
-View.addMoveShortcuts();
 
 /***/ }),
 
@@ -56060,20 +56045,31 @@ var Crate = function () {
           document.documentIndex -= 1;
         });
 
-        // if the remove the actualDocument with change it to the prevouis
-        if (this.actualSessionIndex === documentIndex && documentIndex >= 1) {
-          this.setActualDocument(documentIndex - 1);
-        } else if (this.actualSessionIndex > documentIndex) {
-          this.actualSessionIndex--;
-        }
-
-        this._documentsIds.delete(this.getDocumentIdFromIndex(documentIndex));
+        var documentId = this.getDocumentIdFromIndex(documentIndex);
+        this._documentsIds.delete(documentId);
         //change the new index in  the session
-
         this._documents.splice(documentIndex, 1);
+
+        this.updateActualDocumentIndex(documentIndex);
         this.updateView();
       } else {
         throw new _ErrorHandler.ErrorHandler().SESSION_NOT_FOUND(documentIndex);
+      }
+    }
+  }, {
+    key: 'updateActualDocumentIndex',
+    value: function updateActualDocumentIndex(removedIndex) {
+      // if we remove the selected document move to previous if exist, else move to next if exist, else set  actualSessionIndex = -1
+      if (this.actualSessionIndex === removedIndex) {
+        if (this.exist(removedIndex - 1)) {
+          this.setActualDocument(this.getDocumentIdFromIndex(removedIndex - 1));
+        } else if (this.exist(removedIndex + 1)) {
+          this.setActualDocument(this.getDocumentIdFromIndex(removedIndex + 1));
+        } else {
+          this.actualSessionIndex = -1;
+        }
+      } else if (this.actualSessionIndex > documentIndex) {
+        this.actualSessionIndex--;
       }
     }
   }, {
@@ -56223,6 +56219,79 @@ exports.default = Crate;
 
 Crate.Marker = _marker2.default;
 module.exports = exports.default;
+
+/***/ }),
+
+/***/ "./src/view/CrateDecorator.js":
+/*!************************************!*\
+  !*** ./src/view/CrateDecorator.js ***!
+  \************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/**This class is to add functions for the main class when display is true */
+var CrateDecorator = exports.CrateDecorator = function () {
+  function CrateDecorator() {
+    _classCallCheck(this, CrateDecorator);
+  }
+
+  _createClass(CrateDecorator, null, [{
+    key: 'addMoveShortcuts',
+
+    /**
+     * add ctrl+left arrow and ctrl+right arrow shortcuts for the editor
+     * @param crate  crate instance
+     */
+    value: function addMoveShortcuts(crate) {
+      // custom prev next page event
+      if (!crate.addMoveShortcuts) {
+        crate.addMoveShortcuts = function () {
+          var _this = this;
+
+          var codes = {
+            37: 'prev',
+            39: 'next'
+          };
+
+          document.addEventListener && // Modern browsers only
+          document.addEventListener('keydown', function (e) {
+            var code = codes[e.keyCode];
+            if ((e.ctrlKey || e.metaKey) && code) {
+              var evt = document.createEvent('Event');
+              evt.initEvent(code, true, false);
+              e.target.dispatchEvent(evt); // dispatch on current target. Event will bubble up to window
+              e.preventDefault(); // opera defaut fix
+            }
+          }, false);
+
+          $(document).on('next', function () {
+            console.log('nnnnnext');
+            _this.moveToNext();
+          });
+
+          $(document).on('prev', function () {
+            console.log('pppppprev');
+            _this.moveToPrevious();
+          });
+        };
+        crate.addMoveShortcuts();
+      }
+    }
+  }]);
+
+  return CrateDecorator;
+}();
 
 /***/ }),
 
@@ -57207,6 +57276,9 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var attributes = this.viewEditor.getFormat(position, 1);
       var packet = { type: type, content: content, attributes: attributes };
       this.textManager._insertManager.insert({ packet: packet, position: position });
+      if (Object.keys(attributes).length > 0) {
+        this.updateCommentsLinks();
+      }
     }
 
     /**
@@ -57274,7 +57346,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       this._timeout = setTimeout(function () {
         _this5.convertLocalLinks();
         _this5._comments.UpdateComments();
-      }, 2000);
+      }, 500);
     }
   }, {
     key: 'convertLocalLinks',
@@ -57282,9 +57354,13 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
       var _this6 = this;
 
       var linksToCrate = this.getAllLinksToCrate();
+
       linksToCrate.forEach(function (link) {
-        link.onclick = function () {
-          var sessionId = link.href.split('?')[1];
+        var sessionId = link.attr('id') || link.attr('href').split('?')[1];
+        link.attr('href', '#');
+        link.attr('id', sessionId);
+        link.addClass('CrateSessionID');
+        link[0].onclick = function () {
           _this6._document.createNewDocument(sessionId);
         };
       });
@@ -57300,9 +57376,10 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
 
       try {
         for (var _iterator = links[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var link = _step.value;
+          var l = _step.value;
 
-          if (link.href.includes(window.location.href.split('?')[0])) {
+          var link = $(l);
+          if (l.href.includes(window.location.href.split('?')[0]) || l.className.includes('CrateSessionID')) {
             linksToCrate.push(link);
           }
         }

@@ -1,11 +1,14 @@
 import { LinkView } from './view/link.js'
 import { StatesHeader } from './view/statesheader.js'
 import { EditorController } from './view/editor'
+import { CrateDecorator } from './view/CrateDecorator'
 
 export class View {
   constructor(options, document, editorsContainerID) {
     this._options = options
     this._document = document
+    this.crate = this._document.crate
+
     this._editorsHolderID = editorsContainerID
     this._editorContainerID = `container-${
       this._options.signalingOptions.session
@@ -43,6 +46,8 @@ export class View {
       this._options.signalingOptions.session,
       this._editorContainerID
     )
+
+    CrateDecorator.addMoveShortcuts(crate)
   }
 
   init() {
@@ -228,18 +233,42 @@ export class View {
   }
 
   focusOut() {
+    jQuery(`#container-${this._document.documentId}`).removeClass(
+      'activeEditor'
+    )
     console.log('FocusOuT', this._document.documentId)
   }
 
   focusIn() {
-    console.log('FocusIn', this._document.documentId)
+    jQuery(`#container-${this._document.documentId}`).addClass('activeEditor')
+
+    let moveToIndex = this._document.documentIndex
+    if (moveToIndex >= 1) {
+      moveToIndex--
+    }
+
+    const moveToDocumentId = this._document.crate.getDocumentIdFromIndex(
+      moveToIndex
+    )
+    jQuery('html, body').animate(
+      {
+        scrollLeft: jQuery(`#container-${moveToDocumentId}`).offset().left - 10
+      },
+      'slow'
+    )
+    this._editor.viewEditor.focus()
   }
 
   updateView(numberOfDocuments) {
     console.log('uodateView', this._document.documentId)
     if (numberOfDocuments > 1) {
+      jQuery(`#content-default`).css(
+        'cssText',
+        `width:calc(53% * ${numberOfDocuments}) !important`
+      )
       this.splitedScreen()
     } else {
+      jQuery(`#content-default`).css('cssText', `width:100% !important`)
       this.fullScreen()
     }
   }
@@ -265,40 +294,6 @@ export class View {
     }
     // remove it from the browser
     jQuery(`#${this._editorContainerID}`).remove()
-  }
-
-  static addMoveShortcuts() {
-    // custom prev next page event
-
-    let codes = {
-      37: 'prev',
-      39: 'next'
-    }
-
-    document.addEventListener && // Modern browsers only
-      document.addEventListener(
-        'keydown',
-        function(e) {
-          const code = codes[e.keyCode]
-          if ((e.ctrlKey || e.metaKey) && code) {
-            const evt = document.createEvent('Event')
-            evt.initEvent(code, true, false)
-            e.target.dispatchEvent(evt) // dispatch on current target. Event will bubble up to window
-            e.preventDefault() // opera defaut fix
-          }
-        },
-        false
-      )
-
-    // or using jQuery
-
-    $(document).on('next', () => {
-      this._document.moveToNext()
-    })
-
-    $(document).on('prev', () => {
-      this._document.moveToPrevious()
-    })
   }
 
   //TODO:Create a special class for remote session
@@ -379,5 +374,3 @@ export class View {
     }
   }
 }
-
-View.addMoveShortcuts()

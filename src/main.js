@@ -67,20 +67,30 @@ export default class Crate {
           document.documentIndex -= 1
         })
 
-      // if the remove the actualDocument with change it to the prevouis
-      if (this.actualSessionIndex === documentIndex && documentIndex >= 1) {
-        this.setActualDocument(documentIndex - 1)
-      } else if (this.actualSessionIndex > documentIndex) {
-        this.actualSessionIndex--
-      }
-
-      this._documentsIds.delete(this.getDocumentIdFromIndex(documentIndex))
+      const documentId = this.getDocumentIdFromIndex(documentIndex)
+      this._documentsIds.delete(documentId)
       //change the new index in  the session
-
       this._documents.splice(documentIndex, 1)
+
+      this.updateActualDocumentIndex(documentIndex)
       this.updateView()
     } else {
       throw new ErrorHandler().SESSION_NOT_FOUND(documentIndex)
+    }
+  }
+
+  updateActualDocumentIndex(removedIndex) {
+    // if we remove the selected document move to previous if exist, else move to next if exist, else set  actualSessionIndex = -1
+    if (this.actualSessionIndex === removedIndex) {
+      if (this.exist(removedIndex - 1)) {
+        this.setActualDocument(this.getDocumentIdFromIndex(removedIndex - 1))
+      } else if (this.exist(removedIndex + 1)) {
+        this.setActualDocument(this.getDocumentIdFromIndex(removedIndex + 1))
+      } else {
+        this.actualSessionIndex = -1
+      }
+    } else if (this.actualSessionIndex > documentIndex) {
+      this.actualSessionIndex--
     }
   }
   focusInToDocument(documentIndex) {
