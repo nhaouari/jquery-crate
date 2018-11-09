@@ -1,5 +1,5 @@
-import animals from "animals"
-import hash from "string-hash"
+import animals from 'animals'
+import hash from 'string-hash'
 var debug = require('debug')('CRATE:Communication:MarkerManager:Marker')
 
 /**
@@ -10,7 +10,7 @@ export default class Marker {
   /**
    * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
    * @param {[string]}  origin the id of the the user
-   * @param {Number}  lifeTime After this time, if no ping or Caret position is received => 
+   * @param {Number}  lifeTime After this time, if no ping or Caret position is received =>
    * remove caret and avatar. if lifetime is -1 we didn't add the avatar
    * @param {[{index: index,length: 0}]}  range  range stars from index with the specified length
    * @param {[cursor module]}  cursorsp the used cursor module for quilljs
@@ -21,17 +21,16 @@ export default class Marker {
   constructor(origin, options, editor) {
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
 
-
-    if (origin===undefined) {
-      console.error("origin not defined",origin);
+    if (origin === undefined) {
+      console.error('origin not defined', origin)
     }
-    if (editor===undefined) {
-      console.error("editor not defined",editor);
+    if (editor === undefined) {
+      console.error('editor not defined', editor)
     }
 
-    if(Object.keys(editor).length === 0 && editor.constructor === Object) { console.error("editor is empty",editor); }
-
-
+    if (Object.keys(editor).length === 0 && editor.constructor === Object) {
+      console.error('editor is empty', editor)
+    }
 
     if (options == null) {
       var options = {
@@ -46,22 +45,21 @@ export default class Marker {
      * @type {[type]}
      */
 
-
     this.options = options
-    this.origin = origin;
+    this.origin = origin
 
     /**
-     * lifeTime After this time, if no ping or Caret position is received => 
+     * lifeTime After this time, if no ping or Caret position is received =>
      * remove caret and avatar. if lifetime is -1 we don't add the avatar
      * @type {[type]}
      */
-    this.lifeTime = options.lifeTime;
+    this.lifeTime = options.lifeTime
 
     /**
      * used to store last update time to detected outdated users
      * @type {Date}
      */
-    this.time = new Date().getTime();
+    this.time = new Date().getTime()
 
     /**
      * color rgb(r,g,b)
@@ -74,7 +72,6 @@ export default class Marker {
      * @type {String}
      */
     this.colorRGBLight = this.constructor.getColor(this.origin, 'rgba')
-
 
     /**
      * auto generated pseudo name (from animals list)
@@ -89,34 +86,32 @@ export default class Marker {
     this.pseudoName = this.constructor.getPseudoname(this.origin)
 
     /**
-     * add or not the avatar 
+     * add or not the avatar
      * @type {Boolean}
      */
-    this.avatarAdd = false;
+    this.avatarAdd = false
 
     /**
      * true for an editor, false if it is from a ping
      * @type {[type]}
      */
-    this.cursor = options.cursor;
-
+    this.cursor = options.cursor
 
     this._editor = editor
-
 
     if (editor) {
       this._editorContainerID = editor._editorContainerID
     }
 
-    if (this.lifeTime != -1) { // -1 => created without timer avatar cursor 
+    if (this.lifeTime != -1) {
+      // -1 => created without timer avatar cursor
       if (options.isItMe) {
         this.addAvatar()
       } else if (this.cursor) {
-        this.addCursor(options.range);
+        this.addCursor(options.range)
       }
     }
   }
-
 
   /**
    * capitalize uppercase the first letter
@@ -124,9 +119,8 @@ export default class Marker {
    * @return {[string]}   [String the first letter is in uppercase]
    */
   static capitalize(s) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  };
-
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  }
 
   /**
    * getColor for a specific id, get a unique color
@@ -134,29 +128,34 @@ export default class Marker {
    * @return {[(r,g,b))]}     [the corresponding rgb color]
    */
   static getColor(str, format = 'rgb') {
-    var h1 = hash(str) % 206;
-    var h2 = (h1 * 7) % 206;
-    var h3 = (h1 * 11) % 206;
-    let color = Math.floor(h1 + 50) + ", " + Math.floor(h2 + 50) + ", " + Math.floor(h3 + 50)
+    var h1 = hash(str) % 206
+    var h2 = (h1 * 7) % 206
+    var h3 = (h1 * 11) % 206
+    let color =
+      Math.floor(h1 + 50) +
+      ', ' +
+      Math.floor(h2 + 50) +
+      ', ' +
+      Math.floor(h3 + 50)
     if (format === 'rgb') {
-      return 'rgb(' + color + ')';
+      return 'rgb(' + color + ')'
     }
 
     if (format === 'rgba') {
-      return 'rgba(' + color + ')';
+      return 'rgba(' + color + ')'
     }
 
     return color
   }
 
-
   static getPseudoname(id, format = 'Anonymous') {
-
     if (format === 'Anonymous') {
-      return 'Anonymous ' +
-        this.capitalize(animals.words[hash(id) % animals.words.length]);
+      return (
+        'Anonymous ' +
+        this.capitalize(animals.words[hash(id) % animals.words.length])
+      )
     }
-    return animals.words[hash(id) % animals.words.length];
+    return animals.words[hash(id) % animals.words.length]
   }
   /**
    * update the time to keep the avatar and cursor if it exist
@@ -164,44 +163,45 @@ export default class Marker {
    * @param  {[boolean]} cursor [if it is true add update the caret position]
    */
   update(range, cursor) {
-    this.time = new Date().getTime();
+    this.time = new Date().getTime()
     let editor = $(`#${this._editorContainerID}`)
     let avatar = $(`#${this._editorContainerID} #${this.origin}`)
 
     if (!avatar.length && editor.length) {
-      this.addAvatar();
+      this.addAvatar()
     }
 
     if (this.avatarAdd) {
-      avatar.attr('data-toggle', 'tooltip');
-      avatar.attr('title', this.pseudoName);
+      avatar.attr('data-toggle', 'tooltip')
+      avatar.attr('title', this.pseudoName)
     }
-    if (this.cursor == true && cursor == true) { // in the case of update, make sure that ping updates don't change the range
+    if (this.cursor == true && cursor == true) {
+      // in the case of update, make sure that ping updates don't change the range
 
-      this._editor.viewEditor.getModule('cursors').moveCursor(this.origin, range);
-
+      this._editor.viewEditor
+        .getModule('cursors')
+        .moveCursor(this.origin, range)
     } else if (cursor == true) {
-      this.cursor = cursor;
-      this.addCursor(range);
+      this.cursor = cursor
+      this.addCursor(range)
     }
     return this
-  };
-
+  }
 
   /**
-   * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
+   * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar
    */
   checkIfOutdated() {
-    var timeNow = new Date().getTime();
-    var dff = (timeNow - this.time);
-    // if  cursor  is outdated 
-    if ((timeNow - this.time) >= this.lifeTime) {
+    var timeNow = new Date().getTime()
+    var dff = timeNow - this.time
+    // if  cursor  is outdated
+    if (timeNow - this.time >= this.lifeTime) {
       // Remve cursor and avatar
       if (this.cursor) {
-        this._editor.viewEditor.getModule('cursors').removeCursor(this.origin);
-        this.cursor = false;
+        this._editor.viewEditor.getModule('cursors').removeCursor(this.origin)
+        this.cursor = false
       }
-      this.removeAvatar();
+      this.removeAvatar()
       return true
     } else {
       // jQuery(`#${this._editorContainerID} #${this.origin}`).css('opacity', (1 - ((timeNow - this.time) / this.lifeTime)));
@@ -209,19 +209,16 @@ export default class Marker {
     }
   }
 
-
-
   /*
    * addAvatar addAvatar of the user to the editor with corresponding divID
    * @param {String} divID [the id of the div where the avatars are placed]
    */
-  addAvatar(divID = "#users") {
- 
-    jQuery(`#${this._editorContainerID} ${divID}`).append(this.getAvatar());
+  addAvatar(divID = '#users') {
+    jQuery(`#${this._editorContainerID} ${divID}`).append(this.getAvatar())
     let avatar = $(`#${this._editorContainerID} #${this.origin}`)
     avatar.attr('data-toggle', 'tooltip')
     avatar.attr('title', this.pseudoName)
-    this.avatarAdd = true;
+    this.avatarAdd = true
 
     if (!this.options.isItMe) {
       /**
@@ -229,40 +226,58 @@ export default class Marker {
        * @return {[type]}   [description]
        */
 
-      this.timer = setInterval(() => this.checkIfOutdated(), 1000);
+      this.timer = setInterval(() => this.checkIfOutdated(), 1000)
     }
     return this
-  };
+  }
 
   /**
    * getAvatar return a div that contains this user id
    * @return {[type]} [description]
    */
   getAvatar() {
-    return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="./icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
-  };
-
+    return (
+      '<div id="' +
+      this.origin +
+      '"style="background-color:' +
+      this.colorRGB +
+      ';"><img class="imageuser" src="/icons/' +
+      this.animal +
+      '.png" alt="' +
+      this.pseudoName +
+      '"></div>'
+    )
+  }
 
   /**
    * getAvatar return the div that contains this user id
    * @return {[type]} [description]
    */
   static getAvatar(id) {
-    return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
-  };
+    return (
+      '<div id="' +
+      id +
+      '"style="background-color:' +
+      this.getColor(id, 'rgb') +
+      ';"><img class="imageuser" src="/icons/' +
+      this.getPseudoname(id, null) +
+      '.png" alt="' +
+      this.getPseudoname(id) +
+      '"></div>'
+    )
+  }
 
   /**
    * removeAvatar remove the avatar of the user from the interface
    * @return {[type]} [description]
    */
   removeAvatar() {
-
     let avatar = $(`#${this._editorContainerID} #${this.origin}`)
     avatar.remove()
-    this.avatarAdd = false;
-    clearInterval(this.timer);
+    this.avatarAdd = false
+    clearInterval(this.timer)
     return this
-  };
+  }
 
   /**
    * setPseudo set pseudo  for the user
@@ -273,20 +288,20 @@ export default class Marker {
     this.pseudoName = Pseudo
     let avatar = $(`#${this._editorContainerID} #${this.origin}`)
     if (avatar.length) {
-      avatar.attr('title', this.pseudoName);
+      avatar.attr('title', this.pseudoName)
     }
     return this
-  };
+  }
 
   /**
    * addCursor add the cursor to the editor
    * @param {[{index: index,length: 0}]} range [description]
    */
   addCursor(range) {
-    this.cursor = true;
-    this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
+    this.cursor = true
+    this._editor.viewEditor
+      .getModule('cursors')
+      .setCursor(this.origin, range, this.pseudoName, this.colorRGB)
     return this
-  };
-  
-
+  }
 }

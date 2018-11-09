@@ -1,6 +1,7 @@
 import Marker from './view/marker'
 import { ErrorHandler } from './helpers/ErrorHandler'
 import DocumentBuilder from './DocumentBuilder'
+import { GUID } from './helpers/randomID'
 
 export default class Crate {
   constructor(options = null, documentBuilder = null) {
@@ -181,6 +182,9 @@ export default class Crate {
 
   exist(documentIndex) {
     return this.getDocument(documentIndex) !== undefined
+  }
+  static getRandomId() {
+    return GUID()
   }
 }
 

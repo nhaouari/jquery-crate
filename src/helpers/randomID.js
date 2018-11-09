@@ -1,5 +1,7 @@
-import shortid from "shortid"
-
+import shortid from 'shortid'
+shortid.characters(
+  '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-'
+)
 export function GUID() {
-    return shortid.generate();
-  }
+  return 'c' + shortid.generate()
+}

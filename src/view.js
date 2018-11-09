@@ -47,7 +47,7 @@ export class View {
       this._editorContainerID
     )
 
-    CrateDecorator.addMoveShortcuts(crate)
+    CrateDecorator.addMoveShortcuts(this.crate)
   }
 
   init() {
@@ -70,32 +70,34 @@ export class View {
     })
 
     // make title editable
-    jQuery(`#${this._editorContainerID} #title`).click(() => {
-      jQuery(`#${this._editorContainerID} #title`).attr(
-        'contenteditable',
-        'true'
-      )
+    $(`#${this._editorContainerID} #title`).click(() => {
+      $(`#${this._editorContainerID} #title`).attr('contenteditable', 'true')
+      $(document).on('scroll touchmove mousewheel', function(e) {
+        e.preventDefault()
+        e.stopPropagation()
+        return false
+      })
     })
 
-    jQuery(`#${this._editorContainerID} #closeDocument`).click(() => {
+    $(`#${this._editorContainerID} #closeDocument`).click(() => {
       this.closeDocument()
     })
 
     //Menu Bar events
-    jQuery(`#${this._editorContainerID} #saveicon`).click(() => {
+    $(`#${this._editorContainerID} #saveicon`).click(() => {
       this.saveDocument()
     })
 
-    jQuery(`#${this._editorContainerID} #title`).focusout(() => {
+    $(`#${this._editorContainerID} #title`).focusout(() => {
       this.changeTitle()
       //TODO: this.emit('thereAreChanges')
     })
 
     const sharingLinkContainer = new LinkView(
-      jQuery(`#${this._editorContainerID} #sharinglink`)
+      $(`#${this._editorContainerID} #sharinglink`)
     )
 
-    const shareButton = jQuery(`#${this._editorContainerID} #shareicon`)
+    const shareButton = $(`#${this._editorContainerID} #shareicon`)
 
     this._statesHeader = new StatesHeader(
       this._document,
@@ -111,80 +113,88 @@ export class View {
 
   createCRATE() {
     const html = ` 
-<div class="col-md-10 editorContainer" id="${
+    <div class="col-md-10 editorContainer" id="${
       this._editorContainerID
-    }" style="width:${this.getWidth()}vw !important" >
- <!-- Head -->
-   <div id="head">
-      <div id="firstrow" class="row">
-         <div id="connectionState">
-         </div>
-         <div id="title">
-            ${this._options.name}
-         </div>
-         <div id="features">
-            <div id="shareicon">
-               <i class="fa fa-link fa-2x ficon2"></i>
-            </div>
-            <div id="saveicon"><i class="fa fa-floppy-o fa-2x ficon2"></i></div>
-            <div id="remotesave">
-               <i class="fa fa-cloud fa-2x ficon2"></i>
-            </div>
-            <div id="state">
-            <i class="fa fa-globe fa-2x ficon2 "></i>
-         </div>
-            <div id="closeDocument" style="
-              float: right;
-             position: relative;
-                ">
-            <i class="fa fa-window-close" style="
-        " aria-hidden="true" ></i>
-            </div>
-         </div>
-      </div>
-      <div id="sharinglink" class="row">
-      </div>
-   </div>
-   
- <!-- Content -->
-   <div id="content" class="content">
-      <div id="users" class="row">
-      </div>
-      <div id="editorSection">
-         <div id="editor" class="editor">
-         </div>
-         <div id="comments">
-         </div>
-      </div>
-   </div>
-
-
-  <div id="inputCommentModal" class="modal fade" role="dialog" style="display: none;">
-            <div class="modal-dialog">
-        
-                <!-- Modal content-->
-                <div class="modal-content">
-                    <div class="modal-body">
-                    <button type="button" class="close" data-dismiss="modal">×</button>
-                    <h4>Comment</h4>
-                    <p><textarea name="commentInput" id="commentInput" style="width: 100%;" rows="5"></textarea></p>
-                    </div>
-                    <div class="modal-footer">
-                    <button type="button" class="btn btn-default" id="saveComment"data-dismiss="modal">Save</button>
-                    </div>
-                </div>
-        
-            </div>
-        </div>
+    }" style="width:${this.getWidth()} !important" >
+  <!-- editorContent -->
+      <div class="editorContent">
+          <!-- Head -->
+          <div id="head">
+          
+          </div><!-- Head -->
+  
+          <div id="firstrow" class="row">
+  
+              <div id="title">
+              ${this._options.name}
+                  </div>
+  
+                  <div id='menurow'>
+                  <div id="features">
+                  <div id="shareicon">
+                  <i class="fa fa-link fa-2x ficon2"></i>
+                  </div>
+                  <div id="saveicon"><i class="fa fa-floppy-o fa-2x ficon2"></i></div>
+                  <div id="remotesave">
+                  <i class="fa fa-cloud fa-2x ficon2"></i>
+                  </div>
+                  <div id="state">
+                  <i class="fa fa-globe fa-2x ficon2 "></i>
+              </div>
+              
+                  <div id="closeDocument">
+                  <i class="fa fa-times-circle fa-2x ficon2" style="
+              " aria-hidden="true" ></i>
+                  </div>
+              </div>
+              </div>
+              <div id='sharingContainer'> 
+              </div>
+          </div>
+          
+          <!-- Content -->
+          <div id="content" class="content">
+              <div id="users" class="row">
+              </div>
+              <div id="editorSection">
+              <div id="editor" class="editor">
+              </div>
+              <div id="comments">
+              </div>
+              </div>
+          </div><!-- Content -->
+  
+          <!-- inputCommentModal -->
+          <div id="inputCommentModal" class="modal fade" role="dialog" style="display: none;">
+              <div class="modal-dialog">
+          
+                  <!-- Modal content-->
+                  <div class="modal-content">
+                      <div class="modal-body">
+                      <button type="button" class="close" data-dismiss="modal">×</button>
+                      <h4>Comment</h4>
+                      <p><textarea name="commentInput" id="commentInput" style="width: 100%;" rows="5"></textarea></p>
+                      </div>
+                      <div class="modal-footer">
+                      <button type="button" class="btn btn-default" id="saveComment"data-dismiss="modal">Save</button>
+                      </div>
+                  </div>
+              
+              </div>
+          </div><!-- inputCommentModal -->
+      </div><!-- editorContent -->
+  </div>
     `
-    jQuery(`#${this._editorsHolderID}`).append(html)
 
-    jQuery(`#${this._editorContainerID} #saveComment`).click(() => {
+    const editorContainer = $(`#${this._editorsHolderID}`)
+    editorContainer.append(html)
+
+    $(`#${this._editorContainerID} #saveComment`).click(() => {
       this.saveComment()
     })
 
-    jQuery(`#${this._editorContainerID} #remotesave`).click(() => {
-      if (jQuery(`#${this._editorContainerID} #remotesave`).hasClass('PIN')) {
+    $(`#${this._editorContainerID} #remotesave`).click(() => {
+      if ($(`#${this._editorContainerID} #remotesave`).hasClass('PIN')) {
         this.kill()
       } else {
         this.join()
@@ -193,12 +203,12 @@ export class View {
   }
 
   getWidth() {
-    let width = 98
+    let width = 100
     const NumberOfDocuments = this._document.crate.getNumberOfDocuments()
     if (NumberOfDocuments > 1) {
-      width = 45
+      width = 50
     }
-    return width
+    return width + 'vw'
   }
 
   saveComment() {
@@ -218,29 +228,25 @@ export class View {
    * @return {[type]} [description]
    */
   changeTitle() {
-    jQuery(`#${this._editorContainerID} #title`).attr(
-      'contenteditable',
-      'false'
-    )
-    if (jQuery(`#${this._editorContainerID} #title`).text() == '') {
-      jQuery(`#${this._editorContainerID} #title`).text('Untitled document')
+    $(document).unbind('scroll touchmove mousewheel')
+    $(`#${this._editorContainerID} #title`).attr('contenteditable', 'false')
+    if ($(`#${this._editorContainerID} #title`).text() == '') {
+      $(`#${this._editorContainerID} #title`).text('Untitled document')
     }
 
     //TODO: Optimize change only if the text is changed from last state
     this._document._communication.textManager._titleManager.sendChangeTitle(
-      jQuery(`#${this._editorContainerID} #title`).text()
+      $(`#${this._editorContainerID} #title`).text()
     )
   }
 
   focusOut() {
-    jQuery(`#container-${this._document.documentId}`).removeClass(
-      'activeEditor'
-    )
+    $(`#container-${this._document.documentId}`).removeClass('activeEditor')
     console.log('FocusOuT', this._document.documentId)
   }
 
   focusIn() {
-    jQuery(`#container-${this._document.documentId}`).addClass('activeEditor')
+    $(`#container-${this._document.documentId}`).addClass('activeEditor')
 
     let moveToIndex = this._document.documentIndex
     if (moveToIndex >= 1) {
@@ -250,41 +256,30 @@ export class View {
     const moveToDocumentId = this._document.crate.getDocumentIdFromIndex(
       moveToIndex
     )
-    jQuery('html, body').animate(
-      {
-        scrollLeft: jQuery(`#container-${moveToDocumentId}`).offset().left - 10
-      },
-      'slow'
-    )
+    if (this._document.crate.getNumberOfDocuments() > 1) {
+      $('html, body').animate(
+        {
+          scrollLeft: $(`#container-${moveToDocumentId}`).offset().left
+        },
+        'slow'
+      )
+    }
     this._editor.viewEditor.focus()
   }
 
   updateView(numberOfDocuments) {
     console.log('uodateView', this._document.documentId)
+    $(`#${this._editorContainerID}`).css(
+      'cssText',
+      `width:${this.getWidth()} !important`
+    )
+
     if (numberOfDocuments > 1) {
       jQuery(`#content-default`).css(
         'cssText',
-        `width:calc(53% * ${numberOfDocuments}) !important`
+        `width:calc(${this.getWidth()} * ${numberOfDocuments}) !important`
       )
-      this.splitedScreen()
-    } else {
-      jQuery(`#content-default`).css('cssText', `width:100% !important`)
-      this.fullScreen()
     }
-  }
-
-  fullScreen() {
-    jQuery(`#${this._editorContainerID}`).css(
-      'cssText',
-      'width:98vw !important'
-    )
-  }
-
-  splitedScreen() {
-    jQuery(`#${this._editorContainerID}`).css(
-      'cssText',
-      'width:calc(50vw - 17.5px) !important'
-    )
   }
 
   close() {
@@ -293,13 +288,13 @@ export class View {
       clearInterval(marker.timer)
     }
     // remove it from the browser
-    jQuery(`#${this._editorContainerID}`).remove()
+    $(`#${this._editorContainerID}`).remove()
   }
 
   //TODO:Create a special class for remote session
   findremote(firsttime) {
     let sessionID = this._options.signalingOptions.session
-    let remotesave = jQuery(`#${this._editorContainerID} #remotesave`)
+    let remotesave = $(`#${this._editorContainerID} #remotesave`)
     // There is a configured server
     if (this._options.storageServer) {
       const url = this._options.storageServer + '/exist/' + sessionID

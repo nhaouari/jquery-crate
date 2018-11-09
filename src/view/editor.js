@@ -298,7 +298,7 @@ export class EditorController extends EventEmitter {
   }
 
   sendDelete(index, operation, isItInsertWithAtt) {
-    console.log('Send delete', index, operation, isItInsertWithAtt)
+    debug('Send delete', index, operation, isItInsertWithAtt)
     //to ensure that the editor contains just \n without any attributes
     if (!isItInsertWithAtt) {
       this._comments.UpdateComments()
@@ -393,6 +393,7 @@ export class EditorController extends EventEmitter {
       let sessionId = link.attr('id') || link.attr('href').split('?')[1]
       link.attr('href', '#')
       link.attr('id', sessionId)
+      link.attr('data-toggle', 'Open this document')
       link.addClass('CrateSessionID')
       link[0].onclick = () => {
         this._document.createNewDocument(sessionId)

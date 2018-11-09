@@ -78,12 +78,14 @@ export default class DocumentBuilder extends EventEmitter {
    */
   setUser(options) {
     let uid = this.GUID()
-    options.user = {
+    const randomId = {
       id: uid,
       pseudo: 'Anonymous'
     }
+    const config = store.get('config')
+    const localStorageUser = { id: config.id, pseudo: config.pseudo }
 
-    options.user = Object.assign(options.user, store.get('myId'))
+    options.user = Object.assign(config, localStorageUser)
   }
 
   //TODO: Make this global to use the same server for all the documents

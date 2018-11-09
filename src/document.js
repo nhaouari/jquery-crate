@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events'
 
-import LSEQTree from 'LSEQTree'
+import LSEQTree from 'lseqtree'
 import { Communication } from './communication/Communication'
-
+import Marker from './view/marker'
 var debug = require('debug')('CRATE:Document')
 
 export default class Document extends EventEmitter {
@@ -47,6 +47,7 @@ export default class Document extends EventEmitter {
     this.sequence = new LSEQTree(
       this._communication._data_comm.broadcast._causality.local.e
     )
+
     this.delta = { ops: [] }
 
     /* TODO:Think about the creation of modules without view */
@@ -55,7 +56,7 @@ export default class Document extends EventEmitter {
     // #1B if it is imported from an existing object, initialize it with these
 
     // #2 grant fast access
-
+    this._foglet = this._communication._foglet
     this.broadcast = this._communication._data_comm.broadcast
     this.broadcastCaret = this._communication._behaviors_comm.broadcast
     this.rps = this._communication._data_comm.network.rps
@@ -94,11 +95,13 @@ export default class Document extends EventEmitter {
     )
     const local = this.broadcast._causality.local
 
-    this._behaviors_comm.broadcast._causality.local.e = local.e
+    this._communication._behaviors_comm.broadcast._causality.local.e = local.e
 
     this.sequence.fromJSON(object.sequence)
     this.sequence._s = local.e
     this.sequence._c = local.v
+
+    this.delta = this.getDeltaFromSequence()
   }
 
   /**
@@ -150,7 +153,7 @@ export default class Document extends EventEmitter {
       let op = { insert: node.e.content, attributes: node.e.attributes }
       if (WhoWriteIt) {
         const id = node.t.s
-        op.attributes.color = session.default.Marker.getColor(id)
+        op.attributes.color = Marker.getColor(id)
       }
       ops.push(op)
     })

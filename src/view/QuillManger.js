@@ -1,5 +1,5 @@
 import { ImageDrop } from 'quill-image-drop-module'
-import { ImageResize } from 'quill-image-resize-module'
+//import { ImageResize } from 'quill-image-resize-module'
 import { GUID } from '../helpers/randomID'
 
 export class QuillManager {
