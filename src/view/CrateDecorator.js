@@ -41,4 +41,25 @@ export class CrateDecorator {
       crate.addMoveShortcuts()
     }
   }
+
+  /**
+   * add the resize event to focus always on the specific editor
+   * @param {*} crate
+   */
+  static addResize(crate) {
+    if (!crate.Resize) {
+      crate.resize = function() {
+        this.resizeTimeout
+        $(window).resize(() => {
+          clearTimeout(this.resizeTimeout)
+          this.resizeTimeout = setTimeout(() => {
+            this.focusInToDocument(this.actualSessionIndex)
+            clearTimeout(this.resizeTimeout)
+            console.log('resiiize')
+          }, 200)
+        })
+      }
+      crate.resize()
+    }
+  }
 }

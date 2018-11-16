@@ -12,11 +12,10 @@ export default class Document extends EventEmitter {
     this.documentIndex = documentIndex
     this.crate = crate
     this.documentId = this._options.signalingOptions.session
-
-    this._lastChanges = new Date()
-
+    this._lastChanges = new Date().getTime()
+    this.documentActiveWatcher
+    this.state = 'active'
     this.name = options.name
-    this.date = new Date()
     //User ID
     this.user = options.user
     this.uid = this.user.id
@@ -78,10 +77,20 @@ export default class Document extends EventEmitter {
    * setLastChangesTime set the last time of changes
    */
   setLastChangesTime() {
-    const d = new Date()
-    const n = d.getTime()
-    this._lastChanges = n
+    this._lastChanges = new Date().getTime()
     this.refreshDocument(this.sequence)
+    this.emit('changed')
+    if (this.state === 'sleep') {
+      //TODO:wake up the server if it existes
+    }
+
+    this.state = 'active'
+    clearTimeout(this.documentActivityWatcher)
+
+    this.documentActivityWatcher = setTimeout(() => {
+      this.state = 'sleep'
+      this.emit('sleep')
+    }, this._options.documentActivityTimeout)
   }
 
   /*!
@@ -202,7 +211,6 @@ export default class Document extends EventEmitter {
   /**
    *  get the id of the session
    */
-  //TODO: reveiw this function comes from session
   getId(options) {
     return options.signalingOptions.session
   }
@@ -211,7 +219,6 @@ export default class Document extends EventEmitter {
    * focus on the next session
    */
 
-  //TODO: reveiw this function comes from session
   moveToNext() {
     this.crate.moveToNext(this.documentId)
   }
@@ -220,7 +227,6 @@ export default class Document extends EventEmitter {
    * focus on the previous session
    */
 
-  //TODO: reveiw this function comes from session
   moveToPrevious() {
     this.crate.moveToPrevious(this.documentId)
   }

@@ -68,6 +68,7 @@ export class QuillManager {
 
     return quill
   }
+
   getToolbarOptions() {
     const toolbarOptions = [
       [
@@ -156,6 +157,7 @@ export class QuillManager {
     }
     return opts
   }
+
   addExtraToolbarOptions() {
     $('.ql-subdocument .ql-comments-toggle .ql-comments-add').attr(
       'data-toggle',

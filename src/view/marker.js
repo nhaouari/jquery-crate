@@ -235,13 +235,15 @@ export default class Marker {
    * getAvatar return a div that contains this user id
    * @return {[type]} [description]
    */
-  getAvatar() {
+  getAvatar(subDomain = '') {
     return (
       '<div id="' +
       this.origin +
       '"style="background-color:' +
       this.colorRGB +
-      ';"><img class="imageuser" src="/icons/' +
+      ';"><img class="imageuser" src="' +
+      subDomain +
+      '/icons/' +
       this.animal +
       '.png" alt="' +
       this.pseudoName +
@@ -253,13 +255,15 @@ export default class Marker {
    * getAvatar return the div that contains this user id
    * @return {[type]} [description]
    */
-  static getAvatar(id) {
+  static getAvatar(id, subDomain = '') {
     return (
       '<div id="' +
       id +
       '"style="background-color:' +
       this.getColor(id, 'rgb') +
-      ';"><img class="imageuser" src="/icons/' +
+      ';"><img class="imageuser" src="' +
+      subDomain +
+      '/icons/' +
       this.getPseudoname(id, null) +
       '.png" alt="' +
       this.getPseudoname(id) +

@@ -3,6 +3,15 @@ import { ErrorHandler } from './helpers/ErrorHandler'
 import DocumentBuilder from './DocumentBuilder'
 import { GUID } from './helpers/randomID'
 
+/**
+ * @typedef {Object} Core
+ * @property {Object} documentBuilder the builder of the documents
+ * @property {Document[]} _documents the list of the documents in the session
+ * @property {number[]} _documentsIds The index ids of the documents
+ * @property {number} actualSessionIndex the index id of the actual document
+ *
+ */
+
 export default class Crate {
   constructor(options = null, documentBuilder = null) {
     if (!documentBuilder) {
@@ -14,14 +23,40 @@ export default class Crate {
     // key=sessionId,value=documentIndex
     this._documentsIds = new Map()
     this.actualSessionIndex = -1
+    window.crate = this
   }
 
+  /**
+   * Get all document indexes
+   */
   getDocumentIndexs() {
     let keys = Array.from(this._documents.keys())
     return keys
   }
 
+  /**
+   * Get document by its index
+   * @param {*} index  it is index in the core
+   * @deprecated
+   */
   getDocument(index) {
+    return this._documents[index]
+  }
+
+  /**
+   * Get document by its index
+   * @param {*} index  it is index in the core
+   */
+  getDocumentByIndex(index) {
+    return this._documents[index]
+  }
+
+  /**
+   * Get document by its document Id
+   * @param {string} documentId  it is index in the core
+   */
+  getDocumentByDocumentId(documentId) {
+    const index = this.getIndexFromDocumentId(documentId)
     return this._documents[index]
   }
 
@@ -29,34 +64,51 @@ export default class Crate {
     return this._documents.length
   }
 
-  //TODO: Prevent creating two session with the same id
-  async createNewDocument(documentId) {
+  /**
+   * Create a new document ans set it as actual document
+   * @param {string} documentId the id of the document
+   * @param {Object} specialOpts special options that override the default options
+   * @returns {void|Core}
+   */
+  async createNewDocument(documentId, specialOpts = {}) {
     let documentIndex = this.getIndexFromDocumentId(documentId)
     if (!documentIndex && documentIndex != 0) {
       const documentIndex = this.getNumberOfDocuments()
       const doc = await this.documentBuilder.buildDocument(
         documentId,
-        documentIndex
+        documentIndex,
+        null,
+        specialOpts
       )
       this._documentsIds.set(documentId, documentIndex)
       this.addDocument(doc)
       doc.init().then(() => {
         this.setActualDocument(documentId)
       })
-      return this
+
+      return doc
     } else {
       throw new Error('The session exist')
     }
   }
 
+  /**
+   * add document to list of documents
+   * @param {Document} document
+   */
   addDocument(document) {
     this._documents.push(document)
     this.updateView()
   }
 
+  /**
+   *  remove document and update the status of the different documents
+   * @param {number} documentIndex
+   */
   removeDocument(documentIndex) {
     if (this.exist(documentIndex)) {
-      //change the index off all the sessuib index more than this
+      //Change the index off all the documentIndexs that are greater than documentIndex
+
       this.getDocumentIndexs()
         .filter(index => index > documentIndex)
         .map(index => this.getDocument(index))
@@ -80,6 +132,10 @@ export default class Crate {
     }
   }
 
+  /**
+   * Update the actual document index after removing a document
+   * @param {number} removedIndex
+   */
   updateActualDocumentIndex(removedIndex) {
     // if we remove the selected document move to previous if exist, else move to next if exist, else set  actualSessionIndex = -1
     if (this.actualSessionIndex === removedIndex) {
@@ -90,10 +146,15 @@ export default class Crate {
       } else {
         this.actualSessionIndex = -1
       }
-    } else if (this.actualSessionIndex > documentIndex) {
+    } else if (this.actualSessionIndex > removedIndex) {
       this.actualSessionIndex--
     }
   }
+
+  /**
+   * Emit FocusIn event to the document with documentIndex index
+   * @param {number} documentIndex
+   */
   focusInToDocument(documentIndex) {
     if (this.exist(documentIndex)) {
       this.getDocument(documentIndex).emit('FocusIn')
@@ -102,6 +163,10 @@ export default class Crate {
     }
   }
 
+  /**
+   * Emit FocusOut event to the document with documentIndex index
+   * @param {number} documentIndex
+   */
   focusOutToDocument(documentIndex) {
     if (this.exist(documentIndex)) {
       this.getDocument(documentIndex).emit('FocusOut')
@@ -110,20 +175,34 @@ export default class Crate {
     }
   }
 
+  /**
+   * get Document Index from document Id
+   * @param {string} documentId
+   * @returns {number} documentIndex
+   */
   getIndexFromDocumentId(documentId) {
     return this._documentsIds.get(documentId)
   }
 
+  /**
+   * get Document Id from document Index
+   * @param {number} documentIndex
+   * @returns {string} documentId
+   */
   getDocumentIdFromIndex(documentIndex) {
     return this.getDocument(documentIndex).documentId
   }
 
+  /**
+   * Set actual document by document Id. The actual document is the document that w're editing
+   * @param {string} documentId
+   */
   setActualDocument(documentId) {
     const documentIndex = this.getIndexFromDocumentId(documentId)
-    if (
-      documentIndex !== undefined &&
-      this.actualSessionIndex != documentIndex
-    ) {
+
+    if (documentIndex === undefined) {
+      throw Error('Document ' + documentId + ' dose not exist')
+    } else if (this.actualSessionIndex != documentIndex) {
       this.actualSessionIndex = documentIndex
       this.focusInToDocument(documentIndex)
 
@@ -131,25 +210,20 @@ export default class Crate {
       this.getDocumentIndexs()
         .filter(index => index != documentIndex)
         .forEach(documentIndex => this.focusOutToDocument(documentIndex))
-    } else {
-      throw Error('Session ' + documentId + ' dose not exist')
     }
   }
 
+  /**
+   * get actual document index
+   * @returns {Document}
+   *    */
   getActualDocument() {
     return this.getDocument(this.actualSessionIndex)
   }
 
-  //TODO: remove this function
-  async addNewDocument(sessionId) {
-    let documentIndex = this.getIndexFromDocumentId(sessionId)
-    if (!documentIndex && documentIndex != 0) {
-      await this.createNewDocument(sessionId)
-      documentIndex = this.getIndexFromDocumentId(sessionId)
-    }
-    return this
-  }
-
+  /**
+   * Emit 'UpdateView' to all the documents
+   */
   updateView() {
     this.getDocumentIndexs().forEach(documentIndex => {
       this.getDocument(documentIndex).emit(
@@ -160,19 +234,24 @@ export default class Crate {
   }
 
   /**
-   * focus on the next session of it is possible
+   * Focus on the next document (it dose exist)
    */
   moveToNext() {
     return this.moveTo(this.actualSessionIndex + 1)
   }
 
   /**
-   * focus on the previous session
+   * Focus on the Previous document (it dose exist)
    */
   moveToPrevious() {
     return this.moveTo(this.actualSessionIndex - 1)
   }
 
+  /**
+   * Move to a given document index
+   * @param {number} documentIndex
+   * @returns {Core} document
+   */
   moveTo(documentIndex) {
     if (this.exist(documentIndex)) {
       this.setActualDocument(this.getDocumentIdFromIndex(documentIndex))
@@ -180,9 +259,18 @@ export default class Crate {
     return this
   }
 
+  /**
+   * Dose the given documment index exist in the list of documents
+   * @param {number} documentIndex
+   */
   exist(documentIndex) {
     return this.getDocument(documentIndex) !== undefined
   }
+
+  /**
+   * Get random Id, this used for documents and for users
+   * @returns {string} random Id
+   */
   static getRandomId() {
     return GUID()
   }

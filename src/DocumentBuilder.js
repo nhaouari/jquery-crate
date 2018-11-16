@@ -24,8 +24,15 @@ export default class DocumentBuilder extends EventEmitter {
    for example in the case of a large number of linked document any change in any document will be broadcasted to all the users. 
   */
 
-  async buildDocument(sessionId, sessionIndex, foglet = null) {
-    const options = await this.prepareOptions(sessionId)
+  async buildDocument(
+    sessionId,
+    sessionIndex,
+    foglet = null,
+    specialOpts = {}
+  ) {
+    let defaultOptions = { ...this._defaultOptions, ...specialOpts }
+    let options = await this.prepareOptions(sessionId, defaultOptions)
+
     if (!foglet) {
       foglet = this.getNewFoglet(options)
     }
@@ -37,8 +44,7 @@ export default class DocumentBuilder extends EventEmitter {
   /**
    * set the different options for the created document
    */
-  async prepareOptions(sessionId) {
-    let options = { ...this._defaultOptions }
+  async prepareOptions(sessionId, options) {
     this.setSignalingOptions(options, sessionId)
     this.getLocalStorageData(options)
     await this.setWebRTCOptions(options)
@@ -46,6 +52,7 @@ export default class DocumentBuilder extends EventEmitter {
     this.setDocumentTitle(options)
     this.setTemporarySessionID(options)
     this.setFogletOptions(options)
+    this.setDocumentActivityTimeout(options)
     return options
   }
 
@@ -82,10 +89,13 @@ export default class DocumentBuilder extends EventEmitter {
       id: uid,
       pseudo: 'Anonymous'
     }
-    const config = store.get('config')
-    const localStorageUser = { id: config.id, pseudo: config.pseudo }
+    let localStorageUser = {}
+    if (store.get('config')) {
+      const config = store.get('config')
+      localStorageUser = { id: config.id, pseudo: config.pseudo }
+    }
 
-    options.user = Object.assign(config, localStorageUser)
+    options.user = Object.assign(randomId, localStorageUser)
   }
 
   //TODO: Make this global to use the same server for all the documents
@@ -185,9 +195,8 @@ export default class DocumentBuilder extends EventEmitter {
     const userId = options.editingSessionID
     const room = options.signalingOptions.session
     const address = options.signalingOptions.address
-    const webrtc = options.webrtc
+    const webrtc = options.webRTCOptions
     const rps = options.rps
-
     const fogletOptions = {
       id: userId,
       verbose: true, // want some logs ? switch to false otherwise
@@ -200,7 +209,6 @@ export default class DocumentBuilder extends EventEmitter {
   }
 
   /**
-   *
    * @param {*} room  this is the id of the session, in crate it is the id of the document
    * @param {*} signalingServer the signaling server of foglet
    * @param {*} webrtc {config:{iceServers:[],trickle: bool}}
@@ -233,6 +241,14 @@ export default class DocumentBuilder extends EventEmitter {
     return new Foglet(options.fogletOptions)
   }
 
+  setDocumentActivityTimeout(options) {
+    const documentActivityTimeout =
+      options.documentActivityTimeout || 120 * 1000
+
+    Object.assign(options, {
+      documentActivityTimeout
+    })
+  }
   /**
    * Function that generates random ID.
    * @returns random string

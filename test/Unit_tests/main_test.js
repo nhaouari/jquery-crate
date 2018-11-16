@@ -18,8 +18,7 @@ class DocumentMock extends EventEmitter {
     this.documentIndex = documentIndex
     this.crate = crate
   }
-
-  init() {}
+  async init() {}
 }
 
 class DocumentBuilderMock {
@@ -48,7 +47,7 @@ describe('Main class', () => {
     await crate.createNewDocument('a')
     assert(crate.getDocument(0).documentId === 'a', 'session a is created')
     await crate.createNewDocument('b')
-    debugger
+
     assert(crate.getDocument(1).documentId === 'b', 'session b is created')
 
     assert(!crate.getDocument(2), 'session b is created')
@@ -136,7 +135,6 @@ describe('Main class', () => {
   it('getDocumentIdFromIndex ', async () => {
     await crate.createNewDocument('a')
     await crate.createNewDocument('b')
-    debugger
     assert(crate.getDocumentIdFromIndex(0) === 'a', '0=>a')
     assert(crate.getDocumentIdFromIndex(1) === 'b', '1=>b')
   })
@@ -208,40 +206,6 @@ describe('Main class', () => {
     )
   })
 
-  it('addNewDocument ', async () => {
-    await crate.addNewDocument('a')
-
-    assert(
-      crate.getNumberOfDocuments() === 1,
-      '1/number of sessions 1 =' + crate.getNumberOfDocuments()
-    )
-    await crate.addNewDocument('a')
-    assert(
-      crate.getNumberOfDocuments() === 1,
-      '2/number of sessions 1 =' + crate.getNumberOfDocuments()
-    )
-    await crate.addNewDocument('a')
-    assert(
-      crate.getNumberOfDocuments() === 1,
-      '3/number of sessions 1 =' + crate.getNumberOfDocuments()
-    )
-
-    crate.removeDocument(0)
-    assert(
-      crate.getNumberOfDocuments() === 0,
-      '01/ number of sessions 0 =' + crate.getNumberOfDocuments()
-    )
-    await crate.addNewDocument('a')
-    await crate.addNewDocument('a')
-    await crate.addNewDocument('a')
-    await crate.addNewDocument('b')
-
-    assert(
-      crate.getNumberOfDocuments() === 2,
-      'number of sessions 2 =' + crate.getNumberOfDocuments()
-    )
-  })
-
   it('updateView ', async () => {
     await crate.createNewDocument('a')
     await crate.createNewDocument('b')
@@ -255,20 +219,27 @@ describe('Main class', () => {
       b++
     })
 
-    crate.updateView(0)
-    assert(a === 1 && b === 0, 'UpdateView is sent to a')
-    crate.updateView(1)
-    assert(a === 1 && b === 1, 'UpdateView is sent to b')
-    crate.updateView(0)
-    assert(a === 2 && b === 1, 'UpdateView is sent to a 2')
+    crate.updateView()
+
+    assert(a === 1, 'UpdateView is sent to a')
+    assert(b === 1, 'UpdateView is sent to b')
+
+    crate.updateView()
+
+    assert(a === 2, 'UpdateView is sent to a')
+    assert(b === 2, 'UpdateView is sent to b')
+
+    crate.updateView()
+    assert(a === 3, 'UpdateView is sent to a')
+    assert(b === 3, 'UpdateView is sent to b')
   })
 
   it('moveTo ', async () => {
     await crate.createNewDocument('a')
-    crate.setActualDocument('a')
     await crate.createNewDocument('b')
     await crate.createNewDocument('c')
-
+    crate.setActualDocument('a')
+    debugger
     assert(
       crate.moveToNext().getActualDocument().documentId === 'b',
       ' NExt session is b but ' + crate.getActualDocument().documentId

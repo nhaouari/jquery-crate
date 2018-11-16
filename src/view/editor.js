@@ -381,33 +381,48 @@ export class EditorController extends EventEmitter {
   updateCommentsLinks() {
     clearTimeout(this._timeout)
     this._timeout = setTimeout(() => {
+      console.log('update comments and links')
       this.convertLocalLinks()
       this._comments.UpdateComments()
     }, 500)
   }
 
   convertLocalLinks() {
-    const linksToCrate = this.getAllLinksToCrate()
+    console.log(`#${this._document._view._editorContainerID} a`)
+    $(`#${this._document._view._editorContainerID} a`)
+      .toArray()
+      .filter(
+        link =>
+          link.href.includes('#/document/') ||
+          link.href.includes('#') ||
+          link.className === 'CrateSessionID'
+      )
+      .forEach(link => {
+        this.updateLink(link)
+      })
+  }
 
-    linksToCrate.forEach(link => {
-      let sessionId = link.attr('id') || link.attr('href').split('?')[1]
-      link.attr('href', '#')
-      link.attr('id', sessionId)
-      link.attr('data-toggle', 'Open this document')
-      link.addClass('CrateSessionID')
-      link[0].onclick = () => {
-        this._document.createNewDocument(sessionId)
-      }
+  updateLink(l) {
+    const link = $(l)
+    const documentId = link.attr('id') || link.attr('href').split('?')[1]
+    link.attr('href', '#')
+    link.attr('id', documentId)
+    link.attr('class', 'CrateSessionID')
+    link.attr('data-toggle', 'Open this document')
+    link.addClass('CrateSessionID')
+    link.click(() => {
+      this._document.createNewDocument(documentId)
     })
   }
 
   getAllLinksToCrate() {
     const linksToCrate = []
     const links = $(`#${this._document._view._editorContainerID} a`)
+    debugger
     for (let l of links) {
       const link = $(l)
       if (
-        l.href.includes(window.location.href.split('?')[0]) ||
+        l.href.includes(window.location.href.split('#')[0] + '#/document/') ||
         l.className.includes('CrateSessionID')
       ) {
         linksToCrate.push(link)

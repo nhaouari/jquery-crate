@@ -48,6 +48,7 @@ export class View {
     )
 
     CrateDecorator.addMoveShortcuts(this.crate)
+    CrateDecorator.addResize(this.crate)
   }
 
   init() {
@@ -204,11 +205,14 @@ export class View {
 
   getWidth() {
     let width = 100
+    let scrollWidth = 0
     const NumberOfDocuments = this._document.crate.getNumberOfDocuments()
+
     if (NumberOfDocuments > 1) {
       width = 50
+      scrollWidth = scrollWidth / 2
     }
-    return width + 'vw'
+    return `calc(${width}vw - ${scrollWidth}px)`
   }
 
   saveComment() {

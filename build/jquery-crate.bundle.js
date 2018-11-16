@@ -96,2990 +96,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /************************************************************************/
 /******/ ({
 
-/***/ "./node_modules/LSEQTree/lib/base.js":
-/*!*******************************************!*\
-  !*** ./node_modules/LSEQTree/lib/base.js ***!
-  \*******************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Configuration and util class of the base, i.e. the maximal arity of the first
- * level of the tree.
- */
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Base = function () {
-    /**
-     * @param {Number} [b = 3] The number of bits at level 0 of the dense space.
-     */
-    function Base() {
-        var b = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3;
-
-        _classCallCheck(this, Base);
-
-        this._b = b;
-    }
-
-    _createClass(Base, [{
-        key: 'getBitBase',
-
-
-        /**
-         * Process the number of bits usage at a certain level of dense space.
-         * @param {Number} level The level in dense space, i.e., the number of
-         * concatenations of the identifier.
-         * @return {Number} The number of bit to encode a single path concatenation
-         * at the depth in argument.
-         */
-        value: function getBitBase(level) {
-            return this._b + level;
-        }
-    }, {
-        key: 'getSumBit',
-
-
-        /**
-         * Process the total number of bits usage to get to a certain level.
-         * @param {Number} level The level in dense space, i.e., the number of
-         * concatenations of the identifier.
-         * @return {Number} The number of bits required to encode the path
-         * comprising level concatenations.
-         */
-        value: function getSumBit(level) {
-            var n = this.getBitBase(level);
-            var m = this._b - 1;
-            return n * (n + 1) / 2 - m * (m + 1) / 2;
-        }
-    }, {
-        key: 'getInterval',
-
-
-        /**
-         * Process the number of possible paths between two LSEQNode.
-         * @param {Number} level The depth of the tree to process.
-         * @param {LSeqNode} p The previous LSeqNode.
-         * @param {LSeqNode} q The next LSeqNode.
-         * @return {Number} The interval between the two nodes at the depth in
-         * argument.
-         */
-        value: function getInterval(level, p, q) {
-            var sum = 0,
-                i = 0,
-                pIsGreater = false,
-                commonRoot = true,
-                prevValue = 0,
-                nextValue = 0;
-
-            while (i <= level) {
-                prevValue = p && p.t.p || 0;
-                nextValue = q && q.t.p || 0;
-                // #1 check if paths are identical
-                if (commonRoot && prevValue !== nextValue) {
-                    commonRoot = false;
-                    pIsGreater = prevValue > nextValue;
-                }
-                // #2 process the value to add to interval
-                if (pIsGreater) {
-                    nextValue = Math.pow(2, this.getBitBase(i)) - 1;
-                }
-                if (commonRoot || pIsGreater || i !== level) {
-                    sum += nextValue - prevValue;
-                } else {
-                    sum += nextValue - prevValue - 1;
-                }
-                if (i !== level) {
-                    sum *= Math.pow(2, this.getBitBase(i + 1));
-                };
-                // #3 iterate over path concatenations
-                p = p && p.child || null;
-                q = q && q.child || null;
-                ++i;
-            }
-            return sum;
-        }
-    }]);
-
-    return Base;
-}();
-
-;
-
-module.exports = Base;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/lib/exoutofbounds.js":
-/*!****************************************************!*\
-  !*** ./node_modules/LSEQTree/lib/exoutofbounds.js ***!
-  \****************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Thrown when the index is higher than the current length-1 of the array, or
- * lower than 0.
- */
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var ExOutOfBounds =
-
-/** 
- * @param {Number} index The index out of bounds.
- * @param {Number} size The size of the array.
- */
-function ExOutOfBounds(index, size) {
-  _classCallCheck(this, ExOutOfBounds);
-
-  this.index = index;
-  this.size = size;
-};
-
-;
-
-module.exports = ExOutOfBounds;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/lib/identifier.js":
-/*!*************************************************!*\
-  !*** ./node_modules/LSEQTree/lib/identifier.js ***!
-  \*************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var BI = __webpack_require__(/*! BigInt */ "./node_modules/LSEQTree/node_modules/BigInt/src/BigInt.js");
-var Triple = __webpack_require__(/*! ./triple.js */ "./node_modules/LSEQTree/lib/triple.js");
-var LSeqNode = __webpack_require__(/*! ./lseqnode.js */ "./node_modules/LSEQTree/lib/lseqnode.js");
-
-/**
- * Unique and immutable identifier composed of digit, sources, counters.
- */
-
-var Identifier = function () {
-
-    /**
-     * @param {Base} base The base of identifiers.
-     * @param {Number[]} digits The digit (position in dense space).
-     * @param {Object[]} sites The list of sources.
-     * @param {Number[]} counters The list of counters.
-     */
-    function Identifier(base, digits) {
-        var sites = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
-        var counters = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
-
-        _classCallCheck(this, Identifier);
-
-        this._d = digits;
-        this._s = sites;
-        this._c = counters;
-
-        this._base = base;
-    }
-
-    _createClass(Identifier, [{
-        key: 'fromNode',
-
-
-        /**
-         * Set the d,s,c values according to the node in argument
-         * @param {LSeqNode} node The lseqnode containing the path in the tree
-         * structure.
-         * @return {Identifier} This identifier modified.
-         */
-        value: function fromNode(node) {
-            // #1 process the length of the path
-            var length = 1,
-                tempNode = node;
-
-            while (!tempNode.isLeaf) {
-                ++length;
-                tempNode = tempNode.child;
-            };
-            // #2 copy the values contained in the path
-            this._d = BI.int2bigInt(0, this._base.getSumBit(length - 1));
-
-            for (var i = 0; i < length; ++i) {
-                // #1a copy the site id
-                this._s.push(node.t.s);
-                // #1b copy the counter
-                this._c.push(node.t.c);
-                // #1c copy the digit
-                BI.addInt_(this._d, node.t.p);
-                if (i !== length - 1) {
-                    BI.leftShift_(this._d, this._base.getBitBase(i + 1));
-                };
-                node = node.child;
-            };
-
-            return this;
-        }
-    }, {
-        key: 'toNode',
-
-
-        /**
-         * Convert the identifier into a node without element.
-         * @param {Object} e The element associated with the node.
-         * @return {LSeqNode} An LSeqNode containing the element and the path
-         * extracted from this identifier.
-         */
-        value: function toNode(e) {
-            var dBitLength = this._base.getSumBit(this._c.length - 1);
-            var resultPath = [],
-                mine = void 0;
-
-            // #1 deconstruct the digit 
-            for (var i = 0; i < this._c.length; ++i) {
-                // #1 truncate mine
-                mine = BI.dup(this._d);
-                // #1a shift right to erase the tail of the path
-                BI.rightShift_(mine, dBitLength - this._base.getSumBit(i));
-                // #1b copy value in the result
-                resultPath.push(new Triple(BI.modInt(mine, Math.pow(2, this._base.getBitBase(i))), this._s[i], this._c[i]));
-            };
-            return new LSeqNode(resultPath, e);
-        }
-    }, {
-        key: 'compareTo',
-
-
-        /**
-         * Compare two identifiers.
-         * @param {Identifier} o The other identifier.
-         * @return {Integer} -1 if this is lower, 0 if they are equal, 1 if this is
-         * greater.
-         */
-        value: function compareTo(o) {
-            var dBitLength = this._base.getSumBit(this._c.length - 1),
-                odBitLength = this._base.getSumBit(o._c.length - 1),
-                comparing = true,
-                result = 0,
-                i = 0,
-                sum = void 0,
-                mine = void 0,
-                other = void 0;
-
-            // #1 Compare the list of <d,s,c>
-            while (comparing && i < Math.min(this._c.length, o._c.length)) {
-                // can stop before the end of for loop wiz return
-                sum = this._base.getSumBit(i);
-                // #1a truncate mine
-                mine = BI.dup(this._d);
-                BI.rightShift_(mine, dBitLength - sum);
-                // #1b truncate other
-                other = BI.dup(o._d);
-                BI.rightShift_(other, odBitLength - sum);
-                // #2 Compare triples
-                // #A digit
-                if (!BI.equals(mine, other)) {
-                    if (BI.greater(mine, other)) {
-                        result = 1;
-                    } else {
-                        result = -1;
-                    };
-                    comparing = false;
-                } else {
-                    // #B source
-                    result = this._s[i] - o._s[i];
-                    if (result !== 0) {
-                        comparing = false;
-                    } else {
-                        // #C counter
-                        result = this._c[i] - o._c[i];
-                        if (result !== 0) {
-                            comparing = false;
-                        };
-                    };
-                };
-                ++i;
-            };
-
-            // #3 compare list size
-            if (result === 0) {
-                result = this._c.length - o._c.length;
-            };
-
-            return result;
-        }
-    }]);
-
-    return Identifier;
-}();
-
-;
-
-module.exports = Identifier;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/lib/lseqnode.js":
-/*!***********************************************!*\
-  !*** ./node_modules/LSEQTree/lib/lseqnode.js ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Triple = __webpack_require__(/*! ./triple.js */ "./node_modules/LSEQTree/lib/triple.js");
-
-/**
- * A node of the LSeq tree.
- */
-
-var LSeqNode = function () {
-    /**
-     * @param {Triple[]} triples The list of triples composing the path to the
-     * element.
-     * @param {Object} element The element to insert in the structure, e.g., a
-     * character in a text document.
-     */
-    function LSeqNode() {
-        var triples = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-        var element = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-        _classCallCheck(this, LSeqNode);
-
-        this.t = triples.shift();
-        this.e = null;
-        if (triples.length === 0) {
-            this.e = element;
-        };
-        this.subCounter = triples.length > 0 && 1 || 0;
-        this.children = [];
-        triples.length > 0 && this.children.push(new LSeqNode(triples, element));
-    }
-
-    _createClass(LSeqNode, [{
-        key: 'compareTo',
-
-
-        /**
-         * Comparator between to LSeqNodes.
-         * @param {LSeqNode} o The other LSeqNode to compare to.
-         */
-        value: function compareTo(o) {
-            return this.t.compareTo(o.t);
-        }
-    }, {
-        key: 'add',
-
-
-        /**
-         * Add a node to the current node.
-         * @param {LSeqNode} node The node to add as a children of this node.
-         * @return {Boolean} False if the element already exists, True otherwise.
-         */
-        value: function add(node) {
-            var index = this._binaryIndexOf(node);
-
-            // #1 if the path do no exist, create it
-            if (!this._contains(node)) {
-                this.children.splice(-index, 0, node);
-                this.subCounter += 1;
-                // #2 otherwise, continue to explore the subtrees
-            } else if (node.children.length === 0) {
-                // #2a check if the element already exists
-                if (this.children[index].e !== null) {
-                    return false;
-                } else {
-                    this.children[index].e = node.e;
-                    this.subCounter += 1;
-                };
-                // #3 if didnot exist, increment the counter
-            } else if (this.children[index].add(node.child)) {
-                this.subCounter += 1;
-            };
-            return true;
-        }
-    }, {
-        key: 'del',
-
-
-        /**
-         * Remove the node of the tree and all node within path being useless.
-         * @param {LSeqNode} node the node containing the path to remove
-         * @return {Boolean} True if the node has been removed, False if it does not
-         * exist.
-         */
-        value: function del(node) {
-            var indexes = this._getIndexes(node);
-            var currentTree = this,
-                i = 0,
-                isSplitted = false;
-
-            // #1 The element does not exists, stop
-            if (indexes.length === 0) {
-                return false;
-            };
-
-            // #2 Crawl the path and remove the element
-            currentTree.subCounter -= 1;
-            while (i < indexes.length && !isSplitted) {
-                var isLast = currentTree.children[indexes[i]]._hasElement && i === indexes.length - 1;
-                if (!isLast) {
-                    currentTree.children[indexes[i]].subCounter -= 1;
-                };
-                if (currentTree.children[indexes[i]].subCounter <= 0 && (!currentTree.children[indexes[i]]._hasElement || isLast)) {
-                    currentTree.children.splice(indexes[i], 1);
-                    isSplitted = true;
-                };
-                currentTree = currentTree.children[indexes[i]];
-                ++i;
-            };
-            if (!isSplitted) {
-                currentTree.e = null;
-            };
-
-            return true;
-        }
-    }, {
-        key: 'indexOf',
-
-
-        /**
-         * The ordered tree can be linearized into a sequence. This function get the
-         * index of the path represented by the list of triples.
-         * @param {LSeqNode} node The node containing -- at least -- the path to the
-         * element.
-         * @return {Number} The index of the node in the linearized sequence; -1 if
-         * the element does not exist.
-         */
-        value: function indexOf(node) {
-            var indexes = this._getIndexes(node);
-            var sum = 0,
-                currentTree = this,
-                j = void 0;
-
-            // #1 If the node does not exist, stop
-            if (indexes.length === 0) {
-                return -1;
-            };
-
-            // #2 Otherwise, start counting
-            if (currentTree._hasElement) {
-                sum += 1;
-            };
-
-            for (var i = 0; i < indexes.length; ++i) {
-                if (indexes[i] < currentTree.children.length / 2) {
-                    // #A start from the beginning [---->|     ]
-                    j = 0;
-                    while (j < indexes[i]) {
-                        if (currentTree.children[j]._hasElement) {
-                            sum += 1;
-                        };
-                        sum += currentTree.children[j].subCounter;
-                        ++j;
-                    };
-                } else {
-                    // #B start from the end [     |<----]
-                    sum += currentTree.subCounter;
-                    j = currentTree.children.length - 1;
-                    while (j >= indexes[i]) {
-                        if (currentTree.children[j]._hasElement) {
-                            sum -= 1;
-                        };
-                        sum -= currentTree.children[j].subCounter;
-                        --j;
-                    };
-                    j += 1;
-                };
-                if (currentTree.children[j]._hasElement) {
-                    sum += 1;
-                };
-                currentTree = currentTree.children[j];
-            };
-            return sum - 1; // -1 because algorithm counted the element itself
-        }
-    }, {
-        key: 'get',
-
-
-        /**
-         * The ordered tree can be linearized. This function gets the node at the
-         * index in the projected sequence.
-         * @param {Number} index The index in the sequence.
-         * @return {LSeqNode} The node at the index.
-         */
-        value: function get(index) {
-
-            /**
-             * @param {Number} leftSum The sum of all element at the left of the
-             * current inspected node.
-             * @param {LSeqNode} buildingNode The head part of the node being built
-             * as we crawl.
-             * @param {LSeqNode} queue The queue part of the node being built.
-             * @param {LSeqNode} currentNode The subtree being crawled.
-             */
-            var _get = function _get(leftSum, buildingNode, queue, currentNode) {
-                var startBeginning = true,
-                    useFunction = void 0,
-                    i = 0,
-                    p = void 0,
-                    temp = void 0;
-                // #0 The node is found, return the incrementally built node and
-                // praise the sun !
-                if (leftSum === index && currentNode._hasElement) {
-                    // 1a copy the value of the element in the path
-                    queue.e = currentNode.e;
-                    return buildingNode;
-                };
-                if (currentNode._hasElement) {
-                    leftSum += 1;
-                };
-
-                // #1 search: do I start from the beginning or the end
-                startBeginning = index - leftSum < currentNode.subCounter / 2;
-                if (startBeginning) {
-                    useFunction = function useFunction(a, b) {
-                        return a + b;
-                    };
-                } else {
-                    leftSum += currentNode.subCounter;
-                    useFunction = function useFunction(a, b) {
-                        return a - b;
-                    };
-                }
-
-                // #2a counting the element from left to right
-                if (!startBeginning) {
-                    i = currentNode.children.length - 1;
-                };
-                while (startBeginning && leftSum <= index || !startBeginning && leftSum > index) {
-                    if (currentNode.children[i]._hasElement) {
-                        leftSum = useFunction(leftSum, 1);
-                    };
-                    leftSum = useFunction(leftSum, currentNode.children[i].subCounter);
-                    i = useFunction(i, 1);
-                };
-
-                // #2b decreasing the incrementation
-                i = useFunction(i, -1);
-                if (startBeginning) {
-                    if (currentNode.children[i]._hasElement) {
-                        leftSum = useFunction(leftSum, -1);
-                    };
-                    leftSum = useFunction(leftSum, -currentNode.children[i].subCounter);
-                };
-
-                // #3 build path
-                p = [];p.push(currentNode.children[i].t);
-                if (buildingNode === null) {
-                    buildingNode = new LSeqNode(p, null);
-                    queue = buildingNode;
-                } else {
-                    temp = new LSeqNode(p, null);
-                    queue.add(temp);
-                    queue = temp;
-                };
-                return _get(leftSum, buildingNode, queue, currentNode.children[i]);
-            };
-            return _get(0, null, null, this);
-        }
-    }, {
-        key: '_getIndexes',
-
-
-        /**
-         * @private Get the list of indexes of the arrays representing the children
-         * in the tree.  
-         * @param {LSeqNode} node The node containing the path.
-         * @return {Number[]} The successive indexes to get to the node. An empty
-         * list if the node does not exist.
-         */
-        value: function _getIndexes(node) {
-            var __getIndexes = function __getIndexes(indexes, currentTree, currentNode) {
-                if (!currentTree._contains(currentNode)) {
-                    return [];
-                };
-
-                var index = currentTree._binaryIndexOf(currentNode);
-
-                indexes.push(index);
-
-                return (currentNode.children.length === 0 || currentTree.children.length === 0) && indexes || __getIndexes(indexes, currentTree.children[index], currentNode.child);
-            };
-
-            return __getIndexes([], this, node);
-        }
-    }, {
-        key: '_binaryIndexOf',
-
-
-        /**
-         * @private from: [https://gist.github.com/Wolfy87/5734530] Performs a
-         * binary search on the host array.
-         * @param {LSeqNode} searchElement The item to search for within the array.
-         * @return {Number} The index of the element which defaults to -1 when not
-         * found.
-         */
-        value: function _binaryIndexOf(searchElement) {
-            var minIndex = 0;
-            var maxIndex = this.children.length - 1;
-            var currentIndex = void 0;
-            var currentElement = void 0;
-
-            while (minIndex <= maxIndex) {
-                currentIndex = Math.floor((minIndex + maxIndex) / 2);
-                currentElement = this.children[currentIndex];
-                if (currentElement.compareTo(searchElement) < 0) {
-                    minIndex = currentIndex + 1;
-                } else if (currentElement.compareTo(searchElement) > 0) {
-                    maxIndex = currentIndex - 1;
-                } else {
-                    return currentIndex;
-                };
-            };
-            return ~maxIndex;
-        }
-    }, {
-        key: '_contains',
-
-
-        /**
-         * @private Check whether this node contains the searchElement as children.
-         * @param {LSeqNode} searchElement The element to look for.
-         * @return {Boolean} True if this node contains the node in its
-         * children, False otherwise.
-         */
-        value: function _contains(searchElement) {
-            var index = this._binaryIndexOf(searchElement);
-            return this.children.length > 0 && (index > 0 || index === 0 && this.child.compareTo(searchElement) === 0);
-        }
-    }, {
-        key: 'child',
-
-
-        /**
-         * Getter to the first child.
-         * @returns {LSeqNode} The first child of this node. Null if it does not
-         * exists.
-         */
-        get: function get() {
-            return this.children.length > 0 && this.children[0] || null;
-        }
-    }, {
-        key: '_hasElement',
-
-
-        /**
-         * @private Check if the node contains an element.
-         * @return {Boolean} True if the node has an element, false otherwise.
-         */
-        get: function get() {
-            return this.e !== null;
-        }
-    }, {
-        key: 'isLeaf',
-
-
-        /**
-         * Check if the node has children.
-         * @return {Boolean} True if the node has children, false otherwise.
-         */
-        get: function get() {
-            return this.children.length === 0;
-        }
-    }], [{
-        key: 'fromJSON',
-
-
-        /**
-         * Cast a JSON object to an LSeqNode. 
-         * @param {Object} o The JSON object.
-         * @return {LSeqNode} An LSeqNode.
-         */
-        value: function fromJSON(o) {
-            var beingBuilt = void 0;
-
-            // #1 leaf
-            if (o.children.length === 0) {
-                beingBuilt = new LSeqNode([new Triple(o.t.p, o.t.s, o.t.c)], o.e);
-            } else {
-                // #2 branch
-                beingBuilt = new LSeqNode([new Triple(o.t.p, o.t.s, o.t.c)]);
-                beingBuilt.children.push(LSeqNode.fromJSON(o.children[0]));
-            };
-
-            return beingBuilt;
-        }
-    }]);
-
-    return LSeqNode;
-}();
-
-;
-
-module.exports = LSeqNode;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/lib/lseqtree.js":
-/*!***********************************************!*\
-  !*** ./node_modules/LSEQTree/lib/lseqtree.js ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var merge = __webpack_require__(/*! lodash.merge */ "./node_modules/lodash.merge/index.js");
-
-var Base = __webpack_require__(/*! ./base.js */ "./node_modules/LSEQTree/lib/base.js");
-var Strategy = __webpack_require__(/*! ./strategy.js */ "./node_modules/LSEQTree/lib/strategy.js");
-var Identifier = __webpack_require__(/*! ./identifier.js */ "./node_modules/LSEQTree/lib/identifier.js");
-var Triple = __webpack_require__(/*! ./triple.js */ "./node_modules/LSEQTree/lib/triple.js");
-var LSeqNode = __webpack_require__(/*! ./lseqnode.js */ "./node_modules/LSEQTree/lib/lseqnode.js");
-
-var ExOutOfBounds = __webpack_require__(/*! ./exoutofbounds.js */ "./node_modules/LSEQTree/lib/exoutofbounds.js");
-
-/**
- * Distributed array using LSeq allocation strategy with an underlying
- * exponential tree.
- */
-
-var LSeqTree = function () {
-
-    /**
-     * @param {Object} source The globally unique site identifier.
-     * @param {Object} [options] The options of the LSeqTree.
-     * @param {Number} [options.boundary = 10] The maximal interval between two
-     * generated nodes.
-     * @param {Number} [options.base = 15] The base, i.e., the maximal arity of
-     * the root node. Default is 2**15.
-     */
-    function LSeqTree(site) {
-        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
-        _classCallCheck(this, LSeqTree);
-
-        var listTriple = void 0;
-        // #0 process options
-        this.options = merge({ boundary: 10, base: 15 }, options);
-
-        // #1 initialize source, counter, and strategy choice
-        this._s = site;
-        this._c = 0;
-        this._hash = function (depth) {
-            return depth % 2;
-        };
-
-        this._base = new Base(this.options.base);
-        this._strategy = new Strategy(this._base, this.options.boundary);
-
-        // #2 initialize tree structure with maximal bounds
-        this.root = new LSeqNode();
-        // #A minimal bound
-        this.root.add(new LSeqNode([new Triple(0, 0, 0)], ''));
-        // #B maximal bound
-        this.root.add(new LSeqNode([new Triple(Math.pow(2, this._base.getBitBase(0)) - 1, Number.MAX_VALUE, Number.MAX_VALUE)], ''));
-    }
-
-    _createClass(LSeqTree, [{
-        key: 'get',
-
-
-        /**
-         * Get the element at targeted index in the linearized sequence. It does not
-         * take into account the hidden boundaries of the sequence [MIN, e_1, e_2,
-         * ... e_length, MAX], hence index of e_1 is 0.
-         * @param {Number} index The index of the element in the flattened array.
-         * @return {Object} The element located at the index in argument.
-         */
-        value: function get(index) {
-            if (index < 0 || index >= this.length) {
-                throw new ExOutOfBounds(index, this.length);
-            };
-
-            var node = this.root.get(index + 1);
-            while (!node.isLeaf) {
-                node = node.child;
-            };
-            return node.e;
-        }
-    }, {
-        key: '_get',
-
-
-        /**
-         * @private Get the LSeqNode at targeted index in the linearized
-         * sequence. The sequence includes the hidden boundaries [MIN, e_1, e_2,
-         * ... e_length, MAX], hence e_1's index is 1.
-         * @param {Number} index The index of the element in the flattened array.
-         * @return {LSeqNode} The LSeqNode targeting the element at index.
-         */
-        value: function _get(index) {
-            if (index < 0 || index >= this.length + 2) {
-                // +2: boundaries
-                throw new ExOutOfBounds(index, this.length + 2);
-            };
-
-            return this.root.get(index);
-        }
-    }, {
-        key: 'insert',
-
-
-        /**
-         * Insert a value at the targeted index.
-         * @param {Object} element The element to insert, e.g. a character if the
-         * sequence is a string.
-         * @param {Number} index The position in the array.
-         * @return {Object} {_e: element of Object type, _i: Identifier}
-         */
-        value: function insert(element, index) {
-            var pei = this._get(index),
-                // #1a previous bound
-            qei = this._get(index + 1); // #1b next bound
-
-            // #2a incrementing the local counter
-            this._c += 1;
-            // #2b generating the id inbetween the bounds
-            var id = this.alloc(pei, qei);
-
-            // #3 add it to the structure and return value
-            var pair = { elem: element, id: id };
-            this.applyInsert(pair);
-            return pair;
-        }
-    }, {
-        key: 'remove',
-
-
-        /**
-         * Delete the element at the index.
-         * @param {Number} index The index of the element to delete in the array.
-         * @return {Identifier} The identifier of the element at the index.
-         */
-        value: function remove(index) {
-            var ei = this._get(index + 1);
-            var i = new Identifier(this._base).fromNode(ei);
-            this.applyRemove(ei);
-            return i;
-        }
-    }, {
-        key: 'alloc',
-
-
-        /**
-         * Generate the digit part of the identifiers  between p and q.
-         * @param {LSeqNode} p The digit part of the previous identifier.
-         * @param {LSeqNode} q The digit part of the next identifier.
-         * @return {Identifier} The new identifier located between p and q.
-         */
-        value: function alloc(p, q) {
-            var interval = 0,
-                level = 0;
-            // #1 process the level of the new identifier
-            while (interval <= 0) {
-                // no room for insertion
-                interval = this._base.getInterval(level, p, q);
-                ++level;
-            };
-            level -= 1;
-            if (this._hash(level) === 0) {
-                return this._strategy.bPlus(p, q, level, interval, this._s, this._c);
-            } else {
-                return this._strategy.bMinus(p, q, level, interval, this._s, this._c);
-            };
-        }
-    }, {
-        key: 'applyInsert',
-
-
-        /**
-         * Insert an element created from a remote site into the array.
-         * @param {Object} pair Pair containing the identifier and the element to
-         * insert in the data structure.
-         * @param {Identifier|LSeqNode} pair.id The identifier of the element.
-         * @param {Object} pair.elem The element to insert.
-         * @param {boolean} [noIndex = true] Whether or not it should return the
-         * index of the insert.
-         * @return {Number|Boolean} The index of the newly inserted element in the
-         * array, if asked. -1 if the element already exists and has not been added.
-         * If noIndex, returns true if the element has been added, false otherwise.
-         */
-        value: function applyInsert(pair) {
-            var noIndex = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
-            var node = void 0,
-                result = void 0,
-                i = void 0;
-            // #0 cast from the proper type
-            // #0A the identifier is an Identifier
-            i = pair.id;
-            node = i && i._d && i._s && i._c && new Identifier(this._base, i._d, i._s, i._c).toNode(pair.elem);
-            // #0B the identifier is a LSeqNode
-            node = i && i.t && i.children && LSeqNode.fromJSON(i) || node;
-            // #1 integrates the new element to the data structure
-            result = this.root.add(node);
-            // #2 if the element as been added
-            if (noIndex) {
-                return result;
-            } else if (result) {
-                return this.root.indexOf(node);
-            } else {
-                return -1;
-            };
-        }
-    }, {
-        key: 'applyRemove',
-
-
-        /**
-         * Delete the element with the targeted identifier.
-         * @param {Identifier|LSeqNode} i The identifier of the element.
-         * @return {Number} The index of the element freshly deleted, -1 if no
-         * removal.
-         */
-        value: function applyRemove(i) {
-            var node = void 0,
-                position = void 0;
-            // #0 cast from the proper type
-            node = i && i._d && i._s && i._c && new Identifier(this._base, i._d, i._s, i._c).toNode(null);
-            // #0B the identifier is a LSEQNode
-            node = i && i.t && i.children && LSeqNode.fromJSON(i) || node;
-            // #1 get the index of the element to remove
-            position = this.root.indexOf(node);
-            if (position !== -1) {
-                // #2 if it exists remove it
-                this.root.del(node);
-            };
-            return position;
-        }
-    }, {
-        key: 'fromJSON',
-
-
-        /**
-         * Cast the JSON object into a proper LSeqTree.
-         * @param {Object} object the JSON object to cast.
-         * @return {LSeqTree} A self reference.
-         */
-        value: function fromJSON(object) {
-            var _this = this;
-
-            // #1 copy the source, counter, and length of the object
-            this._s = object._s;
-            this._c = object._c;
-            this.options = object.options;
-
-            this._base = new Base(this.options.base);
-            this._boundary = new Strategy(this._base, this.options.boundary);
-
-            // #2 depth first adding
-            var depthFirst = function depthFirst(currentNode, currentPath) {
-                var triple = new Triple(currentNode.t.p, currentNode.t.s, currentNode.t.c);
-                currentPath.push(triple); // stack
-                if (currentNode.e !== null) {
-                    _this.root.add(new LSeqNode(currentPath.slice(), currentNode.e));
-                };
-                for (var i = 0; i < currentNode.children.length; ++i) {
-                    depthFirst(currentNode.children[i], currentPath);
-                };
-                currentPath.pop(); // unstack
-            };
-            for (var i = 0; i < object.root.children.length; ++i) {
-                depthFirst(object.root.children[i], []);
-            };
-            return this;
-        }
-    }, {
-        key: 'length',
-        get: function get() {
-            var result = this.root.subCounter - 2; // -2: the boundaries
-            result = this.root._hasElement && result + 1 || result;
-            return result;
-        }
-    }]);
-
-    return LSeqTree;
-}();
-
-;
-
-module.exports = LSeqTree;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/lib/strategy.js":
-/*!***********************************************!*\
-  !*** ./node_modules/LSEQTree/lib/strategy.js ***!
-  \***********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var BI = __webpack_require__(/*! BigInt */ "./node_modules/LSEQTree/node_modules/BigInt/src/BigInt.js");
-var Identifier = __webpack_require__(/*! ./identifier.js */ "./node_modules/LSEQTree/lib/identifier.js");
-
-/**
- * Enumerate the available sub-allocation strategies. The signature of these
- * functions is f(Id, Id, N+, N+, N, N): Id.
- */
-
-var Strategy = function () {
-    /**
-     * @param {Base} base The base used to create the new identifiers.
-     * @param {Number} [boundary = 10] The value used as the default maximum
-     * spacing between identifiers.
-     */
-    function Strategy(base) {
-        var boundary = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 10;
-
-        _classCallCheck(this, Strategy);
-
-        this._base = base;
-        this._boundary = boundary;
-    }
-
-    _createClass(Strategy, [{
-        key: 'bPlus',
-
-
-        /**
-         * Choose an identifier starting from previous bound and adding random
-         * number.
-         * @param {LSeqNode} p The previous identifier.
-         * @param {LSeqNode} q The next identifier.
-         * @param {Number} level The number of concatenation composing the new
-         * identifier.
-         * @param {Number} interval The interval between p and q.
-         * @param {Object} s The source that creates the new identifier.
-         * @param {Number} c The counter of that source.
-         * @return {Identifier} The new allocated identifier.
-         */
-        value: function bPlus(p, q, level, interval, s, c) {
-            var copyP = p,
-                copyQ = q,
-                step = Math.min(this._boundary, interval),
-                //#0 the min interval
-            digit = BI.int2bigInt(0, this._base.getSumBit(level)),
-                value = void 0;
-
-            // #1 copy the previous identifier
-            for (var i = 0; i <= level; ++i) {
-                value = p && p.t.p || 0;
-                BI.addInt_(digit, value);
-                if (i !== level) {
-                    BI.leftShift_(digit, this._base.getBitBase(i + 1));
-                };
-                p = p && !p.isLeaf && p.child || null;
-            };
-            // #2 create a digit for an identifier by adding a random value
-            // #A Digit
-            BI.addInt_(digit, Math.floor(Math.random() * step + 1));
-            // #B Source & counter
-            return this._getSC(digit, copyP, copyQ, level, s, c);
-        }
-    }, {
-        key: 'bMinus',
-
-
-        /**
-         * Choose an identifier starting from next bound and substract a random
-         * number.
-         * @param {LSeqNode} p The previous identifier.
-         * @param {LSeqNode} q The next identifier.
-         * @param {Number} level The number of concatenation composing the new
-         * identifier.
-         * @param {Number} interval The interval between p and q.
-         * @param {Object} s The source that creates the new identifier.
-         * @param {Number} c The counter of that source.
-         */
-        value: function bMinus(p, q, level, interval, s, c) {
-            var copyP = p,
-                copyQ = q,
-                step = Math.min(this._boundary, interval),
-                // #0 process min interval
-            digit = BI.int2bigInt(0, this._base.getSumBit(level)),
-                pIsGreater = false,
-                commonRoot = true,
-                prevValue = void 0,
-                nextValue = void 0;
-
-            // #1 copy next, if previous is greater, copy maxValue @ depth
-            for (var i = 0; i <= level; ++i) {
-                prevValue = p && p.t.p || 0;
-                nextValue = q && q.t.p || 0;
-
-                if (commonRoot && prevValue !== nextValue) {
-                    commonRoot = false;
-                    pIsGreater = prevValue > nextValue;
-                };
-                if (pIsGreater) {
-                    nextValue = Math.pow(2, this._base.getBitBase(i)) - 1;
-                };
-                BI.addInt_(digit, nextValue);
-                if (i !== level) {
-                    BI.leftShift_(digit, this._base.getBitBase(i + 1));
-                };
-
-                q = q && !q.isLeaf && q.child || null;
-                p = p && !p.isLeaf && p.child || null;
-            };
-
-            // #3 create a digit for an identifier by subing a random value
-            // #A Digit
-            if (pIsGreater) {
-                BI.addInt_(digit, -Math.floor(Math.random() * step));
-            } else {
-                BI.addInt_(digit, -Math.floor(Math.random() * step) - 1);
-            };
-
-            // #B Source & counter
-            return this._getSC(digit, copyP, copyQ, level, s, c);
-        }
-    }, {
-        key: '_getSC',
-
-
-        /**
-         * Copies the appropriates source and counter from the adjacent identifiers
-         * at the insertion position.
-         * @param {Number} d The digit part of the new identifier.
-         * @param {LSeqNode} p The previous identifier.
-         * @param {LSeqNode} q the next identifier.
-         * @param {Number} level The size of the new identifier.
-         * @param {Object} s The local site identifier.
-         * @param {Number} c The local monotonic counter.
-         * @return {Identifier} The new allocated identifier.
-         */
-        value: function _getSC(d, p, q, level, s, c) {
-            var sources = [],
-                counters = [],
-                i = 0,
-                sumBit = this._base.getSumBit(level),
-                tempDigit = void 0,
-                value = void 0;
-
-            while (i <= level) {
-                tempDigit = BI.dup(d);
-                BI.rightShift_(tempDigit, sumBit - this._base.getSumBit(i));
-                value = BI.modInt(tempDigit, Math.pow(2, this._base.getBitBase(i)));
-                sources[i] = s;
-                counters[i] = c;
-
-                if (q && q.t.p === value) {
-                    sources[i] = q.t.s;counters[i] = q.t.c;
-                };
-                if (p && p.t.p === value) {
-                    sources[i] = p.t.s;counters[i] = p.t.c;
-                };
-
-                q = q && !q.isLeaf && q.child || null;
-                p = p && !p.isLeaf && p.child || null;
-
-                ++i;
-            };
-
-            return new Identifier(this._base, d, sources, counters);
-        }
-    }]);
-
-    return Strategy;
-}();
-
-;
-
-module.exports = Strategy;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/lib/triple.js":
-/*!*********************************************!*\
-  !*** ./node_modules/LSEQTree/lib/triple.js ***!
-  \*********************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- * Triple that contains <path; site; counter>. Identifiers of LSEQ are lists of
- * triples.
- */
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Triple = function () {
-
-    /**
-     * @param {Number} path The part of the path in the tree.
-     * @param {Number|String} site The unique site identifier that created the
-     * triple.
-     * @param {Number} counter The local counter of the site when it created the
-     * triple.
-     */
-    function Triple(path, site, counter) {
-        _classCallCheck(this, Triple);
-
-        this.p = path;
-        this.s = site;
-        this.c = counter;
-    }
-
-    _createClass(Triple, [{
-        key: 'compareTo',
-
-
-        /**
-         * Compare two triples prioritizing the path, then site, then counter.
-         * @param {Triple} o the other triple to compare .
-         * @returns {Number} -1 if this is lower than o, 1 if this is greater than
-         * o, 0 otherwise.
-         */
-        value: function compareTo(o) {
-            // #1 process maximal virtual bounds
-            if (this.s === Number.MAX_VALUE && this.c === Number.MAX_VALUE) {
-                return 1;
-            };
-            if (o.s === Number.MAX_VALUE && o.s === Number.MAX_VALUE) {
-                return -1;
-            };
-            // #2 compare p then s then c
-            if (this.p < o.p) {
-                return -1;
-            };
-            if (this.p > o.p) {
-                return 1;
-            };
-            if (this.s < o.s) {
-                return -1;
-            };
-            if (this.s > o.s) {
-                return 1;
-            };
-            if (this.c < o.c) {
-                return -1;
-            };
-            if (this.c > o.c) {
-                return 1;
-            };
-            // #3 they are equal
-            return 0;
-        }
-    }]);
-
-    return Triple;
-}();
-
-;
-
-module.exports = Triple;
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/node_modules/BigInt/src sync recursive":
-/*!************************************************************!*\
-  !*** ./node_modules/LSEQTree/node_modules/BigInt/src sync ***!
-  \************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-function webpackEmptyContext(req) {
-	var e = new Error("Cannot find module '" + req + "'");
-	e.code = 'MODULE_NOT_FOUND';
-	throw e;
-}
-webpackEmptyContext.keys = function() { return []; };
-webpackEmptyContext.resolve = webpackEmptyContext;
-module.exports = webpackEmptyContext;
-webpackEmptyContext.id = "./node_modules/LSEQTree/node_modules/BigInt/src sync recursive";
-
-/***/ }),
-
-/***/ "./node_modules/LSEQTree/node_modules/BigInt/src/BigInt.js":
-/*!*****************************************************************!*\
-  !*** ./node_modules/LSEQTree/node_modules/BigInt/src/BigInt.js ***!
-  \*****************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(module) {var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-// Vjeux: Customized bigInt2str and str2bigInt in order to accept custom base.
-
-////////////////////////////////////////////////////////////////////////////////////////
-// Big Integer Library v. 5.5
-// Created 2000, last modified 2013
-// Leemon Baird
-// www.leemon.com
-//
-// Version history:
-// v 5.5  17 Mar 2013
-//   - two lines of a form like "if (x<0) x+=n" had the "if" changed to "while" to 
-//     handle the case when x<-n. (Thanks to James Ansell for finding that bug)
-// v 5.4  3 Oct 2009
-//   - added "var i" to greaterShift() so i is not global. (Thanks to P�ter Szab� for finding that bug)
-//
-// v 5.3  21 Sep 2009
-//   - added randProbPrime(k) for probable primes
-//   - unrolled loop in mont_ (slightly faster)
-//   - millerRabin now takes a bigInt parameter rather than an int
-//
-// v 5.2  15 Sep 2009
-//   - fixed capitalization in call to int2bigInt in randBigInt
-//     (thanks to Emili Evripidou, Reinhold Behringer, and Samuel Macaleese for finding that bug)
-//
-// v 5.1  8 Oct 2007 
-//   - renamed inverseModInt_ to inverseModInt since it doesn't change its parameters
-//   - added functions GCD and randBigInt, which call GCD_ and randBigInt_
-//   - fixed a bug found by Rob Visser (see comment with his name below)
-//   - improved comments
-//
-// This file is public domain.   You can use it for any purpose without restriction.
-// I do not guarantee that it is correct, so use it at your own risk.  If you use 
-// it for something interesting, I'd appreciate hearing about it.  If you find 
-// any bugs or make any improvements, I'd appreciate hearing about those too.
-// It would also be nice if my name and URL were left in the comments.  But none 
-// of that is required.
-//
-// This code defines a bigInt library for arbitrary-precision integers.
-// A bigInt is an array of integers storing the value in chunks of bpe bits, 
-// little endian (buff[0] is the least significant word).
-// Negative bigInts are stored two's complement.  Almost all the functions treat
-// bigInts as nonnegative.  The few that view them as two's complement say so
-// in their comments.  Some functions assume their parameters have at least one 
-// leading zero element. Functions with an underscore at the end of the name put
-// their answer into one of the arrays passed in, and have unpredictable behavior 
-// in case of overflow, so the caller must make sure the arrays are big enough to 
-// hold the answer.  But the average user should never have to call any of the 
-// underscored functions.  Each important underscored function has a wrapper function 
-// of the same name without the underscore that takes care of the details for you.  
-// For each underscored function where a parameter is modified, that same variable 
-// must not be used as another argument too.  So, you cannot square x by doing 
-// multMod_(x,x,n).  You must use squareMod_(x,n) instead, or do y=dup(x); multMod_(x,y,n).
-// Or simply use the multMod(x,x,n) function without the underscore, where
-// such issues never arise, because non-underscored functions never change
-// their parameters; they always allocate new memory for the answer that is returned.
-//
-// These functions are designed to avoid frequent dynamic memory allocation in the inner loop.
-// For most functions, if it needs a BigInt as a local variable it will actually use
-// a global, and will only allocate to it only when it's not the right size.  This ensures
-// that when a function is called repeatedly with same-sized parameters, it only allocates
-// memory on the first call.
-//
-// Note that for cryptographic purposes, the calls to Math.random() must 
-// be replaced with calls to a better pseudorandom number generator.
-//
-// In the following, "bigInt" means a bigInt with at least one leading zero element,
-// and "integer" means a nonnegative integer less than radix.  In some cases, integer 
-// can be negative.  Negative bigInts are 2s complement.
-// 
-// The following functions do not modify their inputs.
-// Those returning a bigInt, string, or Array will dynamically allocate memory for that value.
-// Those returning a boolean will return the integer 0 (false) or 1 (true).
-// Those returning boolean or int will not allocate memory except possibly on the first 
-// time they're called with a given parameter size.
-// 
-// bigInt  add(x,y)               //return (x+y) for bigInts x and y.  
-// bigInt  addInt(x,n)            //return (x+n) where x is a bigInt and n is an integer.
-// string  bigInt2str(x,base)     //return a string form of bigInt x in a given base, with 2 <= base <= 95
-// int     bitSize(x)             //return how many bits long the bigInt x is, not counting leading zeros
-// bigInt  dup(x)                 //return a copy of bigInt x
-// boolean equals(x,y)            //is the bigInt x equal to the bigint y?
-// boolean equalsInt(x,y)         //is bigint x equal to integer y?
-// bigInt  expand(x,n)            //return a copy of x with at least n elements, adding leading zeros if needed
-// Array   findPrimes(n)          //return array of all primes less than integer n
-// bigInt  GCD(x,y)               //return greatest common divisor of bigInts x and y (each with same number of elements).
-// boolean greater(x,y)           //is x>y?  (x and y are nonnegative bigInts)
-// boolean greaterShift(x,y,shift)//is (x <<(shift*bpe)) > y?
-// bigInt  int2bigInt(t,n,m)      //return a bigInt equal to integer t, with at least n bits and m array elements
-// bigInt  inverseMod(x,n)        //return (x**(-1) mod n) for bigInts x and n.  If no inverse exists, it returns null
-// int     inverseModInt(x,n)     //return x**(-1) mod n, for integers x and n.  Return 0 if there is no inverse
-// boolean isZero(x)              //is the bigInt x equal to zero?
-// boolean millerRabin(x,b)       //does one round of Miller-Rabin base integer b say that bigInt x is possibly prime? (b is bigInt, 1<b<x)
-// boolean millerRabinInt(x,b)    //does one round of Miller-Rabin base integer b say that bigInt x is possibly prime? (b is int,    1<b<x)
-// bigInt  mod(x,n)               //return a new bigInt equal to (x mod n) for bigInts x and n.
-// int     modInt(x,n)            //return x mod n for bigInt x and integer n.
-// bigInt  mult(x,y)              //return x*y for bigInts x and y. This is faster when y<x.
-// bigInt  multMod(x,y,n)         //return (x*y mod n) for bigInts x,y,n.  For greater speed, let y<x.
-// boolean negative(x)            //is bigInt x negative?
-// bigInt  powMod(x,y,n)          //return (x**y mod n) where x,y,n are bigInts and ** is exponentiation.  0**0=1. Faster for odd n.
-// bigInt  randBigInt(n,s)        //return an n-bit random BigInt (n>=1).  If s=1, then the most significant of those n bits is set to 1.
-// bigInt  randTruePrime(k)       //return a new, random, k-bit, true prime bigInt using Maurer's algorithm.
-// bigInt  randProbPrime(k)       //return a new, random, k-bit, probable prime bigInt (probability it's composite less than 2^-80).
-// bigInt  str2bigInt(s,b,n,m)    //return a bigInt for number represented in string s in base b with at least n bits and m array elements
-// bigInt  sub(x,y)               //return (x-y) for bigInts x and y.  Negative answers will be 2s complement
-// bigInt  trim(x,k)              //return a copy of x with exactly k leading zero elements
-//
-//
-// The following functions each have a non-underscored version, which most users should call instead.
-// These functions each write to a single parameter, and the caller is responsible for ensuring the array 
-// passed in is large enough to hold the result. 
-//
-// void    addInt_(x,n)          //do x=x+n where x is a bigInt and n is an integer
-// void    add_(x,y)             //do x=x+y for bigInts x and y
-// void    copy_(x,y)            //do x=y on bigInts x and y
-// void    copyInt_(x,n)         //do x=n on bigInt x and integer n
-// void    GCD_(x,y)             //set x to the greatest common divisor of bigInts x and y, (y is destroyed).  (This never overflows its array).
-// boolean inverseMod_(x,n)      //do x=x**(-1) mod n, for bigInts x and n. Returns 1 (0) if inverse does (doesn't) exist
-// void    mod_(x,n)             //do x=x mod n for bigInts x and n. (This never overflows its array).
-// void    mult_(x,y)            //do x=x*y for bigInts x and y.
-// void    multMod_(x,y,n)       //do x=x*y  mod n for bigInts x,y,n.
-// void    powMod_(x,y,n)        //do x=x**y mod n, where x,y,n are bigInts (n is odd) and ** is exponentiation.  0**0=1.
-// void    randBigInt_(b,n,s)    //do b = an n-bit random BigInt. if s=1, then nth bit (most significant bit) is set to 1. n>=1.
-// void    randTruePrime_(ans,k) //do ans = a random k-bit true random prime (not just probable prime) with 1 in the msb.
-// void    sub_(x,y)             //do x=x-y for bigInts x and y. Negative answers will be 2s complement.
-//
-// The following functions do NOT have a non-underscored version. 
-// They each write a bigInt result to one or more parameters.  The caller is responsible for
-// ensuring the arrays passed in are large enough to hold the results. 
-//
-// void addShift_(x,y,ys)       //do x=x+(y<<(ys*bpe))
-// void carry_(x)               //do carries and borrows so each element of the bigInt x fits in bpe bits.
-// void divide_(x,y,q,r)        //divide x by y giving quotient q and remainder r
-// int  divInt_(x,n)            //do x=floor(x/n) for bigInt x and integer n, and return the remainder. (This never overflows its array).
-// void eGCD_(x,y,d,a,b)        //sets a,b,d to positive bigInts such that d = GCD_(x,y) = a*x-b*y
-// void halve_(x)               //do x=floor(|x|/2)*sgn(x) for bigInt x in 2's complement.  (This never overflows its array).
-// void leftShift_(x,n)         //left shift bigInt x by n bits.  n<bpe.
-// void linComb_(x,y,a,b)       //do x=a*x+b*y for bigInts x and y and integers a and b
-// void linCombShift_(x,y,b,ys) //do x=x+b*(y<<(ys*bpe)) for bigInts x and y, and integers b and ys
-// void mont_(x,y,n,np)         //Montgomery multiplication (see comments where the function is defined)
-// void multInt_(x,n)           //do x=x*n where x is a bigInt and n is an integer.
-// void rightShift_(x,n)        //right shift bigInt x by n bits.  0 <= n < bpe. (This never overflows its array).
-// void squareMod_(x,n)         //do x=x*x  mod n for bigInts x,n
-// void subShift_(x,y,ys)       //do x=x-(y<<(ys*bpe)). Negative answers will be 2s complement.
-//
-// The following functions are based on algorithms from the _Handbook of Applied Cryptography_
-//    powMod_()           = algorithm 14.94, Montgomery exponentiation
-//    eGCD_,inverseMod_() = algorithm 14.61, Binary extended GCD_
-//    GCD_()              = algorothm 14.57, Lehmer's algorithm
-//    mont_()             = algorithm 14.36, Montgomery multiplication
-//    divide_()           = algorithm 14.20  Multiple-precision division
-//    squareMod_()        = algorithm 14.16  Multiple-precision squaring
-//    randTruePrime_()    = algorithm  4.62, Maurer's algorithm
-//    millerRabin()       = algorithm  4.24, Miller-Rabin algorithm
-//
-// Profiling shows:
-//     randTruePrime_() spends:
-//         10% of its time in calls to powMod_()
-//         85% of its time in calls to millerRabin()
-//     millerRabin() spends:
-//         99% of its time in calls to powMod_()   (always with a base of 2)
-//     powMod_() spends:
-//         94% of its time in calls to mont_()  (almost always with x==y)
-//
-// This suggests there are several ways to speed up this library slightly:
-//     - convert powMod_ to use a Montgomery form of k-ary window (or maybe a Montgomery form of sliding window)
-//         -- this should especially focus on being fast when raising 2 to a power mod n
-//     - convert randTruePrime_() to use a minimum r of 1/3 instead of 1/2 with the appropriate change to the test
-//     - tune the parameters in randTruePrime_(), including c, m, and recLimit
-//     - speed up the single loop in mont_() that takes 95% of the runtime, perhaps by reducing checking
-//       within the loop when all the parameters are the same length.
-//
-// There are several ideas that look like they wouldn't help much at all:
-//     - replacing trial division in randTruePrime_() with a sieve (that speeds up something taking almost no time anyway)
-//     - increase bpe from 15 to 30 (that would help if we had a 32*32->64 multiplier, but not with JavaScript's 32*32->32)
-//     - speeding up mont_(x,y,n,np) when x==y by doing a non-modular, non-Montgomery square
-//       followed by a Montgomery reduction.  The intermediate answer will be twice as long as x, so that
-//       method would be slower.  This is unfortunate because the code currently spends almost all of its time
-//       doing mont_(x,x,...), both for randTruePrime_() and powMod_().  A faster method for Montgomery squaring
-//       would have a large impact on the speed of randTruePrime_() and powMod_().  HAC has a couple of poorly-worded
-//       sentences that seem to imply it's faster to do a non-modular square followed by a single
-//       Montgomery reduction, but that's obviously wrong.
-////////////////////////////////////////////////////////////////////////////////////////
-(function (factory) {
-  if (( false ? undefined : _typeof(exports)) === 'object') {
-    // CommonJS
-    factory(__webpack_require__("./node_modules/LSEQTree/node_modules/BigInt/src sync recursive"), exports, module);
-  } else if (true) {
-    // AMD requirejs
-    !(__WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
-				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) :
-				__WEBPACK_AMD_DEFINE_FACTORY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-  } else { var _require, _module; }
-})(function (require, exports, module) {
-  "use strict";
-
-  var trueRandom = function trueRandom() {
-    return Math.random();
-  };
-
-  function setRandom(random) {
-    trueRandom = random;
-  }
-
-  //globals
-  var bpe = 0; //bits stored per array element
-  var mask = 0; //AND this with an array element to chop it down to bpe bits
-  var radix = mask + 1; //equals 2^bpe.  A single 1 bit to the left of the last bit of mask.
-
-  //the digits for converting to different bases
-  var digitsStr = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_=!@#$%^&*()[]{}|;:,.<>/?`~ \\\'\"+-';
-
-  //initialize the global variables
-  for (bpe = 0; 1 << bpe + 1 > 1 << bpe; bpe++) {} //bpe=number of bits in the mantissa on this platform
-  bpe >>= 1; //bpe=number of bits in one element of the array representing the bigInt
-  mask = (1 << bpe) - 1; //AND the mask with an integer to get its bpe least significant bits
-  radix = mask + 1; //2^bpe.  a single 1 bit to the left of the first bit of mask
-  var one = int2bigInt(1, 1, 1); //constant used in powMod_()
-
-  //the following global variables are scratchpad memory to
-  //reduce dynamic memory allocation in the inner loop
-  var t = new Array(0);
-  var ss = t; //used in mult_()
-  var s0 = t; //used in multMod_(), squareMod_()
-  var s1 = t; //used in powMod_(), multMod_(), squareMod_()
-  var s2 = t; //used in powMod_(), multMod_()
-  var s3 = t; //used in powMod_()
-  var s4 = t,
-      s5 = t; //used in mod_()
-  var s6 = t; //used in bigInt2str()
-  var s7 = t; //used in powMod_()
-  var T = t; //used in GCD_()
-  var sa = t; //used in mont_()
-  var mr_x1 = t,
-      mr_r = t,
-      mr_a = t; //used in millerRabin()
-  var eg_v = t,
-      eg_u = t,
-      eg_A = t,
-      eg_B = t,
-      eg_C = t,
-      eg_D = t; //used in eGCD_(), inverseMod_()
-  var md_q1 = t,
-      md_q2 = t,
-      md_q3 = t,
-      md_r = t,
-      md_r1 = t,
-      md_r2 = t,
-      md_tt = t; //used in mod_()
-
-  var primes = t,
-      pows = t,
-      s_i = t,
-      s_i2 = t,
-      s_R = t,
-      s_rm = t,
-      s_q = t,
-      s_n1 = t;
-  var s_a = t,
-      s_r2 = t,
-      s_n = t,
-      s_b = t,
-      s_d = t,
-      s_x1 = t,
-      s_x2 = t,
-      s_aa = t; //used in randTruePrime_()
-
-  var rpprb = t; //used in randProbPrimeRounds() (which also uses "primes")
-
-  ////////////////////////////////////////////////////////////////////////////////////////
-
-
-  //return array of all primes less than integer n
-  function findPrimes(n) {
-    var i, s, p, ans;
-    s = new Array(n);
-    for (i = 0; i < n; i++) {
-      s[i] = 0;
-    }s[0] = 2;
-    p = 0; //first p elements of s are primes, the rest are a sieve
-    for (; s[p] < n;) {
-      //s[p] is the pth prime
-      for (i = s[p] * s[p]; i < n; i += s[p]) {
-        //mark multiples of s[p]
-        s[i] = 1;
-      }p++;
-      s[p] = s[p - 1] + 1;
-      for (; s[p] < n && s[s[p]]; s[p]++) {} //find next prime (where s[p]==0)
-    }
-    ans = new Array(p);
-    for (i = 0; i < p; i++) {
-      ans[i] = s[i];
-    }return ans;
-  }
-
-  //does a single round of Miller-Rabin base b consider x to be a possible prime?
-  //x is a bigInt, and b is an integer, with b<x
-  function millerRabinInt(x, b) {
-    if (mr_x1.length != x.length) {
-      mr_x1 = dup(x);
-      mr_r = dup(x);
-      mr_a = dup(x);
-    }
-
-    copyInt_(mr_a, b);
-    return millerRabin(x, mr_a);
-  }
-
-  //does a single round of Miller-Rabin base b consider x to be a possible prime?
-  //x and b are bigInts with b<x
-  function millerRabin(x, b) {
-    var i, j, k, s;
-
-    if (mr_x1.length != x.length) {
-      mr_x1 = dup(x);
-      mr_r = dup(x);
-      mr_a = dup(x);
-    }
-
-    copy_(mr_a, b);
-    copy_(mr_r, x);
-    copy_(mr_x1, x);
-
-    addInt_(mr_r, -1);
-    addInt_(mr_x1, -1);
-
-    //s=the highest power of two that divides mr_r
-    k = 0;
-    for (i = 0; i < mr_r.length; i++) {
-      for (j = 1; j < mask; j <<= 1) {
-        if (x[i] & j) {
-          s = k < mr_r.length + bpe ? k : 0;
-          i = mr_r.length;
-          j = mask;
-        } else k++;
-      }
-    }if (s) rightShift_(mr_r, s);
-
-    powMod_(mr_a, mr_r, x);
-
-    if (!equalsInt(mr_a, 1) && !equals(mr_a, mr_x1)) {
-      j = 1;
-      while (j <= s - 1 && !equals(mr_a, mr_x1)) {
-        squareMod_(mr_a, x);
-        if (equalsInt(mr_a, 1)) {
-          return 0;
-        }
-        j++;
-      }
-      if (!equals(mr_a, mr_x1)) {
-        return 0;
-      }
-    }
-    return 1;
-  }
-
-  //returns how many bits long the bigInt is, not counting leading zeros.
-  function bitSize(x) {
-    var j, z, w;
-    for (j = x.length - 1; x[j] == 0 && j > 0; j--) {}
-    for (z = 0, w = x[j]; w; w >>= 1, z++) {}
-    z += bpe * j;
-    return z;
-  }
-
-  //return a copy of x with at least n elements, adding leading zeros if needed
-  function expand(x, n) {
-    var ans = int2bigInt(0, (x.length > n ? x.length : n) * bpe, 0);
-    copy_(ans, x);
-    return ans;
-  }
-
-  //return a k-bit true random prime using Maurer's algorithm.
-  function randTruePrime(k) {
-    var ans = int2bigInt(0, k, 0);
-    randTruePrime_(ans, k);
-    return trim(ans, 1);
-  }
-
-  //return a k-bit random probable prime with probability of error < 2^-80
-  function randProbPrime(k) {
-    if (k >= 600) return randProbPrimeRounds(k, 2); //numbers from HAC table 4.3
-    if (k >= 550) return randProbPrimeRounds(k, 4);
-    if (k >= 500) return randProbPrimeRounds(k, 5);
-    if (k >= 400) return randProbPrimeRounds(k, 6);
-    if (k >= 350) return randProbPrimeRounds(k, 7);
-    if (k >= 300) return randProbPrimeRounds(k, 9);
-    if (k >= 250) return randProbPrimeRounds(k, 12); //numbers from HAC table 4.4
-    if (k >= 200) return randProbPrimeRounds(k, 15);
-    if (k >= 150) return randProbPrimeRounds(k, 18);
-    if (k >= 100) return randProbPrimeRounds(k, 27);
-    return randProbPrimeRounds(k, 40); //number from HAC remark 4.26 (only an estimate)
-  }
-
-  //return a k-bit probable random prime using n rounds of Miller Rabin (after trial division with small primes)
-  function randProbPrimeRounds(k, n) {
-    var ans, i, divisible, B;
-    B = 30000; //B is largest prime to use in trial division
-    ans = int2bigInt(0, k, 0);
-
-    //optimization: try larger and smaller B to find the best limit.
-
-    if (primes.length == 0) primes = findPrimes(30000); //check for divisibility by primes <=30000
-
-    if (rpprb.length != ans.length) rpprb = dup(ans);
-
-    for (;;) {
-      //keep trying random values for ans until one appears to be prime
-      //optimization: pick a random number times L=2*3*5*...*p, plus a
-      //   random element of the list of all numbers in [0,L) not divisible by any prime up to p.
-      //   This can reduce the amount of random number generation.
-
-      randBigInt_(ans, k, 0); //ans = a random odd number to check
-      ans[0] |= 1;
-      divisible = 0;
-
-      //check ans for divisibility by small primes up to B
-      for (i = 0; i < primes.length && primes[i] <= B; i++) {
-        if (modInt(ans, primes[i]) == 0 && !equalsInt(ans, primes[i])) {
-          divisible = 1;
-          break;
-        }
-      } //optimization: change millerRabin so the base can be bigger than the number being checked, then eliminate the while here.
-
-      //do n rounds of Miller Rabin, with random bases less than ans
-      for (i = 0; i < n && !divisible; i++) {
-        randBigInt_(rpprb, k, 0);
-        while (!greater(ans, rpprb)) {
-          //pick a random rpprb that's < ans
-          randBigInt_(rpprb, k, 0);
-        }if (!millerRabin(ans, rpprb)) divisible = 1;
-      }
-
-      if (!divisible) return ans;
-    }
-  }
-
-  //return a new bigInt equal to (x mod n) for bigInts x and n.
-  function mod(x, n) {
-    var ans = dup(x);
-    mod_(ans, n);
-    return trim(ans, 1);
-  }
-
-  //return (x+n) where x is a bigInt and n is an integer.
-  function addInt(x, n) {
-    var ans = expand(x, x.length + 1);
-    addInt_(ans, n);
-    return trim(ans, 1);
-  }
-
-  //return x*y for bigInts x and y. This is faster when y<x.
-  function mult(x, y) {
-    var ans = expand(x, x.length + y.length);
-    mult_(ans, y);
-    return trim(ans, 1);
-  }
-
-  //return (x**y mod n) where x,y,n are bigInts and ** is exponentiation.  0**0=1. Faster for odd n.
-  function powMod(x, y, n) {
-    var ans = expand(x, n.length);
-    powMod_(ans, trim(y, 2), trim(n, 2), 0); //this should work without the trim, but doesn't
-    return trim(ans, 1);
-  }
-
-  //return (x-y) for bigInts x and y.  Negative answers will be 2s complement
-  function sub(x, y) {
-    var ans = expand(x, x.length > y.length ? x.length + 1 : y.length + 1);
-    sub_(ans, y);
-    return trim(ans, 1);
-  }
-
-  //return (x+y) for bigInts x and y.
-  function add(x, y) {
-    var ans = expand(x, x.length > y.length ? x.length + 1 : y.length + 1);
-    add_(ans, y);
-    return trim(ans, 1);
-  }
-
-  //return (x**(-1) mod n) for bigInts x and n.  If no inverse exists, it returns null
-  function inverseMod(x, n) {
-    var ans = expand(x, n.length);
-    var s;
-    s = inverseMod_(ans, n);
-    return s ? trim(ans, 1) : null;
-  }
-
-  //return (x*y mod n) for bigInts x,y,n.  For greater speed, let y<x.
-  function multMod(x, y, n) {
-    var ans = expand(x, n.length);
-    multMod_(ans, y, n);
-    return trim(ans, 1);
-  }
-
-  //generate a k-bit true random prime using Maurer's algorithm,
-  //and put it into ans.  The bigInt ans must be large enough to hold it.
-  function randTruePrime_(ans, k) {
-    var c, m, pm, dd, j, r, B, divisible, z, zz, recSize;
-
-    if (primes.length == 0) primes = findPrimes(30000); //check for divisibility by primes <=30000
-
-    if (pows.length == 0) {
-      pows = new Array(512);
-      for (j = 0; j < 512; j++) {
-        pows[j] = Math.pow(2, j / 511. - 1.);
-      }
-    }
-
-    //c and m should be tuned for a particular machine and value of k, to maximize speed
-    c = 0.1; //c=0.1 in HAC
-    m = 20; //generate this k-bit number by first recursively generating a number that has between k/2 and k-m bits
-    var recLimit = 20; //stop recursion when k <=recLimit.  Must have recLimit >= 2
-
-    if (s_i2.length != ans.length) {
-      s_i2 = dup(ans);
-      s_R = dup(ans);
-      s_n1 = dup(ans);
-      s_r2 = dup(ans);
-      s_d = dup(ans);
-      s_x1 = dup(ans);
-      s_x2 = dup(ans);
-      s_b = dup(ans);
-      s_n = dup(ans);
-      s_i = dup(ans);
-      s_rm = dup(ans);
-      s_q = dup(ans);
-      s_a = dup(ans);
-      s_aa = dup(ans);
-    }
-
-    if (k <= recLimit) {
-      //generate small random primes by trial division up to its square root
-      pm = (1 << (k + 2 >> 1)) - 1; //pm is binary number with all ones, just over sqrt(2^k)
-      copyInt_(ans, 0);
-      for (dd = 1; dd;) {
-        dd = 0;
-        ans[0] = 1 | 1 << k - 1 | Math.floor(trueRandom() * (1 << k)); //random, k-bit, odd integer, with msb 1
-        for (j = 1; j < primes.length && (primes[j] & pm) == primes[j]; j++) {
-          //trial division by all primes 3...sqrt(2^k)
-          if (0 == ans[0] % primes[j]) {
-            dd = 1;
-            break;
-          }
-        }
-      }
-      carry_(ans);
-      return;
-    }
-
-    B = c * k * k; //try small primes up to B (or all the primes[] array if the largest is less than B).
-    if (k > 2 * m) //generate this k-bit number by first recursively generating a number that has between k/2 and k-m bits
-      for (r = 1; k - k * r <= m;) {
-        r = pows[Math.floor(trueRandom() * 512)];
-      } //r=Math.pow(2,Math.random()-1);
-    else r = .5;
-
-    //simulation suggests the more complex algorithm using r=.333 is only slightly faster.
-
-    recSize = Math.floor(r * k) + 1;
-
-    randTruePrime_(s_q, recSize);
-    copyInt_(s_i2, 0);
-    s_i2[Math.floor((k - 2) / bpe)] |= 1 << (k - 2) % bpe; //s_i2=2^(k-2)
-    divide_(s_i2, s_q, s_i, s_rm); //s_i=floor((2^(k-1))/(2q))
-
-    z = bitSize(s_i);
-
-    for (;;) {
-      for (;;) {
-        //generate z-bit numbers until one falls in the range [0,s_i-1]
-        randBigInt_(s_R, z, 0);
-        if (greater(s_i, s_R)) break;
-      } //now s_R is in the range [0,s_i-1]
-      addInt_(s_R, 1); //now s_R is in the range [1,s_i]
-      add_(s_R, s_i); //now s_R is in the range [s_i+1,2*s_i]
-
-      copy_(s_n, s_q);
-      mult_(s_n, s_R);
-      multInt_(s_n, 2);
-      addInt_(s_n, 1); //s_n=2*s_R*s_q+1
-
-      copy_(s_r2, s_R);
-      multInt_(s_r2, 2); //s_r2=2*s_R
-
-      //check s_n for divisibility by small primes up to B
-      for (divisible = 0, j = 0; j < primes.length && primes[j] < B; j++) {
-        if (modInt(s_n, primes[j]) == 0 && !equalsInt(s_n, primes[j])) {
-          divisible = 1;
-          break;
-        }
-      }if (!divisible) //if it passes small primes check, then try a single Miller-Rabin base 2
-        if (!millerRabinInt(s_n, 2)) //this line represents 75% of the total runtime for randTruePrime_
-          divisible = 1;
-
-      if (!divisible) {
-        //if it passes that test, continue checking s_n
-        addInt_(s_n, -3);
-        for (j = s_n.length - 1; s_n[j] == 0 && j > 0; j--) {} //strip leading zeros
-        for (zz = 0, w = s_n[j]; w; w >>= 1, zz++) {}
-        zz += bpe * j; //zz=number of bits in s_n, ignoring leading zeros
-        for (;;) {
-          //generate z-bit numbers until one falls in the range [0,s_n-1]
-          randBigInt_(s_a, zz, 0);
-          if (greater(s_n, s_a)) break;
-        } //now s_a is in the range [0,s_n-1]
-        addInt_(s_n, 3); //now s_a is in the range [0,s_n-4]
-        addInt_(s_a, 2); //now s_a is in the range [2,s_n-2]
-        copy_(s_b, s_a);
-        copy_(s_n1, s_n);
-        addInt_(s_n1, -1);
-        powMod_(s_b, s_n1, s_n); //s_b=s_a^(s_n-1) modulo s_n
-        addInt_(s_b, -1);
-        if (isZero(s_b)) {
-          copy_(s_b, s_a);
-          powMod_(s_b, s_r2, s_n);
-          addInt_(s_b, -1);
-          copy_(s_aa, s_n);
-          copy_(s_d, s_b);
-          GCD_(s_d, s_n); //if s_b and s_n are relatively prime, then s_n is a prime
-          if (equalsInt(s_d, 1)) {
-            copy_(ans, s_aa);
-            return; //if we've made it this far, then s_n is absolutely guaranteed to be prime
-          }
-        }
-      }
-    }
-  }
-
-  //Return an n-bit random BigInt (n>=1).  If s=1, then the most significant of those n bits is set to 1.
-  function randBigInt(n, s) {
-    var a, b;
-    a = Math.floor((n - 1) / bpe) + 2; //# array elements to hold the BigInt with a leading 0 element
-    b = int2bigInt(0, 0, a);
-    randBigInt_(b, n, s);
-    return b;
-  }
-
-  //Set b to an n-bit random BigInt.  If s=1, then the most significant of those n bits is set to 1.
-  //Array b must be big enough to hold the result. Must have n>=1
-  function randBigInt_(b, n, s) {
-    var i, a;
-    for (i = 0; i < b.length; i++) {
-      b[i] = 0;
-    }a = Math.floor((n - 1) / bpe) + 1; //# array elements to hold the BigInt
-    for (i = 0; i < a; i++) {
-      b[i] = Math.floor(trueRandom() * (1 << bpe - 1));
-    }
-    b[a - 1] &= (2 << (n - 1) % bpe) - 1;
-    if (s == 1) b[a - 1] |= 1 << (n - 1) % bpe;
-  }
-
-  //Return the greatest common divisor of bigInts x and y (each with same number of elements).
-  function GCD(x, y) {
-    var xc, yc;
-    xc = dup(x);
-    yc = dup(y);
-    GCD_(xc, yc);
-    return xc;
-  }
-
-  //set x to the greatest common divisor of bigInts x and y (each with same number of elements).
-  //y is destroyed.
-  function GCD_(x, y) {
-    var i, xp, yp, A, B, C, D, q, sing;
-    if (T.length != x.length) T = dup(x);
-
-    sing = 1;
-    while (sing) {
-      //while y has nonzero elements other than y[0]
-      sing = 0;
-      for (i = 1; i < y.length; i++) {
-        //check if y has nonzero elements other than 0
-        if (y[i]) {
-          sing = 1;
-          break;
-        }
-      }if (!sing) break; //quit when y all zero elements except possibly y[0]
-
-      for (i = x.length; !x[i] && i >= 0; i--) {} //find most significant element of x
-      xp = x[i];
-      yp = y[i];
-      A = 1;B = 0;C = 0;D = 1;
-      while (yp + C && yp + D) {
-        q = Math.floor((xp + A) / (yp + C));
-        var qp = Math.floor((xp + B) / (yp + D));
-        if (q != qp) break;
-        t = A - q * C;A = C;C = t; //  do (A,B,xp, C,D,yp) = (C,D,yp, A,B,xp) - q*(0,0,0, C,D,yp)
-        t = B - q * D;B = D;D = t;
-        t = xp - q * yp;xp = yp;yp = t;
-      }
-      if (B) {
-        copy_(T, x);
-        linComb_(x, y, A, B); //x=A*x+B*y
-        linComb_(y, T, D, C); //y=D*y+C*T
-      } else {
-        mod_(x, y);
-        copy_(T, x);
-        copy_(x, y);
-        copy_(y, T);
-      }
-    }
-    if (y[0] == 0) return;
-    t = modInt(x, y[0]);
-    copyInt_(x, y[0]);
-    y[0] = t;
-    while (y[0]) {
-      x[0] %= y[0];
-      t = x[0];x[0] = y[0];y[0] = t;
-    }
-  }
-
-  //do x=x**(-1) mod n, for bigInts x and n.
-  //If no inverse exists, it sets x to zero and returns 0, else it returns 1.
-  //The x array must be at least as large as the n array.
-  function inverseMod_(x, n) {
-    var k = 1 + 2 * Math.max(x.length, n.length);
-
-    if (!(x[0] & 1) && !(n[0] & 1)) {
-      //if both inputs are even, then inverse doesn't exist
-      copyInt_(x, 0);
-      return 0;
-    }
-
-    if (eg_u.length != k) {
-      eg_u = new Array(k);
-      eg_v = new Array(k);
-      eg_A = new Array(k);
-      eg_B = new Array(k);
-      eg_C = new Array(k);
-      eg_D = new Array(k);
-    }
-
-    copy_(eg_u, x);
-    copy_(eg_v, n);
-    copyInt_(eg_A, 1);
-    copyInt_(eg_B, 0);
-    copyInt_(eg_C, 0);
-    copyInt_(eg_D, 1);
-    for (;;) {
-      while (!(eg_u[0] & 1)) {
-        //while eg_u is even
-        halve_(eg_u);
-        if (!(eg_A[0] & 1) && !(eg_B[0] & 1)) {
-          //if eg_A==eg_B==0 mod 2
-          halve_(eg_A);
-          halve_(eg_B);
-        } else {
-          add_(eg_A, n);halve_(eg_A);
-          sub_(eg_B, x);halve_(eg_B);
-        }
-      }
-
-      while (!(eg_v[0] & 1)) {
-        //while eg_v is even
-        halve_(eg_v);
-        if (!(eg_C[0] & 1) && !(eg_D[0] & 1)) {
-          //if eg_C==eg_D==0 mod 2
-          halve_(eg_C);
-          halve_(eg_D);
-        } else {
-          add_(eg_C, n);halve_(eg_C);
-          sub_(eg_D, x);halve_(eg_D);
-        }
-      }
-
-      if (!greater(eg_v, eg_u)) {
-        //eg_v <= eg_u
-        sub_(eg_u, eg_v);
-        sub_(eg_A, eg_C);
-        sub_(eg_B, eg_D);
-      } else {
-        //eg_v > eg_u
-        sub_(eg_v, eg_u);
-        sub_(eg_C, eg_A);
-        sub_(eg_D, eg_B);
-      }
-
-      if (equalsInt(eg_u, 0)) {
-        while (negative(eg_C)) {
-          //make sure answer is nonnegative
-          add_(eg_C, n);
-        }copy_(x, eg_C);
-
-        if (!equalsInt(eg_v, 1)) {
-          //if GCD_(x,n)!=1, then there is no inverse
-          copyInt_(x, 0);
-          return 0;
-        }
-        return 1;
-      }
-    }
-  }
-
-  //return x**(-1) mod n, for integers x and n.  Return 0 if there is no inverse
-  function inverseModInt(x, n) {
-    var a = 1,
-        b = 0,
-        t;
-    for (;;) {
-      if (x == 1) return a;
-      if (x == 0) return 0;
-      b -= a * Math.floor(n / x);
-      n %= x;
-
-      if (n == 1) return b; //to avoid negatives, change this b to n-b, and each -= to +=
-      if (n == 0) return 0;
-      a -= b * Math.floor(x / n);
-      x %= n;
-    }
-  }
-
-  //this deprecated function is for backward compatibility only.
-  function inverseModInt_(x, n) {
-    return inverseModInt(x, n);
-  }
-
-  //Given positive bigInts x and y, change the bigints v, a, and b to positive bigInts such that:
-  //     v = GCD_(x,y) = a*x-b*y
-  //The bigInts v, a, b, must have exactly as many elements as the larger of x and y.
-  function eGCD_(x, y, v, a, b) {
-    var g = 0;
-    var k = Math.max(x.length, y.length);
-    if (eg_u.length != k) {
-      eg_u = new Array(k);
-      eg_A = new Array(k);
-      eg_B = new Array(k);
-      eg_C = new Array(k);
-      eg_D = new Array(k);
-    }
-    while (!(x[0] & 1) && !(y[0] & 1)) {
-      //while x and y both even
-      halve_(x);
-      halve_(y);
-      g++;
-    }
-    copy_(eg_u, x);
-    copy_(v, y);
-    copyInt_(eg_A, 1);
-    copyInt_(eg_B, 0);
-    copyInt_(eg_C, 0);
-    copyInt_(eg_D, 1);
-    for (;;) {
-      while (!(eg_u[0] & 1)) {
-        //while u is even
-        halve_(eg_u);
-        if (!(eg_A[0] & 1) && !(eg_B[0] & 1)) {
-          //if A==B==0 mod 2
-          halve_(eg_A);
-          halve_(eg_B);
-        } else {
-          add_(eg_A, y);halve_(eg_A);
-          sub_(eg_B, x);halve_(eg_B);
-        }
-      }
-
-      while (!(v[0] & 1)) {
-        //while v is even
-        halve_(v);
-        if (!(eg_C[0] & 1) && !(eg_D[0] & 1)) {
-          //if C==D==0 mod 2
-          halve_(eg_C);
-          halve_(eg_D);
-        } else {
-          add_(eg_C, y);halve_(eg_C);
-          sub_(eg_D, x);halve_(eg_D);
-        }
-      }
-
-      if (!greater(v, eg_u)) {
-        //v<=u
-        sub_(eg_u, v);
-        sub_(eg_A, eg_C);
-        sub_(eg_B, eg_D);
-      } else {
-        //v>u
-        sub_(v, eg_u);
-        sub_(eg_C, eg_A);
-        sub_(eg_D, eg_B);
-      }
-      if (equalsInt(eg_u, 0)) {
-        while (negative(eg_C)) {
-          //make sure a (C) is nonnegative
-          add_(eg_C, y);
-          sub_(eg_D, x);
-        }
-        multInt_(eg_D, -1); ///make sure b (D) is nonnegative
-        copy_(a, eg_C);
-        copy_(b, eg_D);
-        leftShift_(v, g);
-        return;
-      }
-    }
-  }
-
-  //is bigInt x negative?
-  function negative(x) {
-    return x[x.length - 1] >> bpe - 1 & 1;
-  }
-
-  //is (x << (shift*bpe)) > y?
-  //x and y are nonnegative bigInts
-  //shift is a nonnegative integer
-  function greaterShift(x, y, shift) {
-    var i,
-        kx = x.length,
-        ky = y.length;
-    var k = kx + shift < ky ? kx + shift : ky;
-    for (i = ky - 1 - shift; i < kx && i >= 0; i++) {
-      if (x[i] > 0) return 1;
-    } //if there are nonzeros in x to the left of the first column of y, then x is bigger
-    for (i = kx - 1 + shift; i < ky; i++) {
-      if (y[i] > 0) return 0;
-    } //if there are nonzeros in y to the left of the first column of x, then x is not bigger
-    for (i = k - 1; i >= shift; i--) {
-      if (x[i - shift] > y[i]) return 1;else if (x[i - shift] < y[i]) return 0;
-    }return 0;
-  }
-
-  //is x > y? (x and y both nonnegative)
-  function greater(x, y) {
-    var i;
-    var k = x.length < y.length ? x.length : y.length;
-
-    for (i = x.length; i < y.length; i++) {
-      if (y[i]) return 0;
-    } //y has more digits
-
-    for (i = y.length; i < x.length; i++) {
-      if (x[i]) return 1;
-    } //x has more digits
-
-    for (i = k - 1; i >= 0; i--) {
-      if (x[i] > y[i]) return 1;else if (x[i] < y[i]) return 0;
-    }return 0;
-  }
-
-  //divide x by y giving quotient q and remainder r.  (q=floor(x/y),  r=x mod y).  All 4 are bigints.
-  //x must have at least one leading zero element.
-  //y must be nonzero.
-  //q and r must be arrays that are exactly the same length as x. (Or q can have more).
-  //Must have x.length >= y.length >= 2.
-  function divide_(x, y, q, r) {
-    var kx, ky;
-    var i, j, y1, y2, c, a, b;
-    copy_(r, x);
-    for (ky = y.length; y[ky - 1] == 0; ky--) {} //ky is number of elements in y, not including leading zeros
-
-    //normalize: ensure the most significant element of y has its highest bit set
-    b = y[ky - 1];
-    for (a = 0; b; a++) {
-      b >>= 1;
-    }a = bpe - a; //a is how many bits to shift so that the high order bit of y is leftmost in its array element
-    leftShift_(y, a); //multiply both by 1<<a now, then divide both by that at the end
-    leftShift_(r, a);
-
-    //Rob Visser discovered a bug: the following line was originally just before the normalization.
-    for (kx = r.length; r[kx - 1] == 0 && kx > ky; kx--) {} //kx is number of elements in normalized x, not including leading zeros
-
-    copyInt_(q, 0); // q=0
-    while (!greaterShift(y, r, kx - ky)) {
-      // while (leftShift_(y,kx-ky) <= r) {
-      subShift_(r, y, kx - ky); //   r=r-leftShift_(y,kx-ky)
-      q[kx - ky]++; //   q[kx-ky]++;
-    } // }
-
-    for (i = kx - 1; i >= ky; i--) {
-      if (r[i] == y[ky - 1]) q[i - ky] = mask;else q[i - ky] = Math.floor((r[i] * radix + r[i - 1]) / y[ky - 1]);
-
-      //The following for(;;) loop is equivalent to the commented while loop,
-      //except that the uncommented version avoids overflow.
-      //The commented loop comes from HAC, which assumes r[-1]==y[-1]==0
-      //  while (q[i-ky]*(y[ky-1]*radix+y[ky-2]) > r[i]*radix*radix+r[i-1]*radix+r[i-2])
-      //    q[i-ky]--;
-      for (;;) {
-        y2 = (ky > 1 ? y[ky - 2] : 0) * q[i - ky];
-        c = y2 >> bpe;
-        y2 = y2 & mask;
-        y1 = c + q[i - ky] * y[ky - 1];
-        c = y1 >> bpe;
-        y1 = y1 & mask;
-
-        if (c == r[i] ? y1 == r[i - 1] ? y2 > (i > 1 ? r[i - 2] : 0) : y1 > r[i - 1] : c > r[i]) q[i - ky]--;else break;
-      }
-
-      linCombShift_(r, y, -q[i - ky], i - ky); //r=r-q[i-ky]*leftShift_(y,i-ky)
-      if (negative(r)) {
-        addShift_(r, y, i - ky); //r=r+leftShift_(y,i-ky)
-        q[i - ky]--;
-      }
-    }
-
-    rightShift_(y, a); //undo the normalization step
-    rightShift_(r, a); //undo the normalization step
-  }
-
-  //do carries and borrows so each element of the bigInt x fits in bpe bits.
-  function carry_(x) {
-    var i, k, c, b;
-    k = x.length;
-    c = 0;
-    for (i = 0; i < k; i++) {
-      c += x[i];
-      b = 0;
-      if (c < 0) {
-        b = -(c >> bpe);
-        c += b * radix;
-      }
-      x[i] = c & mask;
-      c = (c >> bpe) - b;
-    }
-  }
-
-  //return x mod n for bigInt x and integer n.
-  function modInt(x, n) {
-    var i,
-        c = 0;
-    for (i = x.length - 1; i >= 0; i--) {
-      c = (c * radix + x[i]) % n;
-    }return c;
-  }
-
-  //convert the integer t into a bigInt with at least the given number of bits.
-  //the returned array stores the bigInt in bpe-bit chunks, little endian (buff[0] is least significant word)
-  //Pad the array with leading zeros so that it has at least minSize elements.
-  //There will always be at least one leading 0 element.
-  function int2bigInt(t, bits, minSize) {
-    var i, k;
-    k = Math.ceil(bits / bpe) + 1;
-    k = minSize > k ? minSize : k;
-    var buff = new Array(k);
-    copyInt_(buff, t);
-    return buff;
-  }
-
-  //return the bigInt given a string representation in a given base.
-  //Pad the array with leading zeros so that it has at least minSize elements.
-  //If base=-1, then it reads in a space-separated list of array elements in decimal.
-  //The array will always have at least one leading zero, unless base=-1.
-  function str2bigInt(s, b, minSize) {
-    var d, i, j, base, str, x, y, kk;
-    if (typeof b === 'string') {
-      base = b.length;
-      str = b;
-    } else {
-      base = b;
-      str = digitsStr;
-    }
-    var k = s.length;
-    if (base == -1) {
-      //comma-separated list of array elements in decimal
-      x = new Array(0);
-      for (;;) {
-        y = new Array(x.length + 1);
-        for (i = 0; i < x.length; i++) {
-          y[i + 1] = x[i];
-        }y[0] = parseInt(s, 10);
-        x = y;
-        d = s.indexOf(',', 0);
-        if (d < 1) break;
-        s = s.substring(d + 1);
-        if (s.length == 0) break;
-      }
-      if (x.length < minSize) {
-        y = new Array(minSize);
-        copy_(y, x);
-        return y;
-      }
-      return x;
-    }
-
-    x = int2bigInt(0, base * k, 0);
-    for (i = 0; i < k; i++) {
-      d = str.indexOf(s.substring(i, i + 1), 0);
-      if (base <= 36 && d >= 36) {
-        //convert lowercase to uppercase if base<=36
-        d -= 26;
-      }
-      if (d >= base || d < 0) {
-        //ignore illegal characters
-        continue;
-      }
-      multInt_(x, base);
-      addInt_(x, d);
-    }
-
-    for (k = x.length; k > 0 && !x[k - 1]; k--) {} //strip off leading zeros
-    k = minSize > k + 1 ? minSize : k + 1;
-    y = new Array(k);
-    kk = k < x.length ? k : x.length;
-    for (i = 0; i < kk; i++) {
-      y[i] = x[i];
-    }for (; i < k; i++) {
-      y[i] = 0;
-    }return y;
-  }
-
-  //is bigint x equal to integer y?
-  //y must have less than bpe bits
-  function equalsInt(x, y) {
-    var i;
-    if (x[0] != y) return 0;
-    for (i = 1; i < x.length; i++) {
-      if (x[i]) return 0;
-    }return 1;
-  }
-
-  //are bigints x and y equal?
-  //this works even if x and y are different lengths and have arbitrarily many leading zeros
-  function equals(x, y) {
-    var i;
-    var k = x.length < y.length ? x.length : y.length;
-    for (i = 0; i < k; i++) {
-      if (x[i] != y[i]) return 0;
-    }if (x.length > y.length) {
-      for (; i < x.length; i++) {
-        if (x[i]) return 0;
-      }
-    } else {
-      for (; i < y.length; i++) {
-        if (y[i]) return 0;
-      }
-    }
-    return 1;
-  }
-
-  //is the bigInt x equal to zero?
-  function isZero(x) {
-    var i;
-    for (i = 0; i < x.length; i++) {
-      if (x[i]) return 0;
-    }return 1;
-  }
-
-  //convert a bigInt into a string in a given base, from base 2 up to base 95.
-  //Base -1 prints the contents of the array representing the number.
-  function bigInt2str(x, b) {
-    var i,
-        t,
-        base,
-        str,
-        s = "";
-    if (typeof b === 'string') {
-      base = b.length;
-      str = b;
-    } else {
-      base = b;
-      str = digitsStr;
-    }
-
-    if (s6.length != x.length) s6 = dup(x);else copy_(s6, x);
-
-    if (base == -1) {
-      //return the list of array contents
-      for (i = x.length - 1; i > 0; i--) {
-        s += x[i] + ',';
-      }s += x[0];
-    } else {
-      //return it in the given base
-      while (!isZero(s6)) {
-        t = divInt_(s6, base); //t=s6 % base; s6=floor(s6/base);
-        s = str.substring(t, t + 1) + s;
-      }
-    }
-    if (s.length == 0) s = str[0];
-    return s;
-  }
-
-  //returns a duplicate of bigInt x
-  function dup(x) {
-    var i;
-    var buff = new Array(x.length);
-    copy_(buff, x);
-    return buff;
-  }
-
-  //do x=y on bigInts x and y.  x must be an array at least as big as y (not counting the leading zeros in y).
-  function copy_(x, y) {
-    var i;
-    var k = x.length < y.length ? x.length : y.length;
-    for (i = 0; i < k; i++) {
-      x[i] = y[i];
-    }for (i = k; i < x.length; i++) {
-      x[i] = 0;
-    }
-  }
-
-  //do x=y on bigInt x and integer y.
-  function copyInt_(x, n) {
-    var i, c;
-    for (c = n, i = 0; i < x.length; i++) {
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do x=x+n where x is a bigInt and n is an integer.
-  //x must be large enough to hold the result.
-  function addInt_(x, n) {
-    var i, k, c, b;
-    x[0] += n;
-    k = x.length;
-    c = 0;
-    for (i = 0; i < k; i++) {
-      c += x[i];
-      b = 0;
-      if (c < 0) {
-        b = -(c >> bpe);
-        c += b * radix;
-      }
-      x[i] = c & mask;
-      c = (c >> bpe) - b;
-      if (!c) return; //stop carrying as soon as the carry is zero
-    }
-  }
-
-  //right shift bigInt x by n bits.  0 <= n < bpe.
-  function rightShift_(x, n) {
-    var i;
-    var k = Math.floor(n / bpe);
-    if (k) {
-      for (i = 0; i < x.length - k; i++) {
-        //right shift x by k elements
-        x[i] = x[i + k];
-      }for (; i < x.length; i++) {
-        x[i] = 0;
-      }n %= bpe;
-    }
-    for (i = 0; i < x.length - 1; i++) {
-      x[i] = mask & (x[i + 1] << bpe - n | x[i] >> n);
-    }
-    x[i] >>= n;
-  }
-
-  //do x=floor(|x|/2)*sgn(x) for bigInt x in 2's complement
-  function halve_(x) {
-    var i;
-    for (i = 0; i < x.length - 1; i++) {
-      x[i] = mask & (x[i + 1] << bpe - 1 | x[i] >> 1);
-    }
-    x[i] = x[i] >> 1 | x[i] & radix >> 1; //most significant bit stays the same
-  }
-
-  //left shift bigInt x by n bits.
-  function leftShift_(x, n) {
-    var i;
-    var k = Math.floor(n / bpe);
-    if (k) {
-      for (i = x.length; i >= k; i--) {
-        //left shift x by k elements
-        x[i] = x[i - k];
-      }for (; i >= 0; i--) {
-        x[i] = 0;
-      }n %= bpe;
-    }
-    if (!n) return;
-    for (i = x.length - 1; i > 0; i--) {
-      x[i] = mask & (x[i] << n | x[i - 1] >> bpe - n);
-    }
-    x[i] = mask & x[i] << n;
-  }
-
-  //do x=x*n where x is a bigInt and n is an integer.
-  //x must be large enough to hold the result.
-  function multInt_(x, n) {
-    var i, k, c, b;
-    if (!n) return;
-    k = x.length;
-    c = 0;
-    for (i = 0; i < k; i++) {
-      c += x[i] * n;
-      b = 0;
-      if (c < 0) {
-        b = -(c >> bpe);
-        c += b * radix;
-      }
-      x[i] = c & mask;
-      c = (c >> bpe) - b;
-    }
-  }
-
-  //do x=floor(x/n) for bigInt x and integer n, and return the remainder
-  function divInt_(x, n) {
-    var i,
-        r = 0,
-        s;
-    for (i = x.length - 1; i >= 0; i--) {
-      s = r * radix + x[i];
-      x[i] = Math.floor(s / n);
-      r = s % n;
-    }
-    return r;
-  }
-
-  //do the linear combination x=a*x+b*y for bigInts x and y, and integers a and b.
-  //x must be large enough to hold the answer.
-  function linComb_(x, y, a, b) {
-    var i, c, k, kk;
-    k = x.length < y.length ? x.length : y.length;
-    kk = x.length;
-    for (c = 0, i = 0; i < k; i++) {
-      c += a * x[i] + b * y[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-    for (i = k; i < kk; i++) {
-      c += a * x[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do the linear combination x=a*x+b*(y<<(ys*bpe)) for bigInts x and y, and integers a, b and ys.
-  //x must be large enough to hold the answer.
-  function linCombShift_(x, y, b, ys) {
-    var i, c, k, kk;
-    k = x.length < ys + y.length ? x.length : ys + y.length;
-    kk = x.length;
-    for (c = 0, i = ys; i < k; i++) {
-      c += x[i] + b * y[i - ys];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-    for (i = k; c && i < kk; i++) {
-      c += x[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do x=x+(y<<(ys*bpe)) for bigInts x and y, and integer ys.
-  //x must be large enough to hold the answer.
-  function addShift_(x, y, ys) {
-    var i, c, k, kk;
-    k = x.length < ys + y.length ? x.length : ys + y.length;
-    kk = x.length;
-    for (c = 0, i = ys; i < k; i++) {
-      c += x[i] + y[i - ys];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-    for (i = k; c && i < kk; i++) {
-      c += x[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do x=x-(y<<(ys*bpe)) for bigInts x and y, and integer ys.
-  //x must be large enough to hold the answer.
-  function subShift_(x, y, ys) {
-    var i, c, k, kk;
-    k = x.length < ys + y.length ? x.length : ys + y.length;
-    kk = x.length;
-    for (c = 0, i = ys; i < k; i++) {
-      c += x[i] - y[i - ys];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-    for (i = k; c && i < kk; i++) {
-      c += x[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do x=x-y for bigInts x and y.
-  //x must be large enough to hold the answer.
-  //negative answers will be 2s complement
-  function sub_(x, y) {
-    var i, c, k, kk;
-    k = x.length < y.length ? x.length : y.length;
-    for (c = 0, i = 0; i < k; i++) {
-      c += x[i] - y[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-    for (i = k; c && i < x.length; i++) {
-      c += x[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do x=x+y for bigInts x and y.
-  //x must be large enough to hold the answer.
-  function add_(x, y) {
-    var i, c, k, kk;
-    k = x.length < y.length ? x.length : y.length;
-    for (c = 0, i = 0; i < k; i++) {
-      c += x[i] + y[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-    for (i = k; c && i < x.length; i++) {
-      c += x[i];
-      x[i] = c & mask;
-      c >>= bpe;
-    }
-  }
-
-  //do x=x*y for bigInts x and y.  This is faster when y<x.
-  function mult_(x, y) {
-    var i;
-    if (ss.length != 2 * x.length) ss = new Array(2 * x.length);
-    copyInt_(ss, 0);
-    for (i = 0; i < y.length; i++) {
-      if (y[i]) linCombShift_(ss, x, y[i], i);
-    } //ss=1*ss+y[i]*(x<<(i*bpe))
-    copy_(x, ss);
-  }
-
-  //do x=x mod n for bigInts x and n.
-  function mod_(x, n) {
-    if (s4.length != x.length) s4 = dup(x);else copy_(s4, x);
-    if (s5.length != x.length) s5 = dup(x);
-    divide_(s4, n, s5, x); //x = remainder of s4 / n
-  }
-
-  //do x=x*y mod n for bigInts x,y,n.
-  //for greater speed, let y<x.
-  function multMod_(x, y, n) {
-    var i;
-    if (s0.length != 2 * x.length) s0 = new Array(2 * x.length);
-    copyInt_(s0, 0);
-    for (i = 0; i < y.length; i++) {
-      if (y[i]) linCombShift_(s0, x, y[i], i);
-    } //s0=1*s0+y[i]*(x<<(i*bpe))
-    mod_(s0, n);
-    copy_(x, s0);
-  }
-
-  //do x=x*x mod n for bigInts x,n.
-  function squareMod_(x, n) {
-    var i, j, d, c, kx, kn, k;
-    for (kx = x.length; kx > 0 && !x[kx - 1]; kx--) {} //ignore leading zeros in x
-    k = kx > n.length ? 2 * kx : 2 * n.length; //k=# elements in the product, which is twice the elements in the larger of x and n
-    if (s0.length != k) s0 = new Array(k);
-    copyInt_(s0, 0);
-    for (i = 0; i < kx; i++) {
-      c = s0[2 * i] + x[i] * x[i];
-      s0[2 * i] = c & mask;
-      c >>= bpe;
-      for (j = i + 1; j < kx; j++) {
-        c = s0[i + j] + 2 * x[i] * x[j] + c;
-        s0[i + j] = c & mask;
-        c >>= bpe;
-      }
-      s0[i + kx] = c;
-    }
-    mod_(s0, n);
-    copy_(x, s0);
-  }
-
-  //return x with exactly k leading zero elements
-  function trim(x, k) {
-    var i, y;
-    for (i = x.length; i > 0 && !x[i - 1]; i--) {}
-    y = new Array(i + k);
-    copy_(y, x);
-    return y;
-  }
-
-  //do x=x**y mod n, where x,y,n are bigInts and ** is exponentiation.  0**0=1.
-  //this is faster when n is odd.  x usually needs to have as many elements as n.
-  function powMod_(x, y, n) {
-    var k1, k2, kn, np;
-    if (s7.length != n.length) s7 = dup(n);
-
-    //for even modulus, use a simple square-and-multiply algorithm,
-    //rather than using the more complex Montgomery algorithm.
-    if ((n[0] & 1) == 0) {
-      copy_(s7, x);
-      copyInt_(x, 1);
-      while (!equalsInt(y, 0)) {
-        if (y[0] & 1) multMod_(x, s7, n);
-        divInt_(y, 2);
-        squareMod_(s7, n);
-      }
-      return;
-    }
-
-    //calculate np from n for the Montgomery multiplications
-    copyInt_(s7, 0);
-    for (kn = n.length; kn > 0 && !n[kn - 1]; kn--) {}
-    np = radix - inverseModInt(modInt(n, radix), radix);
-    s7[kn] = 1;
-    multMod_(x, s7, n); // x = x * 2**(kn*bp) mod n
-
-    if (s3.length != x.length) s3 = dup(x);else copy_(s3, x);
-
-    for (k1 = y.length - 1; k1 > 0 & !y[k1]; k1--) {} //k1=first nonzero element of y
-    if (y[k1] == 0) {
-      //anything to the 0th power is 1
-      copyInt_(x, 1);
-      return;
-    }
-    for (k2 = 1 << bpe - 1; k2 && !(y[k1] & k2); k2 >>= 1) {} //k2=position of first 1 bit in y[k1]
-    for (;;) {
-      if (!(k2 >>= 1)) {
-        //look at next bit of y
-        k1--;
-        if (k1 < 0) {
-          mont_(x, one, n, np);
-          return;
-        }
-        k2 = 1 << bpe - 1;
-      }
-      mont_(x, x, n, np);
-
-      if (k2 & y[k1]) //if next bit is a 1
-        mont_(x, s3, n, np);
-    }
-  }
-
-  //do x=x*y*Ri mod n for bigInts x,y,n,
-  //  where Ri = 2**(-kn*bpe) mod n, and kn is the
-  //  number of elements in the n array, not
-  //  counting leading zeros.
-  //x array must have at least as many elemnts as the n array
-  //It's OK if x and y are the same variable.
-  //must have:
-  //  x,y < n
-  //  n is odd
-  //  np = -(n^(-1)) mod radix
-  function mont_(x, y, n, np) {
-    var i, j, c, ui, t, ks;
-    var kn = n.length;
-    var ky = y.length;
-
-    if (sa.length != kn) sa = new Array(kn);
-
-    copyInt_(sa, 0);
-
-    for (; kn > 0 && n[kn - 1] == 0; kn--) {} //ignore leading zeros of n
-    for (; ky > 0 && y[ky - 1] == 0; ky--) {} //ignore leading zeros of y
-    ks = sa.length - 1; //sa will never have more than this many nonzero elements.
-
-    //the following loop consumes 95% of the runtime for randTruePrime_() and powMod_() for large numbers
-    for (i = 0; i < kn; i++) {
-      t = sa[0] + x[i] * y[0];
-      ui = (t & mask) * np & mask; //the inner "& mask" was needed on Safari (but not MSIE) at one time
-      c = t + ui * n[0] >> bpe;
-      t = x[i];
-
-      //do sa=(sa+x[i]*y+ui*n)/b   where b=2**bpe.  Loop is unrolled 5-fold for speed
-      j = 1;
-      for (; j < ky - 4;) {
-        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-      }
-      for (; j < ky;) {
-        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-      }
-      for (; j < kn - 4;) {
-        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-      }
-      for (; j < kn;) {
-        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-      }
-      for (; j < ks;) {
-        c += sa[j];sa[j - 1] = c & mask;c >>= bpe;j++;
-      }
-      sa[j - 1] = c & mask;
-    }
-
-    if (!greater(n, sa)) sub_(sa, n);
-    copy_(x, sa);
-  }
-
-  module.exports = {
-    'add': add,
-    'addInt': addInt,
-    'bigInt2str': bigInt2str,
-    'bitSize': bitSize,
-    'dup': dup,
-    'equals': equals,
-    'equalsInt': equalsInt,
-    'expand': expand,
-    'findPrimes': findPrimes,
-    'GCD': GCD,
-    'greater': greater,
-    'greaterShift': greaterShift,
-    'int2bigInt': int2bigInt,
-    'inverseMod': inverseMod,
-    'inverseModInt': inverseModInt,
-    'isZero': isZero,
-    'millerRabin': millerRabin,
-    'millerRabinInt': millerRabinInt,
-    'mod': mod,
-    'modInt': modInt,
-    'mult': mult,
-    'multMod': multMod,
-    'negative': negative,
-    'powMod': powMod,
-    'randBigInt': randBigInt,
-    'randTruePrime': randTruePrime,
-    'randProbPrime': randProbPrime,
-    'str2bigInt': str2bigInt,
-    'sub': sub,
-    'trim': trim,
-    'addInt_': addInt_,
-    'add_': add_,
-    'copy_': copy_,
-    'copyInt_': copyInt_,
-    'GCD_': GCD_,
-    'inverseMod_': inverseMod_,
-    'mod_': mod_,
-    'mult_': mult_,
-    'multMod_': multMod_,
-    'powMod_': powMod_,
-    'randBigInt_': randBigInt_,
-    'randTruePrime_': randTruePrime_,
-    'sub_': sub_,
-    'addShift_': addShift_,
-    'carry_': carry_,
-    'divide_': divide_,
-    'divInt_': divInt_,
-    'eGCD_': eGCD_,
-    'halve_': halve_,
-    'leftShift_': leftShift_,
-    'linComb_': linComb_,
-    'linCombShift_': linCombShift_,
-    'mont_': mont_,
-    'multInt_': multInt_,
-    'rightShift_': rightShift_,
-    'squareMod_': squareMod_,
-    'subShift_': subShift_
-  };
-});
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
-
-/***/ }),
-
 /***/ "./node_modules/animals/index.js":
 /*!***************************************!*\
   !*** ./node_modules/animals/index.js ***!
@@ -35139,6 +32155,2990 @@ module.exports = sortedIndexBy;
 
 /***/ }),
 
+/***/ "./node_modules/lseqtree/lib/base.js":
+/*!*******************************************!*\
+  !*** ./node_modules/lseqtree/lib/base.js ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Configuration and util class of the base, i.e. the maximal arity of the first
+ * level of the tree.
+ */
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Base = function () {
+    /**
+     * @param {Number} [b = 3] The number of bits at level 0 of the dense space.
+     */
+    function Base() {
+        var b = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3;
+
+        _classCallCheck(this, Base);
+
+        this._b = b;
+    }
+
+    _createClass(Base, [{
+        key: 'getBitBase',
+
+
+        /**
+         * Process the number of bits usage at a certain level of dense space.
+         * @param {Number} level The level in dense space, i.e., the number of
+         * concatenations of the identifier.
+         * @return {Number} The number of bit to encode a single path concatenation
+         * at the depth in argument.
+         */
+        value: function getBitBase(level) {
+            return this._b + level;
+        }
+    }, {
+        key: 'getSumBit',
+
+
+        /**
+         * Process the total number of bits usage to get to a certain level.
+         * @param {Number} level The level in dense space, i.e., the number of
+         * concatenations of the identifier.
+         * @return {Number} The number of bits required to encode the path
+         * comprising level concatenations.
+         */
+        value: function getSumBit(level) {
+            var n = this.getBitBase(level);
+            var m = this._b - 1;
+            return n * (n + 1) / 2 - m * (m + 1) / 2;
+        }
+    }, {
+        key: 'getInterval',
+
+
+        /**
+         * Process the number of possible paths between two LSEQNode.
+         * @param {Number} level The depth of the tree to process.
+         * @param {LSeqNode} p The previous LSeqNode.
+         * @param {LSeqNode} q The next LSeqNode.
+         * @return {Number} The interval between the two nodes at the depth in
+         * argument.
+         */
+        value: function getInterval(level, p, q) {
+            var sum = 0,
+                i = 0,
+                pIsGreater = false,
+                commonRoot = true,
+                prevValue = 0,
+                nextValue = 0;
+
+            while (i <= level) {
+                prevValue = p && p.t.p || 0;
+                nextValue = q && q.t.p || 0;
+                // #1 check if paths are identical
+                if (commonRoot && prevValue !== nextValue) {
+                    commonRoot = false;
+                    pIsGreater = prevValue > nextValue;
+                }
+                // #2 process the value to add to interval
+                if (pIsGreater) {
+                    nextValue = Math.pow(2, this.getBitBase(i)) - 1;
+                }
+                if (commonRoot || pIsGreater || i !== level) {
+                    sum += nextValue - prevValue;
+                } else {
+                    sum += nextValue - prevValue - 1;
+                }
+                if (i !== level) {
+                    sum *= Math.pow(2, this.getBitBase(i + 1));
+                };
+                // #3 iterate over path concatenations
+                p = p && p.child || null;
+                q = q && q.child || null;
+                ++i;
+            }
+            return sum;
+        }
+    }]);
+
+    return Base;
+}();
+
+;
+
+module.exports = Base;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/lib/exoutofbounds.js":
+/*!****************************************************!*\
+  !*** ./node_modules/lseqtree/lib/exoutofbounds.js ***!
+  \****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Thrown when the index is higher than the current length-1 of the array, or
+ * lower than 0.
+ */
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ExOutOfBounds =
+
+/** 
+ * @param {Number} index The index out of bounds.
+ * @param {Number} size The size of the array.
+ */
+function ExOutOfBounds(index, size) {
+  _classCallCheck(this, ExOutOfBounds);
+
+  this.index = index;
+  this.size = size;
+};
+
+;
+
+module.exports = ExOutOfBounds;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/lib/identifier.js":
+/*!*************************************************!*\
+  !*** ./node_modules/lseqtree/lib/identifier.js ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BI = __webpack_require__(/*! BigInt */ "./node_modules/lseqtree/node_modules/BigInt/src/BigInt.js");
+var Triple = __webpack_require__(/*! ./triple.js */ "./node_modules/lseqtree/lib/triple.js");
+var LSeqNode = __webpack_require__(/*! ./lseqnode.js */ "./node_modules/lseqtree/lib/lseqnode.js");
+
+/**
+ * Unique and immutable identifier composed of digit, sources, counters.
+ */
+
+var Identifier = function () {
+
+    /**
+     * @param {Base} base The base of identifiers.
+     * @param {Number[]} digits The digit (position in dense space).
+     * @param {Object[]} sites The list of sources.
+     * @param {Number[]} counters The list of counters.
+     */
+    function Identifier(base, digits) {
+        var sites = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+        var counters = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
+
+        _classCallCheck(this, Identifier);
+
+        this._d = digits;
+        this._s = sites;
+        this._c = counters;
+
+        this._base = base;
+    }
+
+    _createClass(Identifier, [{
+        key: 'fromNode',
+
+
+        /**
+         * Set the d,s,c values according to the node in argument
+         * @param {LSeqNode} node The lseqnode containing the path in the tree
+         * structure.
+         * @return {Identifier} This identifier modified.
+         */
+        value: function fromNode(node) {
+            // #1 process the length of the path
+            var length = 1,
+                tempNode = node;
+
+            while (!tempNode.isLeaf) {
+                ++length;
+                tempNode = tempNode.child;
+            };
+            // #2 copy the values contained in the path
+            this._d = BI.int2bigInt(0, this._base.getSumBit(length - 1));
+
+            for (var i = 0; i < length; ++i) {
+                // #1a copy the site id
+                this._s.push(node.t.s);
+                // #1b copy the counter
+                this._c.push(node.t.c);
+                // #1c copy the digit
+                BI.addInt_(this._d, node.t.p);
+                if (i !== length - 1) {
+                    BI.leftShift_(this._d, this._base.getBitBase(i + 1));
+                };
+                node = node.child;
+            };
+
+            return this;
+        }
+    }, {
+        key: 'toNode',
+
+
+        /**
+         * Convert the identifier into a node without element.
+         * @param {Object} e The element associated with the node.
+         * @return {LSeqNode} An LSeqNode containing the element and the path
+         * extracted from this identifier.
+         */
+        value: function toNode(e) {
+            var dBitLength = this._base.getSumBit(this._c.length - 1);
+            var resultPath = [],
+                mine = void 0;
+
+            // #1 deconstruct the digit 
+            for (var i = 0; i < this._c.length; ++i) {
+                // #1 truncate mine
+                mine = BI.dup(this._d);
+                // #1a shift right to erase the tail of the path
+                BI.rightShift_(mine, dBitLength - this._base.getSumBit(i));
+                // #1b copy value in the result
+                resultPath.push(new Triple(BI.modInt(mine, Math.pow(2, this._base.getBitBase(i))), this._s[i], this._c[i]));
+            };
+            return new LSeqNode(resultPath, e);
+        }
+    }, {
+        key: 'compareTo',
+
+
+        /**
+         * Compare two identifiers.
+         * @param {Identifier} o The other identifier.
+         * @return {Integer} -1 if this is lower, 0 if they are equal, 1 if this is
+         * greater.
+         */
+        value: function compareTo(o) {
+            var dBitLength = this._base.getSumBit(this._c.length - 1),
+                odBitLength = this._base.getSumBit(o._c.length - 1),
+                comparing = true,
+                result = 0,
+                i = 0,
+                sum = void 0,
+                mine = void 0,
+                other = void 0;
+
+            // #1 Compare the list of <d,s,c>
+            while (comparing && i < Math.min(this._c.length, o._c.length)) {
+                // can stop before the end of for loop wiz return
+                sum = this._base.getSumBit(i);
+                // #1a truncate mine
+                mine = BI.dup(this._d);
+                BI.rightShift_(mine, dBitLength - sum);
+                // #1b truncate other
+                other = BI.dup(o._d);
+                BI.rightShift_(other, odBitLength - sum);
+                // #2 Compare triples
+                // #A digit
+                if (!BI.equals(mine, other)) {
+                    if (BI.greater(mine, other)) {
+                        result = 1;
+                    } else {
+                        result = -1;
+                    };
+                    comparing = false;
+                } else {
+                    // #B source
+                    result = this._s[i] - o._s[i];
+                    if (result !== 0) {
+                        comparing = false;
+                    } else {
+                        // #C counter
+                        result = this._c[i] - o._c[i];
+                        if (result !== 0) {
+                            comparing = false;
+                        };
+                    };
+                };
+                ++i;
+            };
+
+            // #3 compare list size
+            if (result === 0) {
+                result = this._c.length - o._c.length;
+            };
+
+            return result;
+        }
+    }]);
+
+    return Identifier;
+}();
+
+;
+
+module.exports = Identifier;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/lib/lseqnode.js":
+/*!***********************************************!*\
+  !*** ./node_modules/lseqtree/lib/lseqnode.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Triple = __webpack_require__(/*! ./triple.js */ "./node_modules/lseqtree/lib/triple.js");
+
+/**
+ * A node of the LSeq tree.
+ */
+
+var LSeqNode = function () {
+    /**
+     * @param {Triple[]} triples The list of triples composing the path to the
+     * element.
+     * @param {Object} element The element to insert in the structure, e.g., a
+     * character in a text document.
+     */
+    function LSeqNode() {
+        var triples = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
+        var element = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+        _classCallCheck(this, LSeqNode);
+
+        this.t = triples.shift();
+        this.e = null;
+        if (triples.length === 0) {
+            this.e = element;
+        };
+        this.subCounter = triples.length > 0 && 1 || 0;
+        this.children = [];
+        triples.length > 0 && this.children.push(new LSeqNode(triples, element));
+    }
+
+    _createClass(LSeqNode, [{
+        key: 'compareTo',
+
+
+        /**
+         * Comparator between to LSeqNodes.
+         * @param {LSeqNode} o The other LSeqNode to compare to.
+         */
+        value: function compareTo(o) {
+            return this.t.compareTo(o.t);
+        }
+    }, {
+        key: 'add',
+
+
+        /**
+         * Add a node to the current node.
+         * @param {LSeqNode} node The node to add as a children of this node.
+         * @return {Boolean} False if the element already exists, True otherwise.
+         */
+        value: function add(node) {
+            var index = this._binaryIndexOf(node);
+
+            // #1 if the path do no exist, create it
+            if (!this._contains(node)) {
+                this.children.splice(-index, 0, node);
+                this.subCounter += 1;
+                // #2 otherwise, continue to explore the subtrees
+            } else if (node.children.length === 0) {
+                // #2a check if the element already exists
+                if (this.children[index].e !== null) {
+                    return false;
+                } else {
+                    this.children[index].e = node.e;
+                    this.subCounter += 1;
+                };
+                // #3 if didnot exist, increment the counter
+            } else if (this.children[index].add(node.child)) {
+                this.subCounter += 1;
+            };
+            return true;
+        }
+    }, {
+        key: 'del',
+
+
+        /**
+         * Remove the node of the tree and all node within path being useless.
+         * @param {LSeqNode} node the node containing the path to remove
+         * @return {Boolean} True if the node has been removed, False if it does not
+         * exist.
+         */
+        value: function del(node) {
+            var indexes = this._getIndexes(node);
+            var currentTree = this,
+                i = 0,
+                isSplitted = false;
+
+            // #1 The element does not exists, stop
+            if (indexes.length === 0) {
+                return false;
+            };
+
+            // #2 Crawl the path and remove the element
+            currentTree.subCounter -= 1;
+            while (i < indexes.length && !isSplitted) {
+                var isLast = currentTree.children[indexes[i]]._hasElement && i === indexes.length - 1;
+                if (!isLast) {
+                    currentTree.children[indexes[i]].subCounter -= 1;
+                };
+                if (currentTree.children[indexes[i]].subCounter <= 0 && (!currentTree.children[indexes[i]]._hasElement || isLast)) {
+                    currentTree.children.splice(indexes[i], 1);
+                    isSplitted = true;
+                };
+                currentTree = currentTree.children[indexes[i]];
+                ++i;
+            };
+            if (!isSplitted) {
+                currentTree.e = null;
+            };
+
+            return true;
+        }
+    }, {
+        key: 'indexOf',
+
+
+        /**
+         * The ordered tree can be linearized into a sequence. This function get the
+         * index of the path represented by the list of triples.
+         * @param {LSeqNode} node The node containing -- at least -- the path to the
+         * element.
+         * @return {Number} The index of the node in the linearized sequence; -1 if
+         * the element does not exist.
+         */
+        value: function indexOf(node) {
+            var indexes = this._getIndexes(node);
+            var sum = 0,
+                currentTree = this,
+                j = void 0;
+
+            // #1 If the node does not exist, stop
+            if (indexes.length === 0) {
+                return -1;
+            };
+
+            // #2 Otherwise, start counting
+            if (currentTree._hasElement) {
+                sum += 1;
+            };
+
+            for (var i = 0; i < indexes.length; ++i) {
+                if (indexes[i] < currentTree.children.length / 2) {
+                    // #A start from the beginning [---->|     ]
+                    j = 0;
+                    while (j < indexes[i]) {
+                        if (currentTree.children[j]._hasElement) {
+                            sum += 1;
+                        };
+                        sum += currentTree.children[j].subCounter;
+                        ++j;
+                    };
+                } else {
+                    // #B start from the end [     |<----]
+                    sum += currentTree.subCounter;
+                    j = currentTree.children.length - 1;
+                    while (j >= indexes[i]) {
+                        if (currentTree.children[j]._hasElement) {
+                            sum -= 1;
+                        };
+                        sum -= currentTree.children[j].subCounter;
+                        --j;
+                    };
+                    j += 1;
+                };
+                if (currentTree.children[j]._hasElement) {
+                    sum += 1;
+                };
+                currentTree = currentTree.children[j];
+            };
+            return sum - 1; // -1 because algorithm counted the element itself
+        }
+    }, {
+        key: 'get',
+
+
+        /**
+         * The ordered tree can be linearized. This function gets the node at the
+         * index in the projected sequence.
+         * @param {Number} index The index in the sequence.
+         * @return {LSeqNode} The node at the index.
+         */
+        value: function get(index) {
+
+            /**
+             * @param {Number} leftSum The sum of all element at the left of the
+             * current inspected node.
+             * @param {LSeqNode} buildingNode The head part of the node being built
+             * as we crawl.
+             * @param {LSeqNode} queue The queue part of the node being built.
+             * @param {LSeqNode} currentNode The subtree being crawled.
+             */
+            var _get = function _get(leftSum, buildingNode, queue, currentNode) {
+                var startBeginning = true,
+                    useFunction = void 0,
+                    i = 0,
+                    p = void 0,
+                    temp = void 0;
+                // #0 The node is found, return the incrementally built node and
+                // praise the sun !
+                if (leftSum === index && currentNode._hasElement) {
+                    // 1a copy the value of the element in the path
+                    queue.e = currentNode.e;
+                    return buildingNode;
+                };
+                if (currentNode._hasElement) {
+                    leftSum += 1;
+                };
+
+                // #1 search: do I start from the beginning or the end
+                startBeginning = index - leftSum < currentNode.subCounter / 2;
+                if (startBeginning) {
+                    useFunction = function useFunction(a, b) {
+                        return a + b;
+                    };
+                } else {
+                    leftSum += currentNode.subCounter;
+                    useFunction = function useFunction(a, b) {
+                        return a - b;
+                    };
+                }
+
+                // #2a counting the element from left to right
+                if (!startBeginning) {
+                    i = currentNode.children.length - 1;
+                };
+                while (startBeginning && leftSum <= index || !startBeginning && leftSum > index) {
+                    if (currentNode.children[i]._hasElement) {
+                        leftSum = useFunction(leftSum, 1);
+                    };
+                    leftSum = useFunction(leftSum, currentNode.children[i].subCounter);
+                    i = useFunction(i, 1);
+                };
+
+                // #2b decreasing the incrementation
+                i = useFunction(i, -1);
+                if (startBeginning) {
+                    if (currentNode.children[i]._hasElement) {
+                        leftSum = useFunction(leftSum, -1);
+                    };
+                    leftSum = useFunction(leftSum, -currentNode.children[i].subCounter);
+                };
+
+                // #3 build path
+                p = [];p.push(currentNode.children[i].t);
+                if (buildingNode === null) {
+                    buildingNode = new LSeqNode(p, null);
+                    queue = buildingNode;
+                } else {
+                    temp = new LSeqNode(p, null);
+                    queue.add(temp);
+                    queue = temp;
+                };
+                return _get(leftSum, buildingNode, queue, currentNode.children[i]);
+            };
+            return _get(0, null, null, this);
+        }
+    }, {
+        key: '_getIndexes',
+
+
+        /**
+         * @private Get the list of indexes of the arrays representing the children
+         * in the tree.  
+         * @param {LSeqNode} node The node containing the path.
+         * @return {Number[]} The successive indexes to get to the node. An empty
+         * list if the node does not exist.
+         */
+        value: function _getIndexes(node) {
+            var __getIndexes = function __getIndexes(indexes, currentTree, currentNode) {
+                if (!currentTree._contains(currentNode)) {
+                    return [];
+                };
+
+                var index = currentTree._binaryIndexOf(currentNode);
+
+                indexes.push(index);
+
+                return (currentNode.children.length === 0 || currentTree.children.length === 0) && indexes || __getIndexes(indexes, currentTree.children[index], currentNode.child);
+            };
+
+            return __getIndexes([], this, node);
+        }
+    }, {
+        key: '_binaryIndexOf',
+
+
+        /**
+         * @private from: [https://gist.github.com/Wolfy87/5734530] Performs a
+         * binary search on the host array.
+         * @param {LSeqNode} searchElement The item to search for within the array.
+         * @return {Number} The index of the element which defaults to -1 when not
+         * found.
+         */
+        value: function _binaryIndexOf(searchElement) {
+            var minIndex = 0;
+            var maxIndex = this.children.length - 1;
+            var currentIndex = void 0;
+            var currentElement = void 0;
+
+            while (minIndex <= maxIndex) {
+                currentIndex = Math.floor((minIndex + maxIndex) / 2);
+                currentElement = this.children[currentIndex];
+                if (currentElement.compareTo(searchElement) < 0) {
+                    minIndex = currentIndex + 1;
+                } else if (currentElement.compareTo(searchElement) > 0) {
+                    maxIndex = currentIndex - 1;
+                } else {
+                    return currentIndex;
+                };
+            };
+            return ~maxIndex;
+        }
+    }, {
+        key: '_contains',
+
+
+        /**
+         * @private Check whether this node contains the searchElement as children.
+         * @param {LSeqNode} searchElement The element to look for.
+         * @return {Boolean} True if this node contains the node in its
+         * children, False otherwise.
+         */
+        value: function _contains(searchElement) {
+            var index = this._binaryIndexOf(searchElement);
+            return this.children.length > 0 && (index > 0 || index === 0 && this.child.compareTo(searchElement) === 0);
+        }
+    }, {
+        key: 'child',
+
+
+        /**
+         * Getter to the first child.
+         * @returns {LSeqNode} The first child of this node. Null if it does not
+         * exists.
+         */
+        get: function get() {
+            return this.children.length > 0 && this.children[0] || null;
+        }
+    }, {
+        key: '_hasElement',
+
+
+        /**
+         * @private Check if the node contains an element.
+         * @return {Boolean} True if the node has an element, false otherwise.
+         */
+        get: function get() {
+            return this.e !== null;
+        }
+    }, {
+        key: 'isLeaf',
+
+
+        /**
+         * Check if the node has children.
+         * @return {Boolean} True if the node has children, false otherwise.
+         */
+        get: function get() {
+            return this.children.length === 0;
+        }
+    }], [{
+        key: 'fromJSON',
+
+
+        /**
+         * Cast a JSON object to an LSeqNode. 
+         * @param {Object} o The JSON object.
+         * @return {LSeqNode} An LSeqNode.
+         */
+        value: function fromJSON(o) {
+            var beingBuilt = void 0;
+
+            // #1 leaf
+            if (o.children.length === 0) {
+                beingBuilt = new LSeqNode([new Triple(o.t.p, o.t.s, o.t.c)], o.e);
+            } else {
+                // #2 branch
+                beingBuilt = new LSeqNode([new Triple(o.t.p, o.t.s, o.t.c)]);
+                beingBuilt.children.push(LSeqNode.fromJSON(o.children[0]));
+            };
+
+            return beingBuilt;
+        }
+    }]);
+
+    return LSeqNode;
+}();
+
+;
+
+module.exports = LSeqNode;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/lib/lseqtree.js":
+/*!***********************************************!*\
+  !*** ./node_modules/lseqtree/lib/lseqtree.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var merge = __webpack_require__(/*! lodash.merge */ "./node_modules/lodash.merge/index.js");
+
+var Base = __webpack_require__(/*! ./base.js */ "./node_modules/lseqtree/lib/base.js");
+var Strategy = __webpack_require__(/*! ./strategy.js */ "./node_modules/lseqtree/lib/strategy.js");
+var Identifier = __webpack_require__(/*! ./identifier.js */ "./node_modules/lseqtree/lib/identifier.js");
+var Triple = __webpack_require__(/*! ./triple.js */ "./node_modules/lseqtree/lib/triple.js");
+var LSeqNode = __webpack_require__(/*! ./lseqnode.js */ "./node_modules/lseqtree/lib/lseqnode.js");
+
+var ExOutOfBounds = __webpack_require__(/*! ./exoutofbounds.js */ "./node_modules/lseqtree/lib/exoutofbounds.js");
+
+/**
+ * Distributed array using LSeq allocation strategy with an underlying
+ * exponential tree.
+ */
+
+var LSeqTree = function () {
+
+    /**
+     * @param {Object} source The globally unique site identifier.
+     * @param {Object} [options] The options of the LSeqTree.
+     * @param {Number} [options.boundary = 10] The maximal interval between two
+     * generated nodes.
+     * @param {Number} [options.base = 15] The base, i.e., the maximal arity of
+     * the root node. Default is 2**15.
+     */
+    function LSeqTree(site) {
+        var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+        _classCallCheck(this, LSeqTree);
+
+        var listTriple = void 0;
+        // #0 process options
+        this.options = merge({ boundary: 10, base: 15 }, options);
+
+        // #1 initialize source, counter, and strategy choice
+        this._s = site;
+        this._c = 0;
+        this._hash = function (depth) {
+            return depth % 2;
+        };
+
+        this._base = new Base(this.options.base);
+        this._strategy = new Strategy(this._base, this.options.boundary);
+
+        // #2 initialize tree structure with maximal bounds
+        this.root = new LSeqNode();
+        // #A minimal bound
+        this.root.add(new LSeqNode([new Triple(0, 0, 0)], ''));
+        // #B maximal bound
+        this.root.add(new LSeqNode([new Triple(Math.pow(2, this._base.getBitBase(0)) - 1, Number.MAX_VALUE, Number.MAX_VALUE)], ''));
+    }
+
+    _createClass(LSeqTree, [{
+        key: 'get',
+
+
+        /**
+         * Get the element at targeted index in the linearized sequence. It does not
+         * take into account the hidden boundaries of the sequence [MIN, e_1, e_2,
+         * ... e_length, MAX], hence index of e_1 is 0.
+         * @param {Number} index The index of the element in the flattened array.
+         * @return {Object} The element located at the index in argument.
+         */
+        value: function get(index) {
+            if (index < 0 || index >= this.length) {
+                throw new ExOutOfBounds(index, this.length);
+            };
+
+            var node = this.root.get(index + 1);
+            while (!node.isLeaf) {
+                node = node.child;
+            };
+            return node.e;
+        }
+    }, {
+        key: '_get',
+
+
+        /**
+         * @private Get the LSeqNode at targeted index in the linearized
+         * sequence. The sequence includes the hidden boundaries [MIN, e_1, e_2,
+         * ... e_length, MAX], hence e_1's index is 1.
+         * @param {Number} index The index of the element in the flattened array.
+         * @return {LSeqNode} The LSeqNode targeting the element at index.
+         */
+        value: function _get(index) {
+            if (index < 0 || index >= this.length + 2) {
+                // +2: boundaries
+                throw new ExOutOfBounds(index, this.length + 2);
+            };
+
+            return this.root.get(index);
+        }
+    }, {
+        key: 'insert',
+
+
+        /**
+         * Insert a value at the targeted index.
+         * @param {Object} element The element to insert, e.g. a character if the
+         * sequence is a string.
+         * @param {Number} index The position in the array.
+         * @return {Object} {_e: element of Object type, _i: Identifier}
+         */
+        value: function insert(element, index) {
+            var pei = this._get(index),
+                // #1a previous bound
+            qei = this._get(index + 1); // #1b next bound
+
+            // #2a incrementing the local counter
+            this._c += 1;
+            // #2b generating the id inbetween the bounds
+            var id = this.alloc(pei, qei);
+
+            // #3 add it to the structure and return value
+            var pair = { elem: element, id: id };
+            this.applyInsert(pair);
+            return pair;
+        }
+    }, {
+        key: 'remove',
+
+
+        /**
+         * Delete the element at the index.
+         * @param {Number} index The index of the element to delete in the array.
+         * @return {Identifier} The identifier of the element at the index.
+         */
+        value: function remove(index) {
+            var ei = this._get(index + 1);
+            var i = new Identifier(this._base).fromNode(ei);
+            this.applyRemove(ei);
+            return i;
+        }
+    }, {
+        key: 'alloc',
+
+
+        /**
+         * Generate the digit part of the identifiers  between p and q.
+         * @param {LSeqNode} p The digit part of the previous identifier.
+         * @param {LSeqNode} q The digit part of the next identifier.
+         * @return {Identifier} The new identifier located between p and q.
+         */
+        value: function alloc(p, q) {
+            var interval = 0,
+                level = 0;
+            // #1 process the level of the new identifier
+            while (interval <= 0) {
+                // no room for insertion
+                interval = this._base.getInterval(level, p, q);
+                ++level;
+            };
+            level -= 1;
+            if (this._hash(level) === 0) {
+                return this._strategy.bPlus(p, q, level, interval, this._s, this._c);
+            } else {
+                return this._strategy.bMinus(p, q, level, interval, this._s, this._c);
+            };
+        }
+    }, {
+        key: 'applyInsert',
+
+
+        /**
+         * Insert an element created from a remote site into the array.
+         * @param {Object} pair Pair containing the identifier and the element to
+         * insert in the data structure.
+         * @param {Identifier|LSeqNode} pair.id The identifier of the element.
+         * @param {Object} pair.elem The element to insert.
+         * @param {boolean} [noIndex = true] Whether or not it should return the
+         * index of the insert.
+         * @return {Number|Boolean} The index of the newly inserted element in the
+         * array, if asked. -1 if the element already exists and has not been added.
+         * If noIndex, returns true if the element has been added, false otherwise.
+         */
+        value: function applyInsert(pair) {
+            var noIndex = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+            var node = void 0,
+                result = void 0,
+                i = void 0;
+            // #0 cast from the proper type
+            // #0A the identifier is an Identifier
+            i = pair.id;
+            node = i && i._d && i._s && i._c && new Identifier(this._base, i._d, i._s, i._c).toNode(pair.elem);
+            // #0B the identifier is a LSeqNode
+            node = i && i.t && i.children && LSeqNode.fromJSON(i) || node;
+            // #1 integrates the new element to the data structure
+            result = this.root.add(node);
+            // #2 if the element as been added
+            if (noIndex) {
+                return result;
+            } else if (result) {
+                return this.root.indexOf(node);
+            } else {
+                return -1;
+            };
+        }
+    }, {
+        key: 'applyRemove',
+
+
+        /**
+         * Delete the element with the targeted identifier.
+         * @param {Identifier|LSeqNode} i The identifier of the element.
+         * @return {Number} The index of the element freshly deleted, -1 if no
+         * removal.
+         */
+        value: function applyRemove(i) {
+            var node = void 0,
+                position = void 0;
+            // #0 cast from the proper type
+            node = i && i._d && i._s && i._c && new Identifier(this._base, i._d, i._s, i._c).toNode(null);
+            // #0B the identifier is a LSEQNode
+            node = i && i.t && i.children && LSeqNode.fromJSON(i) || node;
+            // #1 get the index of the element to remove
+            position = this.root.indexOf(node);
+            if (position !== -1) {
+                // #2 if it exists remove it
+                this.root.del(node);
+            };
+            return position;
+        }
+    }, {
+        key: 'fromJSON',
+
+
+        /**
+         * Cast the JSON object into a proper LSeqTree.
+         * @param {Object} object the JSON object to cast.
+         * @return {LSeqTree} A self reference.
+         */
+        value: function fromJSON(object) {
+            var _this = this;
+
+            // #1 copy the source, counter, and length of the object
+            this._s = object._s;
+            this._c = object._c;
+            this.options = object.options;
+
+            this._base = new Base(this.options.base);
+            this._boundary = new Strategy(this._base, this.options.boundary);
+
+            // #2 depth first adding
+            var depthFirst = function depthFirst(currentNode, currentPath) {
+                var triple = new Triple(currentNode.t.p, currentNode.t.s, currentNode.t.c);
+                currentPath.push(triple); // stack
+                if (currentNode.e !== null) {
+                    _this.root.add(new LSeqNode(currentPath.slice(), currentNode.e));
+                };
+                for (var i = 0; i < currentNode.children.length; ++i) {
+                    depthFirst(currentNode.children[i], currentPath);
+                };
+                currentPath.pop(); // unstack
+            };
+            for (var i = 0; i < object.root.children.length; ++i) {
+                depthFirst(object.root.children[i], []);
+            };
+            return this;
+        }
+    }, {
+        key: 'length',
+        get: function get() {
+            var result = this.root.subCounter - 2; // -2: the boundaries
+            result = this.root._hasElement && result + 1 || result;
+            return result;
+        }
+    }]);
+
+    return LSeqTree;
+}();
+
+;
+
+module.exports = LSeqTree;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/lib/strategy.js":
+/*!***********************************************!*\
+  !*** ./node_modules/lseqtree/lib/strategy.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var BI = __webpack_require__(/*! BigInt */ "./node_modules/lseqtree/node_modules/BigInt/src/BigInt.js");
+var Identifier = __webpack_require__(/*! ./identifier.js */ "./node_modules/lseqtree/lib/identifier.js");
+
+/**
+ * Enumerate the available sub-allocation strategies. The signature of these
+ * functions is f(Id, Id, N+, N+, N, N): Id.
+ */
+
+var Strategy = function () {
+    /**
+     * @param {Base} base The base used to create the new identifiers.
+     * @param {Number} [boundary = 10] The value used as the default maximum
+     * spacing between identifiers.
+     */
+    function Strategy(base) {
+        var boundary = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 10;
+
+        _classCallCheck(this, Strategy);
+
+        this._base = base;
+        this._boundary = boundary;
+    }
+
+    _createClass(Strategy, [{
+        key: 'bPlus',
+
+
+        /**
+         * Choose an identifier starting from previous bound and adding random
+         * number.
+         * @param {LSeqNode} p The previous identifier.
+         * @param {LSeqNode} q The next identifier.
+         * @param {Number} level The number of concatenation composing the new
+         * identifier.
+         * @param {Number} interval The interval between p and q.
+         * @param {Object} s The source that creates the new identifier.
+         * @param {Number} c The counter of that source.
+         * @return {Identifier} The new allocated identifier.
+         */
+        value: function bPlus(p, q, level, interval, s, c) {
+            var copyP = p,
+                copyQ = q,
+                step = Math.min(this._boundary, interval),
+                //#0 the min interval
+            digit = BI.int2bigInt(0, this._base.getSumBit(level)),
+                value = void 0;
+
+            // #1 copy the previous identifier
+            for (var i = 0; i <= level; ++i) {
+                value = p && p.t.p || 0;
+                BI.addInt_(digit, value);
+                if (i !== level) {
+                    BI.leftShift_(digit, this._base.getBitBase(i + 1));
+                };
+                p = p && !p.isLeaf && p.child || null;
+            };
+            // #2 create a digit for an identifier by adding a random value
+            // #A Digit
+            BI.addInt_(digit, Math.floor(Math.random() * step + 1));
+            // #B Source & counter
+            return this._getSC(digit, copyP, copyQ, level, s, c);
+        }
+    }, {
+        key: 'bMinus',
+
+
+        /**
+         * Choose an identifier starting from next bound and substract a random
+         * number.
+         * @param {LSeqNode} p The previous identifier.
+         * @param {LSeqNode} q The next identifier.
+         * @param {Number} level The number of concatenation composing the new
+         * identifier.
+         * @param {Number} interval The interval between p and q.
+         * @param {Object} s The source that creates the new identifier.
+         * @param {Number} c The counter of that source.
+         */
+        value: function bMinus(p, q, level, interval, s, c) {
+            var copyP = p,
+                copyQ = q,
+                step = Math.min(this._boundary, interval),
+                // #0 process min interval
+            digit = BI.int2bigInt(0, this._base.getSumBit(level)),
+                pIsGreater = false,
+                commonRoot = true,
+                prevValue = void 0,
+                nextValue = void 0;
+
+            // #1 copy next, if previous is greater, copy maxValue @ depth
+            for (var i = 0; i <= level; ++i) {
+                prevValue = p && p.t.p || 0;
+                nextValue = q && q.t.p || 0;
+
+                if (commonRoot && prevValue !== nextValue) {
+                    commonRoot = false;
+                    pIsGreater = prevValue > nextValue;
+                };
+                if (pIsGreater) {
+                    nextValue = Math.pow(2, this._base.getBitBase(i)) - 1;
+                };
+                BI.addInt_(digit, nextValue);
+                if (i !== level) {
+                    BI.leftShift_(digit, this._base.getBitBase(i + 1));
+                };
+
+                q = q && !q.isLeaf && q.child || null;
+                p = p && !p.isLeaf && p.child || null;
+            };
+
+            // #3 create a digit for an identifier by subing a random value
+            // #A Digit
+            if (pIsGreater) {
+                BI.addInt_(digit, -Math.floor(Math.random() * step));
+            } else {
+                BI.addInt_(digit, -Math.floor(Math.random() * step) - 1);
+            };
+
+            // #B Source & counter
+            return this._getSC(digit, copyP, copyQ, level, s, c);
+        }
+    }, {
+        key: '_getSC',
+
+
+        /**
+         * Copies the appropriates source and counter from the adjacent identifiers
+         * at the insertion position.
+         * @param {Number} d The digit part of the new identifier.
+         * @param {LSeqNode} p The previous identifier.
+         * @param {LSeqNode} q the next identifier.
+         * @param {Number} level The size of the new identifier.
+         * @param {Object} s The local site identifier.
+         * @param {Number} c The local monotonic counter.
+         * @return {Identifier} The new allocated identifier.
+         */
+        value: function _getSC(d, p, q, level, s, c) {
+            var sources = [],
+                counters = [],
+                i = 0,
+                sumBit = this._base.getSumBit(level),
+                tempDigit = void 0,
+                value = void 0;
+
+            while (i <= level) {
+                tempDigit = BI.dup(d);
+                BI.rightShift_(tempDigit, sumBit - this._base.getSumBit(i));
+                value = BI.modInt(tempDigit, Math.pow(2, this._base.getBitBase(i)));
+                sources[i] = s;
+                counters[i] = c;
+
+                if (q && q.t.p === value) {
+                    sources[i] = q.t.s;counters[i] = q.t.c;
+                };
+                if (p && p.t.p === value) {
+                    sources[i] = p.t.s;counters[i] = p.t.c;
+                };
+
+                q = q && !q.isLeaf && q.child || null;
+                p = p && !p.isLeaf && p.child || null;
+
+                ++i;
+            };
+
+            return new Identifier(this._base, d, sources, counters);
+        }
+    }]);
+
+    return Strategy;
+}();
+
+;
+
+module.exports = Strategy;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/lib/triple.js":
+/*!*********************************************!*\
+  !*** ./node_modules/lseqtree/lib/triple.js ***!
+  \*********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ * Triple that contains <path; site; counter>. Identifiers of LSEQ are lists of
+ * triples.
+ */
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Triple = function () {
+
+    /**
+     * @param {Number} path The part of the path in the tree.
+     * @param {Number|String} site The unique site identifier that created the
+     * triple.
+     * @param {Number} counter The local counter of the site when it created the
+     * triple.
+     */
+    function Triple(path, site, counter) {
+        _classCallCheck(this, Triple);
+
+        this.p = path;
+        this.s = site;
+        this.c = counter;
+    }
+
+    _createClass(Triple, [{
+        key: 'compareTo',
+
+
+        /**
+         * Compare two triples prioritizing the path, then site, then counter.
+         * @param {Triple} o the other triple to compare .
+         * @returns {Number} -1 if this is lower than o, 1 if this is greater than
+         * o, 0 otherwise.
+         */
+        value: function compareTo(o) {
+            // #1 process maximal virtual bounds
+            if (this.s === Number.MAX_VALUE && this.c === Number.MAX_VALUE) {
+                return 1;
+            };
+            if (o.s === Number.MAX_VALUE && o.s === Number.MAX_VALUE) {
+                return -1;
+            };
+            // #2 compare p then s then c
+            if (this.p < o.p) {
+                return -1;
+            };
+            if (this.p > o.p) {
+                return 1;
+            };
+            if (this.s < o.s) {
+                return -1;
+            };
+            if (this.s > o.s) {
+                return 1;
+            };
+            if (this.c < o.c) {
+                return -1;
+            };
+            if (this.c > o.c) {
+                return 1;
+            };
+            // #3 they are equal
+            return 0;
+        }
+    }]);
+
+    return Triple;
+}();
+
+;
+
+module.exports = Triple;
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/node_modules/BigInt/src sync recursive":
+/*!************************************************************!*\
+  !*** ./node_modules/lseqtree/node_modules/BigInt/src sync ***!
+  \************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+function webpackEmptyContext(req) {
+	var e = new Error("Cannot find module '" + req + "'");
+	e.code = 'MODULE_NOT_FOUND';
+	throw e;
+}
+webpackEmptyContext.keys = function() { return []; };
+webpackEmptyContext.resolve = webpackEmptyContext;
+module.exports = webpackEmptyContext;
+webpackEmptyContext.id = "./node_modules/lseqtree/node_modules/BigInt/src sync recursive";
+
+/***/ }),
+
+/***/ "./node_modules/lseqtree/node_modules/BigInt/src/BigInt.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/lseqtree/node_modules/BigInt/src/BigInt.js ***!
+  \*****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(module) {var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+// Vjeux: Customized bigInt2str and str2bigInt in order to accept custom base.
+
+////////////////////////////////////////////////////////////////////////////////////////
+// Big Integer Library v. 5.5
+// Created 2000, last modified 2013
+// Leemon Baird
+// www.leemon.com
+//
+// Version history:
+// v 5.5  17 Mar 2013
+//   - two lines of a form like "if (x<0) x+=n" had the "if" changed to "while" to 
+//     handle the case when x<-n. (Thanks to James Ansell for finding that bug)
+// v 5.4  3 Oct 2009
+//   - added "var i" to greaterShift() so i is not global. (Thanks to P�ter Szab� for finding that bug)
+//
+// v 5.3  21 Sep 2009
+//   - added randProbPrime(k) for probable primes
+//   - unrolled loop in mont_ (slightly faster)
+//   - millerRabin now takes a bigInt parameter rather than an int
+//
+// v 5.2  15 Sep 2009
+//   - fixed capitalization in call to int2bigInt in randBigInt
+//     (thanks to Emili Evripidou, Reinhold Behringer, and Samuel Macaleese for finding that bug)
+//
+// v 5.1  8 Oct 2007 
+//   - renamed inverseModInt_ to inverseModInt since it doesn't change its parameters
+//   - added functions GCD and randBigInt, which call GCD_ and randBigInt_
+//   - fixed a bug found by Rob Visser (see comment with his name below)
+//   - improved comments
+//
+// This file is public domain.   You can use it for any purpose without restriction.
+// I do not guarantee that it is correct, so use it at your own risk.  If you use 
+// it for something interesting, I'd appreciate hearing about it.  If you find 
+// any bugs or make any improvements, I'd appreciate hearing about those too.
+// It would also be nice if my name and URL were left in the comments.  But none 
+// of that is required.
+//
+// This code defines a bigInt library for arbitrary-precision integers.
+// A bigInt is an array of integers storing the value in chunks of bpe bits, 
+// little endian (buff[0] is the least significant word).
+// Negative bigInts are stored two's complement.  Almost all the functions treat
+// bigInts as nonnegative.  The few that view them as two's complement say so
+// in their comments.  Some functions assume their parameters have at least one 
+// leading zero element. Functions with an underscore at the end of the name put
+// their answer into one of the arrays passed in, and have unpredictable behavior 
+// in case of overflow, so the caller must make sure the arrays are big enough to 
+// hold the answer.  But the average user should never have to call any of the 
+// underscored functions.  Each important underscored function has a wrapper function 
+// of the same name without the underscore that takes care of the details for you.  
+// For each underscored function where a parameter is modified, that same variable 
+// must not be used as another argument too.  So, you cannot square x by doing 
+// multMod_(x,x,n).  You must use squareMod_(x,n) instead, or do y=dup(x); multMod_(x,y,n).
+// Or simply use the multMod(x,x,n) function without the underscore, where
+// such issues never arise, because non-underscored functions never change
+// their parameters; they always allocate new memory for the answer that is returned.
+//
+// These functions are designed to avoid frequent dynamic memory allocation in the inner loop.
+// For most functions, if it needs a BigInt as a local variable it will actually use
+// a global, and will only allocate to it only when it's not the right size.  This ensures
+// that when a function is called repeatedly with same-sized parameters, it only allocates
+// memory on the first call.
+//
+// Note that for cryptographic purposes, the calls to Math.random() must 
+// be replaced with calls to a better pseudorandom number generator.
+//
+// In the following, "bigInt" means a bigInt with at least one leading zero element,
+// and "integer" means a nonnegative integer less than radix.  In some cases, integer 
+// can be negative.  Negative bigInts are 2s complement.
+// 
+// The following functions do not modify their inputs.
+// Those returning a bigInt, string, or Array will dynamically allocate memory for that value.
+// Those returning a boolean will return the integer 0 (false) or 1 (true).
+// Those returning boolean or int will not allocate memory except possibly on the first 
+// time they're called with a given parameter size.
+// 
+// bigInt  add(x,y)               //return (x+y) for bigInts x and y.  
+// bigInt  addInt(x,n)            //return (x+n) where x is a bigInt and n is an integer.
+// string  bigInt2str(x,base)     //return a string form of bigInt x in a given base, with 2 <= base <= 95
+// int     bitSize(x)             //return how many bits long the bigInt x is, not counting leading zeros
+// bigInt  dup(x)                 //return a copy of bigInt x
+// boolean equals(x,y)            //is the bigInt x equal to the bigint y?
+// boolean equalsInt(x,y)         //is bigint x equal to integer y?
+// bigInt  expand(x,n)            //return a copy of x with at least n elements, adding leading zeros if needed
+// Array   findPrimes(n)          //return array of all primes less than integer n
+// bigInt  GCD(x,y)               //return greatest common divisor of bigInts x and y (each with same number of elements).
+// boolean greater(x,y)           //is x>y?  (x and y are nonnegative bigInts)
+// boolean greaterShift(x,y,shift)//is (x <<(shift*bpe)) > y?
+// bigInt  int2bigInt(t,n,m)      //return a bigInt equal to integer t, with at least n bits and m array elements
+// bigInt  inverseMod(x,n)        //return (x**(-1) mod n) for bigInts x and n.  If no inverse exists, it returns null
+// int     inverseModInt(x,n)     //return x**(-1) mod n, for integers x and n.  Return 0 if there is no inverse
+// boolean isZero(x)              //is the bigInt x equal to zero?
+// boolean millerRabin(x,b)       //does one round of Miller-Rabin base integer b say that bigInt x is possibly prime? (b is bigInt, 1<b<x)
+// boolean millerRabinInt(x,b)    //does one round of Miller-Rabin base integer b say that bigInt x is possibly prime? (b is int,    1<b<x)
+// bigInt  mod(x,n)               //return a new bigInt equal to (x mod n) for bigInts x and n.
+// int     modInt(x,n)            //return x mod n for bigInt x and integer n.
+// bigInt  mult(x,y)              //return x*y for bigInts x and y. This is faster when y<x.
+// bigInt  multMod(x,y,n)         //return (x*y mod n) for bigInts x,y,n.  For greater speed, let y<x.
+// boolean negative(x)            //is bigInt x negative?
+// bigInt  powMod(x,y,n)          //return (x**y mod n) where x,y,n are bigInts and ** is exponentiation.  0**0=1. Faster for odd n.
+// bigInt  randBigInt(n,s)        //return an n-bit random BigInt (n>=1).  If s=1, then the most significant of those n bits is set to 1.
+// bigInt  randTruePrime(k)       //return a new, random, k-bit, true prime bigInt using Maurer's algorithm.
+// bigInt  randProbPrime(k)       //return a new, random, k-bit, probable prime bigInt (probability it's composite less than 2^-80).
+// bigInt  str2bigInt(s,b,n,m)    //return a bigInt for number represented in string s in base b with at least n bits and m array elements
+// bigInt  sub(x,y)               //return (x-y) for bigInts x and y.  Negative answers will be 2s complement
+// bigInt  trim(x,k)              //return a copy of x with exactly k leading zero elements
+//
+//
+// The following functions each have a non-underscored version, which most users should call instead.
+// These functions each write to a single parameter, and the caller is responsible for ensuring the array 
+// passed in is large enough to hold the result. 
+//
+// void    addInt_(x,n)          //do x=x+n where x is a bigInt and n is an integer
+// void    add_(x,y)             //do x=x+y for bigInts x and y
+// void    copy_(x,y)            //do x=y on bigInts x and y
+// void    copyInt_(x,n)         //do x=n on bigInt x and integer n
+// void    GCD_(x,y)             //set x to the greatest common divisor of bigInts x and y, (y is destroyed).  (This never overflows its array).
+// boolean inverseMod_(x,n)      //do x=x**(-1) mod n, for bigInts x and n. Returns 1 (0) if inverse does (doesn't) exist
+// void    mod_(x,n)             //do x=x mod n for bigInts x and n. (This never overflows its array).
+// void    mult_(x,y)            //do x=x*y for bigInts x and y.
+// void    multMod_(x,y,n)       //do x=x*y  mod n for bigInts x,y,n.
+// void    powMod_(x,y,n)        //do x=x**y mod n, where x,y,n are bigInts (n is odd) and ** is exponentiation.  0**0=1.
+// void    randBigInt_(b,n,s)    //do b = an n-bit random BigInt. if s=1, then nth bit (most significant bit) is set to 1. n>=1.
+// void    randTruePrime_(ans,k) //do ans = a random k-bit true random prime (not just probable prime) with 1 in the msb.
+// void    sub_(x,y)             //do x=x-y for bigInts x and y. Negative answers will be 2s complement.
+//
+// The following functions do NOT have a non-underscored version. 
+// They each write a bigInt result to one or more parameters.  The caller is responsible for
+// ensuring the arrays passed in are large enough to hold the results. 
+//
+// void addShift_(x,y,ys)       //do x=x+(y<<(ys*bpe))
+// void carry_(x)               //do carries and borrows so each element of the bigInt x fits in bpe bits.
+// void divide_(x,y,q,r)        //divide x by y giving quotient q and remainder r
+// int  divInt_(x,n)            //do x=floor(x/n) for bigInt x and integer n, and return the remainder. (This never overflows its array).
+// void eGCD_(x,y,d,a,b)        //sets a,b,d to positive bigInts such that d = GCD_(x,y) = a*x-b*y
+// void halve_(x)               //do x=floor(|x|/2)*sgn(x) for bigInt x in 2's complement.  (This never overflows its array).
+// void leftShift_(x,n)         //left shift bigInt x by n bits.  n<bpe.
+// void linComb_(x,y,a,b)       //do x=a*x+b*y for bigInts x and y and integers a and b
+// void linCombShift_(x,y,b,ys) //do x=x+b*(y<<(ys*bpe)) for bigInts x and y, and integers b and ys
+// void mont_(x,y,n,np)         //Montgomery multiplication (see comments where the function is defined)
+// void multInt_(x,n)           //do x=x*n where x is a bigInt and n is an integer.
+// void rightShift_(x,n)        //right shift bigInt x by n bits.  0 <= n < bpe. (This never overflows its array).
+// void squareMod_(x,n)         //do x=x*x  mod n for bigInts x,n
+// void subShift_(x,y,ys)       //do x=x-(y<<(ys*bpe)). Negative answers will be 2s complement.
+//
+// The following functions are based on algorithms from the _Handbook of Applied Cryptography_
+//    powMod_()           = algorithm 14.94, Montgomery exponentiation
+//    eGCD_,inverseMod_() = algorithm 14.61, Binary extended GCD_
+//    GCD_()              = algorothm 14.57, Lehmer's algorithm
+//    mont_()             = algorithm 14.36, Montgomery multiplication
+//    divide_()           = algorithm 14.20  Multiple-precision division
+//    squareMod_()        = algorithm 14.16  Multiple-precision squaring
+//    randTruePrime_()    = algorithm  4.62, Maurer's algorithm
+//    millerRabin()       = algorithm  4.24, Miller-Rabin algorithm
+//
+// Profiling shows:
+//     randTruePrime_() spends:
+//         10% of its time in calls to powMod_()
+//         85% of its time in calls to millerRabin()
+//     millerRabin() spends:
+//         99% of its time in calls to powMod_()   (always with a base of 2)
+//     powMod_() spends:
+//         94% of its time in calls to mont_()  (almost always with x==y)
+//
+// This suggests there are several ways to speed up this library slightly:
+//     - convert powMod_ to use a Montgomery form of k-ary window (or maybe a Montgomery form of sliding window)
+//         -- this should especially focus on being fast when raising 2 to a power mod n
+//     - convert randTruePrime_() to use a minimum r of 1/3 instead of 1/2 with the appropriate change to the test
+//     - tune the parameters in randTruePrime_(), including c, m, and recLimit
+//     - speed up the single loop in mont_() that takes 95% of the runtime, perhaps by reducing checking
+//       within the loop when all the parameters are the same length.
+//
+// There are several ideas that look like they wouldn't help much at all:
+//     - replacing trial division in randTruePrime_() with a sieve (that speeds up something taking almost no time anyway)
+//     - increase bpe from 15 to 30 (that would help if we had a 32*32->64 multiplier, but not with JavaScript's 32*32->32)
+//     - speeding up mont_(x,y,n,np) when x==y by doing a non-modular, non-Montgomery square
+//       followed by a Montgomery reduction.  The intermediate answer will be twice as long as x, so that
+//       method would be slower.  This is unfortunate because the code currently spends almost all of its time
+//       doing mont_(x,x,...), both for randTruePrime_() and powMod_().  A faster method for Montgomery squaring
+//       would have a large impact on the speed of randTruePrime_() and powMod_().  HAC has a couple of poorly-worded
+//       sentences that seem to imply it's faster to do a non-modular square followed by a single
+//       Montgomery reduction, but that's obviously wrong.
+////////////////////////////////////////////////////////////////////////////////////////
+(function (factory) {
+  if (( false ? undefined : _typeof(exports)) === 'object') {
+    // CommonJS
+    factory(__webpack_require__("./node_modules/lseqtree/node_modules/BigInt/src sync recursive"), exports, module);
+  } else if (true) {
+    // AMD requirejs
+    !(__WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
+				(__WEBPACK_AMD_DEFINE_FACTORY__.call(exports, __webpack_require__, exports, module)) :
+				__WEBPACK_AMD_DEFINE_FACTORY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+  } else { var _require, _module; }
+})(function (require, exports, module) {
+  "use strict";
+
+  var trueRandom = function trueRandom() {
+    return Math.random();
+  };
+
+  function setRandom(random) {
+    trueRandom = random;
+  }
+
+  //globals
+  var bpe = 0; //bits stored per array element
+  var mask = 0; //AND this with an array element to chop it down to bpe bits
+  var radix = mask + 1; //equals 2^bpe.  A single 1 bit to the left of the last bit of mask.
+
+  //the digits for converting to different bases
+  var digitsStr = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_=!@#$%^&*()[]{}|;:,.<>/?`~ \\\'\"+-';
+
+  //initialize the global variables
+  for (bpe = 0; 1 << bpe + 1 > 1 << bpe; bpe++) {} //bpe=number of bits in the mantissa on this platform
+  bpe >>= 1; //bpe=number of bits in one element of the array representing the bigInt
+  mask = (1 << bpe) - 1; //AND the mask with an integer to get its bpe least significant bits
+  radix = mask + 1; //2^bpe.  a single 1 bit to the left of the first bit of mask
+  var one = int2bigInt(1, 1, 1); //constant used in powMod_()
+
+  //the following global variables are scratchpad memory to
+  //reduce dynamic memory allocation in the inner loop
+  var t = new Array(0);
+  var ss = t; //used in mult_()
+  var s0 = t; //used in multMod_(), squareMod_()
+  var s1 = t; //used in powMod_(), multMod_(), squareMod_()
+  var s2 = t; //used in powMod_(), multMod_()
+  var s3 = t; //used in powMod_()
+  var s4 = t,
+      s5 = t; //used in mod_()
+  var s6 = t; //used in bigInt2str()
+  var s7 = t; //used in powMod_()
+  var T = t; //used in GCD_()
+  var sa = t; //used in mont_()
+  var mr_x1 = t,
+      mr_r = t,
+      mr_a = t; //used in millerRabin()
+  var eg_v = t,
+      eg_u = t,
+      eg_A = t,
+      eg_B = t,
+      eg_C = t,
+      eg_D = t; //used in eGCD_(), inverseMod_()
+  var md_q1 = t,
+      md_q2 = t,
+      md_q3 = t,
+      md_r = t,
+      md_r1 = t,
+      md_r2 = t,
+      md_tt = t; //used in mod_()
+
+  var primes = t,
+      pows = t,
+      s_i = t,
+      s_i2 = t,
+      s_R = t,
+      s_rm = t,
+      s_q = t,
+      s_n1 = t;
+  var s_a = t,
+      s_r2 = t,
+      s_n = t,
+      s_b = t,
+      s_d = t,
+      s_x1 = t,
+      s_x2 = t,
+      s_aa = t; //used in randTruePrime_()
+
+  var rpprb = t; //used in randProbPrimeRounds() (which also uses "primes")
+
+  ////////////////////////////////////////////////////////////////////////////////////////
+
+
+  //return array of all primes less than integer n
+  function findPrimes(n) {
+    var i, s, p, ans;
+    s = new Array(n);
+    for (i = 0; i < n; i++) {
+      s[i] = 0;
+    }s[0] = 2;
+    p = 0; //first p elements of s are primes, the rest are a sieve
+    for (; s[p] < n;) {
+      //s[p] is the pth prime
+      for (i = s[p] * s[p]; i < n; i += s[p]) {
+        //mark multiples of s[p]
+        s[i] = 1;
+      }p++;
+      s[p] = s[p - 1] + 1;
+      for (; s[p] < n && s[s[p]]; s[p]++) {} //find next prime (where s[p]==0)
+    }
+    ans = new Array(p);
+    for (i = 0; i < p; i++) {
+      ans[i] = s[i];
+    }return ans;
+  }
+
+  //does a single round of Miller-Rabin base b consider x to be a possible prime?
+  //x is a bigInt, and b is an integer, with b<x
+  function millerRabinInt(x, b) {
+    if (mr_x1.length != x.length) {
+      mr_x1 = dup(x);
+      mr_r = dup(x);
+      mr_a = dup(x);
+    }
+
+    copyInt_(mr_a, b);
+    return millerRabin(x, mr_a);
+  }
+
+  //does a single round of Miller-Rabin base b consider x to be a possible prime?
+  //x and b are bigInts with b<x
+  function millerRabin(x, b) {
+    var i, j, k, s;
+
+    if (mr_x1.length != x.length) {
+      mr_x1 = dup(x);
+      mr_r = dup(x);
+      mr_a = dup(x);
+    }
+
+    copy_(mr_a, b);
+    copy_(mr_r, x);
+    copy_(mr_x1, x);
+
+    addInt_(mr_r, -1);
+    addInt_(mr_x1, -1);
+
+    //s=the highest power of two that divides mr_r
+    k = 0;
+    for (i = 0; i < mr_r.length; i++) {
+      for (j = 1; j < mask; j <<= 1) {
+        if (x[i] & j) {
+          s = k < mr_r.length + bpe ? k : 0;
+          i = mr_r.length;
+          j = mask;
+        } else k++;
+      }
+    }if (s) rightShift_(mr_r, s);
+
+    powMod_(mr_a, mr_r, x);
+
+    if (!equalsInt(mr_a, 1) && !equals(mr_a, mr_x1)) {
+      j = 1;
+      while (j <= s - 1 && !equals(mr_a, mr_x1)) {
+        squareMod_(mr_a, x);
+        if (equalsInt(mr_a, 1)) {
+          return 0;
+        }
+        j++;
+      }
+      if (!equals(mr_a, mr_x1)) {
+        return 0;
+      }
+    }
+    return 1;
+  }
+
+  //returns how many bits long the bigInt is, not counting leading zeros.
+  function bitSize(x) {
+    var j, z, w;
+    for (j = x.length - 1; x[j] == 0 && j > 0; j--) {}
+    for (z = 0, w = x[j]; w; w >>= 1, z++) {}
+    z += bpe * j;
+    return z;
+  }
+
+  //return a copy of x with at least n elements, adding leading zeros if needed
+  function expand(x, n) {
+    var ans = int2bigInt(0, (x.length > n ? x.length : n) * bpe, 0);
+    copy_(ans, x);
+    return ans;
+  }
+
+  //return a k-bit true random prime using Maurer's algorithm.
+  function randTruePrime(k) {
+    var ans = int2bigInt(0, k, 0);
+    randTruePrime_(ans, k);
+    return trim(ans, 1);
+  }
+
+  //return a k-bit random probable prime with probability of error < 2^-80
+  function randProbPrime(k) {
+    if (k >= 600) return randProbPrimeRounds(k, 2); //numbers from HAC table 4.3
+    if (k >= 550) return randProbPrimeRounds(k, 4);
+    if (k >= 500) return randProbPrimeRounds(k, 5);
+    if (k >= 400) return randProbPrimeRounds(k, 6);
+    if (k >= 350) return randProbPrimeRounds(k, 7);
+    if (k >= 300) return randProbPrimeRounds(k, 9);
+    if (k >= 250) return randProbPrimeRounds(k, 12); //numbers from HAC table 4.4
+    if (k >= 200) return randProbPrimeRounds(k, 15);
+    if (k >= 150) return randProbPrimeRounds(k, 18);
+    if (k >= 100) return randProbPrimeRounds(k, 27);
+    return randProbPrimeRounds(k, 40); //number from HAC remark 4.26 (only an estimate)
+  }
+
+  //return a k-bit probable random prime using n rounds of Miller Rabin (after trial division with small primes)
+  function randProbPrimeRounds(k, n) {
+    var ans, i, divisible, B;
+    B = 30000; //B is largest prime to use in trial division
+    ans = int2bigInt(0, k, 0);
+
+    //optimization: try larger and smaller B to find the best limit.
+
+    if (primes.length == 0) primes = findPrimes(30000); //check for divisibility by primes <=30000
+
+    if (rpprb.length != ans.length) rpprb = dup(ans);
+
+    for (;;) {
+      //keep trying random values for ans until one appears to be prime
+      //optimization: pick a random number times L=2*3*5*...*p, plus a
+      //   random element of the list of all numbers in [0,L) not divisible by any prime up to p.
+      //   This can reduce the amount of random number generation.
+
+      randBigInt_(ans, k, 0); //ans = a random odd number to check
+      ans[0] |= 1;
+      divisible = 0;
+
+      //check ans for divisibility by small primes up to B
+      for (i = 0; i < primes.length && primes[i] <= B; i++) {
+        if (modInt(ans, primes[i]) == 0 && !equalsInt(ans, primes[i])) {
+          divisible = 1;
+          break;
+        }
+      } //optimization: change millerRabin so the base can be bigger than the number being checked, then eliminate the while here.
+
+      //do n rounds of Miller Rabin, with random bases less than ans
+      for (i = 0; i < n && !divisible; i++) {
+        randBigInt_(rpprb, k, 0);
+        while (!greater(ans, rpprb)) {
+          //pick a random rpprb that's < ans
+          randBigInt_(rpprb, k, 0);
+        }if (!millerRabin(ans, rpprb)) divisible = 1;
+      }
+
+      if (!divisible) return ans;
+    }
+  }
+
+  //return a new bigInt equal to (x mod n) for bigInts x and n.
+  function mod(x, n) {
+    var ans = dup(x);
+    mod_(ans, n);
+    return trim(ans, 1);
+  }
+
+  //return (x+n) where x is a bigInt and n is an integer.
+  function addInt(x, n) {
+    var ans = expand(x, x.length + 1);
+    addInt_(ans, n);
+    return trim(ans, 1);
+  }
+
+  //return x*y for bigInts x and y. This is faster when y<x.
+  function mult(x, y) {
+    var ans = expand(x, x.length + y.length);
+    mult_(ans, y);
+    return trim(ans, 1);
+  }
+
+  //return (x**y mod n) where x,y,n are bigInts and ** is exponentiation.  0**0=1. Faster for odd n.
+  function powMod(x, y, n) {
+    var ans = expand(x, n.length);
+    powMod_(ans, trim(y, 2), trim(n, 2), 0); //this should work without the trim, but doesn't
+    return trim(ans, 1);
+  }
+
+  //return (x-y) for bigInts x and y.  Negative answers will be 2s complement
+  function sub(x, y) {
+    var ans = expand(x, x.length > y.length ? x.length + 1 : y.length + 1);
+    sub_(ans, y);
+    return trim(ans, 1);
+  }
+
+  //return (x+y) for bigInts x and y.
+  function add(x, y) {
+    var ans = expand(x, x.length > y.length ? x.length + 1 : y.length + 1);
+    add_(ans, y);
+    return trim(ans, 1);
+  }
+
+  //return (x**(-1) mod n) for bigInts x and n.  If no inverse exists, it returns null
+  function inverseMod(x, n) {
+    var ans = expand(x, n.length);
+    var s;
+    s = inverseMod_(ans, n);
+    return s ? trim(ans, 1) : null;
+  }
+
+  //return (x*y mod n) for bigInts x,y,n.  For greater speed, let y<x.
+  function multMod(x, y, n) {
+    var ans = expand(x, n.length);
+    multMod_(ans, y, n);
+    return trim(ans, 1);
+  }
+
+  //generate a k-bit true random prime using Maurer's algorithm,
+  //and put it into ans.  The bigInt ans must be large enough to hold it.
+  function randTruePrime_(ans, k) {
+    var c, m, pm, dd, j, r, B, divisible, z, zz, recSize;
+
+    if (primes.length == 0) primes = findPrimes(30000); //check for divisibility by primes <=30000
+
+    if (pows.length == 0) {
+      pows = new Array(512);
+      for (j = 0; j < 512; j++) {
+        pows[j] = Math.pow(2, j / 511. - 1.);
+      }
+    }
+
+    //c and m should be tuned for a particular machine and value of k, to maximize speed
+    c = 0.1; //c=0.1 in HAC
+    m = 20; //generate this k-bit number by first recursively generating a number that has between k/2 and k-m bits
+    var recLimit = 20; //stop recursion when k <=recLimit.  Must have recLimit >= 2
+
+    if (s_i2.length != ans.length) {
+      s_i2 = dup(ans);
+      s_R = dup(ans);
+      s_n1 = dup(ans);
+      s_r2 = dup(ans);
+      s_d = dup(ans);
+      s_x1 = dup(ans);
+      s_x2 = dup(ans);
+      s_b = dup(ans);
+      s_n = dup(ans);
+      s_i = dup(ans);
+      s_rm = dup(ans);
+      s_q = dup(ans);
+      s_a = dup(ans);
+      s_aa = dup(ans);
+    }
+
+    if (k <= recLimit) {
+      //generate small random primes by trial division up to its square root
+      pm = (1 << (k + 2 >> 1)) - 1; //pm is binary number with all ones, just over sqrt(2^k)
+      copyInt_(ans, 0);
+      for (dd = 1; dd;) {
+        dd = 0;
+        ans[0] = 1 | 1 << k - 1 | Math.floor(trueRandom() * (1 << k)); //random, k-bit, odd integer, with msb 1
+        for (j = 1; j < primes.length && (primes[j] & pm) == primes[j]; j++) {
+          //trial division by all primes 3...sqrt(2^k)
+          if (0 == ans[0] % primes[j]) {
+            dd = 1;
+            break;
+          }
+        }
+      }
+      carry_(ans);
+      return;
+    }
+
+    B = c * k * k; //try small primes up to B (or all the primes[] array if the largest is less than B).
+    if (k > 2 * m) //generate this k-bit number by first recursively generating a number that has between k/2 and k-m bits
+      for (r = 1; k - k * r <= m;) {
+        r = pows[Math.floor(trueRandom() * 512)];
+      } //r=Math.pow(2,Math.random()-1);
+    else r = .5;
+
+    //simulation suggests the more complex algorithm using r=.333 is only slightly faster.
+
+    recSize = Math.floor(r * k) + 1;
+
+    randTruePrime_(s_q, recSize);
+    copyInt_(s_i2, 0);
+    s_i2[Math.floor((k - 2) / bpe)] |= 1 << (k - 2) % bpe; //s_i2=2^(k-2)
+    divide_(s_i2, s_q, s_i, s_rm); //s_i=floor((2^(k-1))/(2q))
+
+    z = bitSize(s_i);
+
+    for (;;) {
+      for (;;) {
+        //generate z-bit numbers until one falls in the range [0,s_i-1]
+        randBigInt_(s_R, z, 0);
+        if (greater(s_i, s_R)) break;
+      } //now s_R is in the range [0,s_i-1]
+      addInt_(s_R, 1); //now s_R is in the range [1,s_i]
+      add_(s_R, s_i); //now s_R is in the range [s_i+1,2*s_i]
+
+      copy_(s_n, s_q);
+      mult_(s_n, s_R);
+      multInt_(s_n, 2);
+      addInt_(s_n, 1); //s_n=2*s_R*s_q+1
+
+      copy_(s_r2, s_R);
+      multInt_(s_r2, 2); //s_r2=2*s_R
+
+      //check s_n for divisibility by small primes up to B
+      for (divisible = 0, j = 0; j < primes.length && primes[j] < B; j++) {
+        if (modInt(s_n, primes[j]) == 0 && !equalsInt(s_n, primes[j])) {
+          divisible = 1;
+          break;
+        }
+      }if (!divisible) //if it passes small primes check, then try a single Miller-Rabin base 2
+        if (!millerRabinInt(s_n, 2)) //this line represents 75% of the total runtime for randTruePrime_
+          divisible = 1;
+
+      if (!divisible) {
+        //if it passes that test, continue checking s_n
+        addInt_(s_n, -3);
+        for (j = s_n.length - 1; s_n[j] == 0 && j > 0; j--) {} //strip leading zeros
+        for (zz = 0, w = s_n[j]; w; w >>= 1, zz++) {}
+        zz += bpe * j; //zz=number of bits in s_n, ignoring leading zeros
+        for (;;) {
+          //generate z-bit numbers until one falls in the range [0,s_n-1]
+          randBigInt_(s_a, zz, 0);
+          if (greater(s_n, s_a)) break;
+        } //now s_a is in the range [0,s_n-1]
+        addInt_(s_n, 3); //now s_a is in the range [0,s_n-4]
+        addInt_(s_a, 2); //now s_a is in the range [2,s_n-2]
+        copy_(s_b, s_a);
+        copy_(s_n1, s_n);
+        addInt_(s_n1, -1);
+        powMod_(s_b, s_n1, s_n); //s_b=s_a^(s_n-1) modulo s_n
+        addInt_(s_b, -1);
+        if (isZero(s_b)) {
+          copy_(s_b, s_a);
+          powMod_(s_b, s_r2, s_n);
+          addInt_(s_b, -1);
+          copy_(s_aa, s_n);
+          copy_(s_d, s_b);
+          GCD_(s_d, s_n); //if s_b and s_n are relatively prime, then s_n is a prime
+          if (equalsInt(s_d, 1)) {
+            copy_(ans, s_aa);
+            return; //if we've made it this far, then s_n is absolutely guaranteed to be prime
+          }
+        }
+      }
+    }
+  }
+
+  //Return an n-bit random BigInt (n>=1).  If s=1, then the most significant of those n bits is set to 1.
+  function randBigInt(n, s) {
+    var a, b;
+    a = Math.floor((n - 1) / bpe) + 2; //# array elements to hold the BigInt with a leading 0 element
+    b = int2bigInt(0, 0, a);
+    randBigInt_(b, n, s);
+    return b;
+  }
+
+  //Set b to an n-bit random BigInt.  If s=1, then the most significant of those n bits is set to 1.
+  //Array b must be big enough to hold the result. Must have n>=1
+  function randBigInt_(b, n, s) {
+    var i, a;
+    for (i = 0; i < b.length; i++) {
+      b[i] = 0;
+    }a = Math.floor((n - 1) / bpe) + 1; //# array elements to hold the BigInt
+    for (i = 0; i < a; i++) {
+      b[i] = Math.floor(trueRandom() * (1 << bpe - 1));
+    }
+    b[a - 1] &= (2 << (n - 1) % bpe) - 1;
+    if (s == 1) b[a - 1] |= 1 << (n - 1) % bpe;
+  }
+
+  //Return the greatest common divisor of bigInts x and y (each with same number of elements).
+  function GCD(x, y) {
+    var xc, yc;
+    xc = dup(x);
+    yc = dup(y);
+    GCD_(xc, yc);
+    return xc;
+  }
+
+  //set x to the greatest common divisor of bigInts x and y (each with same number of elements).
+  //y is destroyed.
+  function GCD_(x, y) {
+    var i, xp, yp, A, B, C, D, q, sing;
+    if (T.length != x.length) T = dup(x);
+
+    sing = 1;
+    while (sing) {
+      //while y has nonzero elements other than y[0]
+      sing = 0;
+      for (i = 1; i < y.length; i++) {
+        //check if y has nonzero elements other than 0
+        if (y[i]) {
+          sing = 1;
+          break;
+        }
+      }if (!sing) break; //quit when y all zero elements except possibly y[0]
+
+      for (i = x.length; !x[i] && i >= 0; i--) {} //find most significant element of x
+      xp = x[i];
+      yp = y[i];
+      A = 1;B = 0;C = 0;D = 1;
+      while (yp + C && yp + D) {
+        q = Math.floor((xp + A) / (yp + C));
+        var qp = Math.floor((xp + B) / (yp + D));
+        if (q != qp) break;
+        t = A - q * C;A = C;C = t; //  do (A,B,xp, C,D,yp) = (C,D,yp, A,B,xp) - q*(0,0,0, C,D,yp)
+        t = B - q * D;B = D;D = t;
+        t = xp - q * yp;xp = yp;yp = t;
+      }
+      if (B) {
+        copy_(T, x);
+        linComb_(x, y, A, B); //x=A*x+B*y
+        linComb_(y, T, D, C); //y=D*y+C*T
+      } else {
+        mod_(x, y);
+        copy_(T, x);
+        copy_(x, y);
+        copy_(y, T);
+      }
+    }
+    if (y[0] == 0) return;
+    t = modInt(x, y[0]);
+    copyInt_(x, y[0]);
+    y[0] = t;
+    while (y[0]) {
+      x[0] %= y[0];
+      t = x[0];x[0] = y[0];y[0] = t;
+    }
+  }
+
+  //do x=x**(-1) mod n, for bigInts x and n.
+  //If no inverse exists, it sets x to zero and returns 0, else it returns 1.
+  //The x array must be at least as large as the n array.
+  function inverseMod_(x, n) {
+    var k = 1 + 2 * Math.max(x.length, n.length);
+
+    if (!(x[0] & 1) && !(n[0] & 1)) {
+      //if both inputs are even, then inverse doesn't exist
+      copyInt_(x, 0);
+      return 0;
+    }
+
+    if (eg_u.length != k) {
+      eg_u = new Array(k);
+      eg_v = new Array(k);
+      eg_A = new Array(k);
+      eg_B = new Array(k);
+      eg_C = new Array(k);
+      eg_D = new Array(k);
+    }
+
+    copy_(eg_u, x);
+    copy_(eg_v, n);
+    copyInt_(eg_A, 1);
+    copyInt_(eg_B, 0);
+    copyInt_(eg_C, 0);
+    copyInt_(eg_D, 1);
+    for (;;) {
+      while (!(eg_u[0] & 1)) {
+        //while eg_u is even
+        halve_(eg_u);
+        if (!(eg_A[0] & 1) && !(eg_B[0] & 1)) {
+          //if eg_A==eg_B==0 mod 2
+          halve_(eg_A);
+          halve_(eg_B);
+        } else {
+          add_(eg_A, n);halve_(eg_A);
+          sub_(eg_B, x);halve_(eg_B);
+        }
+      }
+
+      while (!(eg_v[0] & 1)) {
+        //while eg_v is even
+        halve_(eg_v);
+        if (!(eg_C[0] & 1) && !(eg_D[0] & 1)) {
+          //if eg_C==eg_D==0 mod 2
+          halve_(eg_C);
+          halve_(eg_D);
+        } else {
+          add_(eg_C, n);halve_(eg_C);
+          sub_(eg_D, x);halve_(eg_D);
+        }
+      }
+
+      if (!greater(eg_v, eg_u)) {
+        //eg_v <= eg_u
+        sub_(eg_u, eg_v);
+        sub_(eg_A, eg_C);
+        sub_(eg_B, eg_D);
+      } else {
+        //eg_v > eg_u
+        sub_(eg_v, eg_u);
+        sub_(eg_C, eg_A);
+        sub_(eg_D, eg_B);
+      }
+
+      if (equalsInt(eg_u, 0)) {
+        while (negative(eg_C)) {
+          //make sure answer is nonnegative
+          add_(eg_C, n);
+        }copy_(x, eg_C);
+
+        if (!equalsInt(eg_v, 1)) {
+          //if GCD_(x,n)!=1, then there is no inverse
+          copyInt_(x, 0);
+          return 0;
+        }
+        return 1;
+      }
+    }
+  }
+
+  //return x**(-1) mod n, for integers x and n.  Return 0 if there is no inverse
+  function inverseModInt(x, n) {
+    var a = 1,
+        b = 0,
+        t;
+    for (;;) {
+      if (x == 1) return a;
+      if (x == 0) return 0;
+      b -= a * Math.floor(n / x);
+      n %= x;
+
+      if (n == 1) return b; //to avoid negatives, change this b to n-b, and each -= to +=
+      if (n == 0) return 0;
+      a -= b * Math.floor(x / n);
+      x %= n;
+    }
+  }
+
+  //this deprecated function is for backward compatibility only.
+  function inverseModInt_(x, n) {
+    return inverseModInt(x, n);
+  }
+
+  //Given positive bigInts x and y, change the bigints v, a, and b to positive bigInts such that:
+  //     v = GCD_(x,y) = a*x-b*y
+  //The bigInts v, a, b, must have exactly as many elements as the larger of x and y.
+  function eGCD_(x, y, v, a, b) {
+    var g = 0;
+    var k = Math.max(x.length, y.length);
+    if (eg_u.length != k) {
+      eg_u = new Array(k);
+      eg_A = new Array(k);
+      eg_B = new Array(k);
+      eg_C = new Array(k);
+      eg_D = new Array(k);
+    }
+    while (!(x[0] & 1) && !(y[0] & 1)) {
+      //while x and y both even
+      halve_(x);
+      halve_(y);
+      g++;
+    }
+    copy_(eg_u, x);
+    copy_(v, y);
+    copyInt_(eg_A, 1);
+    copyInt_(eg_B, 0);
+    copyInt_(eg_C, 0);
+    copyInt_(eg_D, 1);
+    for (;;) {
+      while (!(eg_u[0] & 1)) {
+        //while u is even
+        halve_(eg_u);
+        if (!(eg_A[0] & 1) && !(eg_B[0] & 1)) {
+          //if A==B==0 mod 2
+          halve_(eg_A);
+          halve_(eg_B);
+        } else {
+          add_(eg_A, y);halve_(eg_A);
+          sub_(eg_B, x);halve_(eg_B);
+        }
+      }
+
+      while (!(v[0] & 1)) {
+        //while v is even
+        halve_(v);
+        if (!(eg_C[0] & 1) && !(eg_D[0] & 1)) {
+          //if C==D==0 mod 2
+          halve_(eg_C);
+          halve_(eg_D);
+        } else {
+          add_(eg_C, y);halve_(eg_C);
+          sub_(eg_D, x);halve_(eg_D);
+        }
+      }
+
+      if (!greater(v, eg_u)) {
+        //v<=u
+        sub_(eg_u, v);
+        sub_(eg_A, eg_C);
+        sub_(eg_B, eg_D);
+      } else {
+        //v>u
+        sub_(v, eg_u);
+        sub_(eg_C, eg_A);
+        sub_(eg_D, eg_B);
+      }
+      if (equalsInt(eg_u, 0)) {
+        while (negative(eg_C)) {
+          //make sure a (C) is nonnegative
+          add_(eg_C, y);
+          sub_(eg_D, x);
+        }
+        multInt_(eg_D, -1); ///make sure b (D) is nonnegative
+        copy_(a, eg_C);
+        copy_(b, eg_D);
+        leftShift_(v, g);
+        return;
+      }
+    }
+  }
+
+  //is bigInt x negative?
+  function negative(x) {
+    return x[x.length - 1] >> bpe - 1 & 1;
+  }
+
+  //is (x << (shift*bpe)) > y?
+  //x and y are nonnegative bigInts
+  //shift is a nonnegative integer
+  function greaterShift(x, y, shift) {
+    var i,
+        kx = x.length,
+        ky = y.length;
+    var k = kx + shift < ky ? kx + shift : ky;
+    for (i = ky - 1 - shift; i < kx && i >= 0; i++) {
+      if (x[i] > 0) return 1;
+    } //if there are nonzeros in x to the left of the first column of y, then x is bigger
+    for (i = kx - 1 + shift; i < ky; i++) {
+      if (y[i] > 0) return 0;
+    } //if there are nonzeros in y to the left of the first column of x, then x is not bigger
+    for (i = k - 1; i >= shift; i--) {
+      if (x[i - shift] > y[i]) return 1;else if (x[i - shift] < y[i]) return 0;
+    }return 0;
+  }
+
+  //is x > y? (x and y both nonnegative)
+  function greater(x, y) {
+    var i;
+    var k = x.length < y.length ? x.length : y.length;
+
+    for (i = x.length; i < y.length; i++) {
+      if (y[i]) return 0;
+    } //y has more digits
+
+    for (i = y.length; i < x.length; i++) {
+      if (x[i]) return 1;
+    } //x has more digits
+
+    for (i = k - 1; i >= 0; i--) {
+      if (x[i] > y[i]) return 1;else if (x[i] < y[i]) return 0;
+    }return 0;
+  }
+
+  //divide x by y giving quotient q and remainder r.  (q=floor(x/y),  r=x mod y).  All 4 are bigints.
+  //x must have at least one leading zero element.
+  //y must be nonzero.
+  //q and r must be arrays that are exactly the same length as x. (Or q can have more).
+  //Must have x.length >= y.length >= 2.
+  function divide_(x, y, q, r) {
+    var kx, ky;
+    var i, j, y1, y2, c, a, b;
+    copy_(r, x);
+    for (ky = y.length; y[ky - 1] == 0; ky--) {} //ky is number of elements in y, not including leading zeros
+
+    //normalize: ensure the most significant element of y has its highest bit set
+    b = y[ky - 1];
+    for (a = 0; b; a++) {
+      b >>= 1;
+    }a = bpe - a; //a is how many bits to shift so that the high order bit of y is leftmost in its array element
+    leftShift_(y, a); //multiply both by 1<<a now, then divide both by that at the end
+    leftShift_(r, a);
+
+    //Rob Visser discovered a bug: the following line was originally just before the normalization.
+    for (kx = r.length; r[kx - 1] == 0 && kx > ky; kx--) {} //kx is number of elements in normalized x, not including leading zeros
+
+    copyInt_(q, 0); // q=0
+    while (!greaterShift(y, r, kx - ky)) {
+      // while (leftShift_(y,kx-ky) <= r) {
+      subShift_(r, y, kx - ky); //   r=r-leftShift_(y,kx-ky)
+      q[kx - ky]++; //   q[kx-ky]++;
+    } // }
+
+    for (i = kx - 1; i >= ky; i--) {
+      if (r[i] == y[ky - 1]) q[i - ky] = mask;else q[i - ky] = Math.floor((r[i] * radix + r[i - 1]) / y[ky - 1]);
+
+      //The following for(;;) loop is equivalent to the commented while loop,
+      //except that the uncommented version avoids overflow.
+      //The commented loop comes from HAC, which assumes r[-1]==y[-1]==0
+      //  while (q[i-ky]*(y[ky-1]*radix+y[ky-2]) > r[i]*radix*radix+r[i-1]*radix+r[i-2])
+      //    q[i-ky]--;
+      for (;;) {
+        y2 = (ky > 1 ? y[ky - 2] : 0) * q[i - ky];
+        c = y2 >> bpe;
+        y2 = y2 & mask;
+        y1 = c + q[i - ky] * y[ky - 1];
+        c = y1 >> bpe;
+        y1 = y1 & mask;
+
+        if (c == r[i] ? y1 == r[i - 1] ? y2 > (i > 1 ? r[i - 2] : 0) : y1 > r[i - 1] : c > r[i]) q[i - ky]--;else break;
+      }
+
+      linCombShift_(r, y, -q[i - ky], i - ky); //r=r-q[i-ky]*leftShift_(y,i-ky)
+      if (negative(r)) {
+        addShift_(r, y, i - ky); //r=r+leftShift_(y,i-ky)
+        q[i - ky]--;
+      }
+    }
+
+    rightShift_(y, a); //undo the normalization step
+    rightShift_(r, a); //undo the normalization step
+  }
+
+  //do carries and borrows so each element of the bigInt x fits in bpe bits.
+  function carry_(x) {
+    var i, k, c, b;
+    k = x.length;
+    c = 0;
+    for (i = 0; i < k; i++) {
+      c += x[i];
+      b = 0;
+      if (c < 0) {
+        b = -(c >> bpe);
+        c += b * radix;
+      }
+      x[i] = c & mask;
+      c = (c >> bpe) - b;
+    }
+  }
+
+  //return x mod n for bigInt x and integer n.
+  function modInt(x, n) {
+    var i,
+        c = 0;
+    for (i = x.length - 1; i >= 0; i--) {
+      c = (c * radix + x[i]) % n;
+    }return c;
+  }
+
+  //convert the integer t into a bigInt with at least the given number of bits.
+  //the returned array stores the bigInt in bpe-bit chunks, little endian (buff[0] is least significant word)
+  //Pad the array with leading zeros so that it has at least minSize elements.
+  //There will always be at least one leading 0 element.
+  function int2bigInt(t, bits, minSize) {
+    var i, k;
+    k = Math.ceil(bits / bpe) + 1;
+    k = minSize > k ? minSize : k;
+    var buff = new Array(k);
+    copyInt_(buff, t);
+    return buff;
+  }
+
+  //return the bigInt given a string representation in a given base.
+  //Pad the array with leading zeros so that it has at least minSize elements.
+  //If base=-1, then it reads in a space-separated list of array elements in decimal.
+  //The array will always have at least one leading zero, unless base=-1.
+  function str2bigInt(s, b, minSize) {
+    var d, i, j, base, str, x, y, kk;
+    if (typeof b === 'string') {
+      base = b.length;
+      str = b;
+    } else {
+      base = b;
+      str = digitsStr;
+    }
+    var k = s.length;
+    if (base == -1) {
+      //comma-separated list of array elements in decimal
+      x = new Array(0);
+      for (;;) {
+        y = new Array(x.length + 1);
+        for (i = 0; i < x.length; i++) {
+          y[i + 1] = x[i];
+        }y[0] = parseInt(s, 10);
+        x = y;
+        d = s.indexOf(',', 0);
+        if (d < 1) break;
+        s = s.substring(d + 1);
+        if (s.length == 0) break;
+      }
+      if (x.length < minSize) {
+        y = new Array(minSize);
+        copy_(y, x);
+        return y;
+      }
+      return x;
+    }
+
+    x = int2bigInt(0, base * k, 0);
+    for (i = 0; i < k; i++) {
+      d = str.indexOf(s.substring(i, i + 1), 0);
+      if (base <= 36 && d >= 36) {
+        //convert lowercase to uppercase if base<=36
+        d -= 26;
+      }
+      if (d >= base || d < 0) {
+        //ignore illegal characters
+        continue;
+      }
+      multInt_(x, base);
+      addInt_(x, d);
+    }
+
+    for (k = x.length; k > 0 && !x[k - 1]; k--) {} //strip off leading zeros
+    k = minSize > k + 1 ? minSize : k + 1;
+    y = new Array(k);
+    kk = k < x.length ? k : x.length;
+    for (i = 0; i < kk; i++) {
+      y[i] = x[i];
+    }for (; i < k; i++) {
+      y[i] = 0;
+    }return y;
+  }
+
+  //is bigint x equal to integer y?
+  //y must have less than bpe bits
+  function equalsInt(x, y) {
+    var i;
+    if (x[0] != y) return 0;
+    for (i = 1; i < x.length; i++) {
+      if (x[i]) return 0;
+    }return 1;
+  }
+
+  //are bigints x and y equal?
+  //this works even if x and y are different lengths and have arbitrarily many leading zeros
+  function equals(x, y) {
+    var i;
+    var k = x.length < y.length ? x.length : y.length;
+    for (i = 0; i < k; i++) {
+      if (x[i] != y[i]) return 0;
+    }if (x.length > y.length) {
+      for (; i < x.length; i++) {
+        if (x[i]) return 0;
+      }
+    } else {
+      for (; i < y.length; i++) {
+        if (y[i]) return 0;
+      }
+    }
+    return 1;
+  }
+
+  //is the bigInt x equal to zero?
+  function isZero(x) {
+    var i;
+    for (i = 0; i < x.length; i++) {
+      if (x[i]) return 0;
+    }return 1;
+  }
+
+  //convert a bigInt into a string in a given base, from base 2 up to base 95.
+  //Base -1 prints the contents of the array representing the number.
+  function bigInt2str(x, b) {
+    var i,
+        t,
+        base,
+        str,
+        s = "";
+    if (typeof b === 'string') {
+      base = b.length;
+      str = b;
+    } else {
+      base = b;
+      str = digitsStr;
+    }
+
+    if (s6.length != x.length) s6 = dup(x);else copy_(s6, x);
+
+    if (base == -1) {
+      //return the list of array contents
+      for (i = x.length - 1; i > 0; i--) {
+        s += x[i] + ',';
+      }s += x[0];
+    } else {
+      //return it in the given base
+      while (!isZero(s6)) {
+        t = divInt_(s6, base); //t=s6 % base; s6=floor(s6/base);
+        s = str.substring(t, t + 1) + s;
+      }
+    }
+    if (s.length == 0) s = str[0];
+    return s;
+  }
+
+  //returns a duplicate of bigInt x
+  function dup(x) {
+    var i;
+    var buff = new Array(x.length);
+    copy_(buff, x);
+    return buff;
+  }
+
+  //do x=y on bigInts x and y.  x must be an array at least as big as y (not counting the leading zeros in y).
+  function copy_(x, y) {
+    var i;
+    var k = x.length < y.length ? x.length : y.length;
+    for (i = 0; i < k; i++) {
+      x[i] = y[i];
+    }for (i = k; i < x.length; i++) {
+      x[i] = 0;
+    }
+  }
+
+  //do x=y on bigInt x and integer y.
+  function copyInt_(x, n) {
+    var i, c;
+    for (c = n, i = 0; i < x.length; i++) {
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do x=x+n where x is a bigInt and n is an integer.
+  //x must be large enough to hold the result.
+  function addInt_(x, n) {
+    var i, k, c, b;
+    x[0] += n;
+    k = x.length;
+    c = 0;
+    for (i = 0; i < k; i++) {
+      c += x[i];
+      b = 0;
+      if (c < 0) {
+        b = -(c >> bpe);
+        c += b * radix;
+      }
+      x[i] = c & mask;
+      c = (c >> bpe) - b;
+      if (!c) return; //stop carrying as soon as the carry is zero
+    }
+  }
+
+  //right shift bigInt x by n bits.  0 <= n < bpe.
+  function rightShift_(x, n) {
+    var i;
+    var k = Math.floor(n / bpe);
+    if (k) {
+      for (i = 0; i < x.length - k; i++) {
+        //right shift x by k elements
+        x[i] = x[i + k];
+      }for (; i < x.length; i++) {
+        x[i] = 0;
+      }n %= bpe;
+    }
+    for (i = 0; i < x.length - 1; i++) {
+      x[i] = mask & (x[i + 1] << bpe - n | x[i] >> n);
+    }
+    x[i] >>= n;
+  }
+
+  //do x=floor(|x|/2)*sgn(x) for bigInt x in 2's complement
+  function halve_(x) {
+    var i;
+    for (i = 0; i < x.length - 1; i++) {
+      x[i] = mask & (x[i + 1] << bpe - 1 | x[i] >> 1);
+    }
+    x[i] = x[i] >> 1 | x[i] & radix >> 1; //most significant bit stays the same
+  }
+
+  //left shift bigInt x by n bits.
+  function leftShift_(x, n) {
+    var i;
+    var k = Math.floor(n / bpe);
+    if (k) {
+      for (i = x.length; i >= k; i--) {
+        //left shift x by k elements
+        x[i] = x[i - k];
+      }for (; i >= 0; i--) {
+        x[i] = 0;
+      }n %= bpe;
+    }
+    if (!n) return;
+    for (i = x.length - 1; i > 0; i--) {
+      x[i] = mask & (x[i] << n | x[i - 1] >> bpe - n);
+    }
+    x[i] = mask & x[i] << n;
+  }
+
+  //do x=x*n where x is a bigInt and n is an integer.
+  //x must be large enough to hold the result.
+  function multInt_(x, n) {
+    var i, k, c, b;
+    if (!n) return;
+    k = x.length;
+    c = 0;
+    for (i = 0; i < k; i++) {
+      c += x[i] * n;
+      b = 0;
+      if (c < 0) {
+        b = -(c >> bpe);
+        c += b * radix;
+      }
+      x[i] = c & mask;
+      c = (c >> bpe) - b;
+    }
+  }
+
+  //do x=floor(x/n) for bigInt x and integer n, and return the remainder
+  function divInt_(x, n) {
+    var i,
+        r = 0,
+        s;
+    for (i = x.length - 1; i >= 0; i--) {
+      s = r * radix + x[i];
+      x[i] = Math.floor(s / n);
+      r = s % n;
+    }
+    return r;
+  }
+
+  //do the linear combination x=a*x+b*y for bigInts x and y, and integers a and b.
+  //x must be large enough to hold the answer.
+  function linComb_(x, y, a, b) {
+    var i, c, k, kk;
+    k = x.length < y.length ? x.length : y.length;
+    kk = x.length;
+    for (c = 0, i = 0; i < k; i++) {
+      c += a * x[i] + b * y[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+    for (i = k; i < kk; i++) {
+      c += a * x[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do the linear combination x=a*x+b*(y<<(ys*bpe)) for bigInts x and y, and integers a, b and ys.
+  //x must be large enough to hold the answer.
+  function linCombShift_(x, y, b, ys) {
+    var i, c, k, kk;
+    k = x.length < ys + y.length ? x.length : ys + y.length;
+    kk = x.length;
+    for (c = 0, i = ys; i < k; i++) {
+      c += x[i] + b * y[i - ys];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+    for (i = k; c && i < kk; i++) {
+      c += x[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do x=x+(y<<(ys*bpe)) for bigInts x and y, and integer ys.
+  //x must be large enough to hold the answer.
+  function addShift_(x, y, ys) {
+    var i, c, k, kk;
+    k = x.length < ys + y.length ? x.length : ys + y.length;
+    kk = x.length;
+    for (c = 0, i = ys; i < k; i++) {
+      c += x[i] + y[i - ys];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+    for (i = k; c && i < kk; i++) {
+      c += x[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do x=x-(y<<(ys*bpe)) for bigInts x and y, and integer ys.
+  //x must be large enough to hold the answer.
+  function subShift_(x, y, ys) {
+    var i, c, k, kk;
+    k = x.length < ys + y.length ? x.length : ys + y.length;
+    kk = x.length;
+    for (c = 0, i = ys; i < k; i++) {
+      c += x[i] - y[i - ys];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+    for (i = k; c && i < kk; i++) {
+      c += x[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do x=x-y for bigInts x and y.
+  //x must be large enough to hold the answer.
+  //negative answers will be 2s complement
+  function sub_(x, y) {
+    var i, c, k, kk;
+    k = x.length < y.length ? x.length : y.length;
+    for (c = 0, i = 0; i < k; i++) {
+      c += x[i] - y[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+    for (i = k; c && i < x.length; i++) {
+      c += x[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do x=x+y for bigInts x and y.
+  //x must be large enough to hold the answer.
+  function add_(x, y) {
+    var i, c, k, kk;
+    k = x.length < y.length ? x.length : y.length;
+    for (c = 0, i = 0; i < k; i++) {
+      c += x[i] + y[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+    for (i = k; c && i < x.length; i++) {
+      c += x[i];
+      x[i] = c & mask;
+      c >>= bpe;
+    }
+  }
+
+  //do x=x*y for bigInts x and y.  This is faster when y<x.
+  function mult_(x, y) {
+    var i;
+    if (ss.length != 2 * x.length) ss = new Array(2 * x.length);
+    copyInt_(ss, 0);
+    for (i = 0; i < y.length; i++) {
+      if (y[i]) linCombShift_(ss, x, y[i], i);
+    } //ss=1*ss+y[i]*(x<<(i*bpe))
+    copy_(x, ss);
+  }
+
+  //do x=x mod n for bigInts x and n.
+  function mod_(x, n) {
+    if (s4.length != x.length) s4 = dup(x);else copy_(s4, x);
+    if (s5.length != x.length) s5 = dup(x);
+    divide_(s4, n, s5, x); //x = remainder of s4 / n
+  }
+
+  //do x=x*y mod n for bigInts x,y,n.
+  //for greater speed, let y<x.
+  function multMod_(x, y, n) {
+    var i;
+    if (s0.length != 2 * x.length) s0 = new Array(2 * x.length);
+    copyInt_(s0, 0);
+    for (i = 0; i < y.length; i++) {
+      if (y[i]) linCombShift_(s0, x, y[i], i);
+    } //s0=1*s0+y[i]*(x<<(i*bpe))
+    mod_(s0, n);
+    copy_(x, s0);
+  }
+
+  //do x=x*x mod n for bigInts x,n.
+  function squareMod_(x, n) {
+    var i, j, d, c, kx, kn, k;
+    for (kx = x.length; kx > 0 && !x[kx - 1]; kx--) {} //ignore leading zeros in x
+    k = kx > n.length ? 2 * kx : 2 * n.length; //k=# elements in the product, which is twice the elements in the larger of x and n
+    if (s0.length != k) s0 = new Array(k);
+    copyInt_(s0, 0);
+    for (i = 0; i < kx; i++) {
+      c = s0[2 * i] + x[i] * x[i];
+      s0[2 * i] = c & mask;
+      c >>= bpe;
+      for (j = i + 1; j < kx; j++) {
+        c = s0[i + j] + 2 * x[i] * x[j] + c;
+        s0[i + j] = c & mask;
+        c >>= bpe;
+      }
+      s0[i + kx] = c;
+    }
+    mod_(s0, n);
+    copy_(x, s0);
+  }
+
+  //return x with exactly k leading zero elements
+  function trim(x, k) {
+    var i, y;
+    for (i = x.length; i > 0 && !x[i - 1]; i--) {}
+    y = new Array(i + k);
+    copy_(y, x);
+    return y;
+  }
+
+  //do x=x**y mod n, where x,y,n are bigInts and ** is exponentiation.  0**0=1.
+  //this is faster when n is odd.  x usually needs to have as many elements as n.
+  function powMod_(x, y, n) {
+    var k1, k2, kn, np;
+    if (s7.length != n.length) s7 = dup(n);
+
+    //for even modulus, use a simple square-and-multiply algorithm,
+    //rather than using the more complex Montgomery algorithm.
+    if ((n[0] & 1) == 0) {
+      copy_(s7, x);
+      copyInt_(x, 1);
+      while (!equalsInt(y, 0)) {
+        if (y[0] & 1) multMod_(x, s7, n);
+        divInt_(y, 2);
+        squareMod_(s7, n);
+      }
+      return;
+    }
+
+    //calculate np from n for the Montgomery multiplications
+    copyInt_(s7, 0);
+    for (kn = n.length; kn > 0 && !n[kn - 1]; kn--) {}
+    np = radix - inverseModInt(modInt(n, radix), radix);
+    s7[kn] = 1;
+    multMod_(x, s7, n); // x = x * 2**(kn*bp) mod n
+
+    if (s3.length != x.length) s3 = dup(x);else copy_(s3, x);
+
+    for (k1 = y.length - 1; k1 > 0 & !y[k1]; k1--) {} //k1=first nonzero element of y
+    if (y[k1] == 0) {
+      //anything to the 0th power is 1
+      copyInt_(x, 1);
+      return;
+    }
+    for (k2 = 1 << bpe - 1; k2 && !(y[k1] & k2); k2 >>= 1) {} //k2=position of first 1 bit in y[k1]
+    for (;;) {
+      if (!(k2 >>= 1)) {
+        //look at next bit of y
+        k1--;
+        if (k1 < 0) {
+          mont_(x, one, n, np);
+          return;
+        }
+        k2 = 1 << bpe - 1;
+      }
+      mont_(x, x, n, np);
+
+      if (k2 & y[k1]) //if next bit is a 1
+        mont_(x, s3, n, np);
+    }
+  }
+
+  //do x=x*y*Ri mod n for bigInts x,y,n,
+  //  where Ri = 2**(-kn*bpe) mod n, and kn is the
+  //  number of elements in the n array, not
+  //  counting leading zeros.
+  //x array must have at least as many elemnts as the n array
+  //It's OK if x and y are the same variable.
+  //must have:
+  //  x,y < n
+  //  n is odd
+  //  np = -(n^(-1)) mod radix
+  function mont_(x, y, n, np) {
+    var i, j, c, ui, t, ks;
+    var kn = n.length;
+    var ky = y.length;
+
+    if (sa.length != kn) sa = new Array(kn);
+
+    copyInt_(sa, 0);
+
+    for (; kn > 0 && n[kn - 1] == 0; kn--) {} //ignore leading zeros of n
+    for (; ky > 0 && y[ky - 1] == 0; ky--) {} //ignore leading zeros of y
+    ks = sa.length - 1; //sa will never have more than this many nonzero elements.
+
+    //the following loop consumes 95% of the runtime for randTruePrime_() and powMod_() for large numbers
+    for (i = 0; i < kn; i++) {
+      t = sa[0] + x[i] * y[0];
+      ui = (t & mask) * np & mask; //the inner "& mask" was needed on Safari (but not MSIE) at one time
+      c = t + ui * n[0] >> bpe;
+      t = x[i];
+
+      //do sa=(sa+x[i]*y+ui*n)/b   where b=2**bpe.  Loop is unrolled 5-fold for speed
+      j = 1;
+      for (; j < ky - 4;) {
+        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+      }
+      for (; j < ky;) {
+        c += sa[j] + ui * n[j] + t * y[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+      }
+      for (; j < kn - 4;) {
+        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+      }
+      for (; j < kn;) {
+        c += sa[j] + ui * n[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+      }
+      for (; j < ks;) {
+        c += sa[j];sa[j - 1] = c & mask;c >>= bpe;j++;
+      }
+      sa[j - 1] = c & mask;
+    }
+
+    if (!greater(n, sa)) sub_(sa, n);
+    copy_(x, sa);
+  }
+
+  module.exports = {
+    'add': add,
+    'addInt': addInt,
+    'bigInt2str': bigInt2str,
+    'bitSize': bitSize,
+    'dup': dup,
+    'equals': equals,
+    'equalsInt': equalsInt,
+    'expand': expand,
+    'findPrimes': findPrimes,
+    'GCD': GCD,
+    'greater': greater,
+    'greaterShift': greaterShift,
+    'int2bigInt': int2bigInt,
+    'inverseMod': inverseMod,
+    'inverseModInt': inverseModInt,
+    'isZero': isZero,
+    'millerRabin': millerRabin,
+    'millerRabinInt': millerRabinInt,
+    'mod': mod,
+    'modInt': modInt,
+    'mult': mult,
+    'multMod': multMod,
+    'negative': negative,
+    'powMod': powMod,
+    'randBigInt': randBigInt,
+    'randTruePrime': randTruePrime,
+    'randProbPrime': randProbPrime,
+    'str2bigInt': str2bigInt,
+    'sub': sub,
+    'trim': trim,
+    'addInt_': addInt_,
+    'add_': add_,
+    'copy_': copy_,
+    'copyInt_': copyInt_,
+    'GCD_': GCD_,
+    'inverseMod_': inverseMod_,
+    'mod_': mod_,
+    'mult_': mult_,
+    'multMod_': multMod_,
+    'powMod_': powMod_,
+    'randBigInt_': randBigInt_,
+    'randTruePrime_': randTruePrime_,
+    'sub_': sub_,
+    'addShift_': addShift_,
+    'carry_': carry_,
+    'divide_': divide_,
+    'divInt_': divInt_,
+    'eGCD_': eGCD_,
+    'halve_': halve_,
+    'leftShift_': leftShift_,
+    'linComb_': linComb_,
+    'linCombShift_': linCombShift_,
+    'mont_': mont_,
+    'multInt_': multInt_,
+    'rightShift_': rightShift_,
+    'squareMod_': squareMod_,
+    'subShift_': subShift_
+  };
+});
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
+
+/***/ }),
+
 /***/ "./node_modules/media-recorder-stream/index.js":
 /*!*****************************************************!*\
   !*** ./node_modules/media-recorder-stream/index.js ***!
@@ -45077,902 +45077,6 @@ var ImageDrop = exports.ImageDrop = function () {
 
 	return ImageDrop;
 }();
-
-/***/ }),
-
-/***/ "./node_modules/quill-image-resize-module/image-resize.min.js":
-/*!********************************************************************!*\
-  !*** ./node_modules/quill-image-resize-module/image-resize.min.js ***!
-  \********************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(module) {var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-!function (t, e) {
-  "object" == ( false ? undefined : _typeof(exports)) && "object" == ( false ? undefined : _typeof(module)) ? module.exports = e() :  true ? !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (e),
-				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__)) : undefined;
-}(undefined, function () {
-  return function (t) {
-    function e(o) {
-      if (n[o]) return n[o].exports;var r = n[o] = { i: o, l: !1, exports: {} };return t[o].call(r.exports, r, r.exports, e), r.l = !0, r.exports;
-    }var n = {};return e.m = t, e.c = n, e.i = function (t) {
-      return t;
-    }, e.d = function (t, n, o) {
-      e.o(t, n) || Object.defineProperty(t, n, { configurable: !1, enumerable: !0, get: o });
-    }, e.n = function (t) {
-      var n = t && t.__esModule ? function () {
-        return t.default;
-      } : function () {
-        return t;
-      };return e.d(n, "a", n), n;
-    }, e.o = function (t, e) {
-      return Object.prototype.hasOwnProperty.call(t, e);
-    }, e.p = "", e(e.s = 38);
-  }([function (t, e) {
-    function n(t) {
-      var e = typeof t === "undefined" ? "undefined" : _typeof(t);return null != t && ("object" == e || "function" == e);
-    }t.exports = n;
-  }, function (t, e, n) {
-    var o = n(22),
-        r = "object" == (typeof self === "undefined" ? "undefined" : _typeof(self)) && self && self.Object === Object && self,
-        i = o || r || Function("return this")();t.exports = i;
-  }, function (t, e) {
-    function n(t) {
-      return null != t && "object" == (typeof t === "undefined" ? "undefined" : _typeof(t));
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = -1,
-          n = null == t ? 0 : t.length;for (this.clear(); ++e < n;) {
-        var o = t[e];this.set(o[0], o[1]);
-      }
-    }var r = n(75),
-        i = n(76),
-        a = n(77),
-        s = n(78),
-        u = n(79);o.prototype.clear = r, o.prototype.delete = i, o.prototype.get = a, o.prototype.has = s, o.prototype.set = u, t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      for (var n = t.length; n--;) {
-        if (r(t[n][0], e)) return n;
-      }return -1;
-    }var r = n(8);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return null == t ? void 0 === t ? u : s : c && c in Object(t) ? i(t) : a(t);
-    }var r = n(16),
-        i = n(64),
-        a = n(87),
-        s = "[object Null]",
-        u = "[object Undefined]",
-        c = r ? r.toStringTag : void 0;t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = t.__data__;return r(e) ? n["string" == typeof e ? "string" : "hash"] : n.map;
-    }var r = n(73);t.exports = o;
-  }, function (t, e, n) {
-    var o = n(11),
-        r = o(Object, "create");t.exports = r;
-  }, function (t, e) {
-    function n(t, e) {
-      return t === e || t !== t && e !== e;
-    }t.exports = n;
-  }, function (t, e, n) {
-    "use strict";
-    function o(t, e) {
-      if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
-    }n.d(e, "a", function () {
-      return r;
-    });var r = function t(e) {
-      o(this, t), this.onCreate = function () {}, this.onDestroy = function () {}, this.onUpdate = function () {}, this.overlay = e.overlay, this.img = e.img, this.options = e.options, this.requestUpdate = e.onUpdate;
-    };
-  }, function (t, e, n) {
-    function o(t, e, n) {
-      "__proto__" == e && r ? r(t, e, { configurable: !0, enumerable: !0, value: n, writable: !0 }) : t[e] = n;
-    }var r = n(21);t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = i(t, e);return r(n) ? n : void 0;
-    }var r = n(48),
-        i = n(65);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return null != t && i(t.length) && !r(t);
-    }var r = n(13),
-        i = n(30);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      if (!i(t)) return !1;var e = r(t);return e == s || e == u || e == a || e == c;
-    }var r = n(5),
-        i = n(0),
-        a = "[object AsyncFunction]",
-        s = "[object Function]",
-        u = "[object GeneratorFunction]",
-        c = "[object Proxy]";t.exports = o;
-  }, function (t, e) {
-    t.exports = function (t) {
-      return t.webpackPolyfill || (t.deprecate = function () {}, t.paths = [], t.children || (t.children = []), Object.defineProperty(t, "loaded", { enumerable: !0, get: function get() {
-          return t.l;
-        } }), Object.defineProperty(t, "id", { enumerable: !0, get: function get() {
-          return t.i;
-        } }), t.webpackPolyfill = 1), t;
-    };
-  }, function (t, e, n) {
-    var o = n(11),
-        r = n(1),
-        i = o(r, "Map");t.exports = i;
-  }, function (t, e, n) {
-    var o = n(1),
-        r = o.Symbol;t.exports = r;
-  }, function (t, e) {
-    function n(t, e, n) {
-      switch (n.length) {case 0:
-          return t.call(e);case 1:
-          return t.call(e, n[0]);case 2:
-          return t.call(e, n[0], n[1]);case 3:
-          return t.call(e, n[0], n[1], n[2]);}return t.apply(e, n);
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t, e, n) {
-      (void 0 === n || i(t[e], n)) && (void 0 !== n || e in t) || r(t, e, n);
-    }var r = n(10),
-        i = n(8);t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e, n, l, f) {
-      t !== e && a(e, function (a, c) {
-        if (u(a)) f || (f = new r()), s(t, e, c, n, o, l, f);else {
-          var p = l ? l(t[c], a, c + "", t, e, f) : void 0;void 0 === p && (p = a), i(t, c, p);
-        }
-      }, c);
-    }var r = n(41),
-        i = n(18),
-        a = n(46),
-        s = n(51),
-        u = n(0),
-        c = n(32);t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      return a(i(t, e, r), t + "");
-    }var r = n(26),
-        i = n(89),
-        a = n(90);t.exports = o;
-  }, function (t, e, n) {
-    var o = n(11),
-        r = function () {
-      try {
-        var t = o(Object, "defineProperty");return t({}, "", {}), t;
-      } catch (t) {}
-    }();t.exports = r;
-  }, function (t, e, n) {
-    (function (e) {
-      var n = "object" == (typeof e === "undefined" ? "undefined" : _typeof(e)) && e && e.Object === Object && e;t.exports = n;
-    }).call(e, n(107));
-  }, function (t, e, n) {
-    var o = n(88),
-        r = o(Object.getPrototypeOf, Object);t.exports = r;
-  }, function (t, e) {
-    function n(t, e) {
-      return !!(e = null == e ? o : e) && ("number" == typeof t || r.test(t)) && t > -1 && t % 1 == 0 && t < e;
-    }var o = 9007199254740991,
-        r = /^(?:0|[1-9]\d*)$/;t.exports = n;
-  }, function (t, e) {
-    function n(t) {
-      var e = t && t.constructor;return t === ("function" == typeof e && e.prototype || o);
-    }var o = Object.prototype;t.exports = n;
-  }, function (t, e) {
-    function n(t) {
-      return t;
-    }t.exports = n;
-  }, function (t, e, n) {
-    var o = n(47),
-        r = n(2),
-        i = Object.prototype,
-        a = i.hasOwnProperty,
-        s = i.propertyIsEnumerable,
-        u = o(function () {
-      return arguments;
-    }()) ? o : function (t) {
-      return r(t) && a.call(t, "callee") && !s.call(t, "callee");
-    };t.exports = u;
-  }, function (t, e) {
-    var n = Array.isArray;t.exports = n;
-  }, function (t, e, n) {
-    (function (t) {
-      var o = n(1),
-          r = n(102),
-          i = "object" == (typeof e === "undefined" ? "undefined" : _typeof(e)) && e && !e.nodeType && e,
-          a = i && "object" == (typeof t === "undefined" ? "undefined" : _typeof(t)) && t && !t.nodeType && t,
-          s = a && a.exports === i,
-          u = s ? o.Buffer : void 0,
-          c = u ? u.isBuffer : void 0,
-          l = c || r;t.exports = l;
-    }).call(e, n(14)(t));
-  }, function (t, e) {
-    function n(t) {
-      return "number" == typeof t && t > -1 && t % 1 == 0 && t <= o;
-    }var o = 9007199254740991;t.exports = n;
-  }, function (t, e, n) {
-    var o = n(49),
-        r = n(54),
-        i = n(86),
-        a = i && i.isTypedArray,
-        s = a ? r(a) : o;t.exports = s;
-  }, function (t, e, n) {
-    function o(t) {
-      return a(t) ? r(t, !0) : i(t);
-    }var r = n(43),
-        i = n(50),
-        a = n(12);t.exports = o;
-  }, function (t, e, n) {
-    "use strict";
-    e.a = { modules: ["DisplaySize", "Toolbar", "Resize"], overlayStyles: { position: "absolute", boxSizing: "border-box", border: "1px dashed #444" }, handleStyles: { position: "absolute", height: "12px", width: "12px", backgroundColor: "white", border: "1px solid #777", boxSizing: "border-box", opacity: "0.80" }, displayStyles: { position: "absolute", font: "12px/1.0 Arial, Helvetica, sans-serif", padding: "4px 8px", textAlign: "center", backgroundColor: "white", color: "#333", border: "1px solid #777", boxSizing: "border-box", opacity: "0.80", cursor: "default" }, toolbarStyles: { position: "absolute", top: "-12px", right: "0", left: "0", height: "0", minWidth: "100px", font: "12px/1.0 Arial, Helvetica, sans-serif", textAlign: "center", color: "#333", boxSizing: "border-box", cursor: "default" }, toolbarButtonStyles: { display: "inline-block", width: "24px", height: "24px", background: "white", border: "1px solid #999", verticalAlign: "middle" }, toolbarButtonSvgStyles: { fill: "#444", stroke: "#444", strokeWidth: "2" } };
-  }, function (t, e, n) {
-    "use strict";
-    function o(t, e) {
-      if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
-    }function r(t, e) {
-      if (!t) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return !e || "object" != (typeof e === "undefined" ? "undefined" : _typeof(e)) && "function" != typeof e ? t : e;
-    }function i(t, e) {
-      if ("function" != typeof e && null !== e) throw new TypeError("Super expression must either be null or a function, not " + (typeof e === "undefined" ? "undefined" : _typeof(e)));t.prototype = Object.create(e && e.prototype, { constructor: { value: t, enumerable: !1, writable: !0, configurable: !0 } }), e && (Object.setPrototypeOf ? Object.setPrototypeOf(t, e) : t.__proto__ = e);
-    }var a = n(9);n.d(e, "a", function () {
-      return s;
-    });var s = function (t) {
-      function e() {
-        var t, n, i, a;o(this, e);for (var s = arguments.length, u = Array(s), c = 0; c < s; c++) {
-          u[c] = arguments[c];
-        }return n = i = r(this, (t = e.__proto__ || Object.getPrototypeOf(e)).call.apply(t, [this].concat(u))), i.onCreate = function () {
-          i.display = document.createElement("div"), Object.assign(i.display.style, i.options.displayStyles), i.overlay.appendChild(i.display);
-        }, i.onDestroy = function () {}, i.onUpdate = function () {
-          if (i.display && i.img) {
-            var t = i.getCurrentSize();if (i.display.innerHTML = t.join(" &times; "), t[0] > 120 && t[1] > 30) Object.assign(i.display.style, { right: "4px", bottom: "4px", left: "auto" });else if ("right" == i.img.style.float) {
-              var e = i.display.getBoundingClientRect();Object.assign(i.display.style, { right: "auto", bottom: "-" + (e.height + 4) + "px", left: "-" + (e.width + 4) + "px" });
-            } else {
-              var n = i.display.getBoundingClientRect();Object.assign(i.display.style, { right: "-" + (n.width + 4) + "px", bottom: "-" + (n.height + 4) + "px", left: "auto" });
-            }
-          }
-        }, i.getCurrentSize = function () {
-          return [i.img.width, Math.round(i.img.width / i.img.naturalWidth * i.img.naturalHeight)];
-        }, a = n, r(i, a);
-      }return i(e, t), e;
-    }(a.a);
-  }, function (t, e, n) {
-    "use strict";
-    function o(t, e) {
-      if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
-    }function r(t, e) {
-      if (!t) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return !e || "object" != (typeof e === "undefined" ? "undefined" : _typeof(e)) && "function" != typeof e ? t : e;
-    }function i(t, e) {
-      if ("function" != typeof e && null !== e) throw new TypeError("Super expression must either be null or a function, not " + (typeof e === "undefined" ? "undefined" : _typeof(e)));t.prototype = Object.create(e && e.prototype, { constructor: { value: t, enumerable: !1, writable: !0, configurable: !0 } }), e && (Object.setPrototypeOf ? Object.setPrototypeOf(t, e) : t.__proto__ = e);
-    }var a = n(9);n.d(e, "a", function () {
-      return s;
-    });var s = function (t) {
-      function e() {
-        var t, n, i, a;o(this, e);for (var s = arguments.length, u = Array(s), c = 0; c < s; c++) {
-          u[c] = arguments[c];
-        }return n = i = r(this, (t = e.__proto__ || Object.getPrototypeOf(e)).call.apply(t, [this].concat(u))), i.onCreate = function () {
-          i.boxes = [], i.addBox("nwse-resize"), i.addBox("nesw-resize"), i.addBox("nwse-resize"), i.addBox("nesw-resize"), i.positionBoxes();
-        }, i.onDestroy = function () {
-          i.setCursor("");
-        }, i.positionBoxes = function () {
-          var t = -parseFloat(i.options.handleStyles.width) / 2 + "px",
-              e = -parseFloat(i.options.handleStyles.height) / 2 + "px";[{ left: t, top: e }, { right: t, top: e }, { right: t, bottom: e }, { left: t, bottom: e }].forEach(function (t, e) {
-            Object.assign(i.boxes[e].style, t);
-          });
-        }, i.addBox = function (t) {
-          var e = document.createElement("div");Object.assign(e.style, i.options.handleStyles), e.style.cursor = t, e.style.width = i.options.handleStyles.width + "px", e.style.height = i.options.handleStyles.height + "px", e.addEventListener("mousedown", i.handleMousedown, !1), i.overlay.appendChild(e), i.boxes.push(e);
-        }, i.handleMousedown = function (t) {
-          i.dragBox = t.target, i.dragStartX = t.clientX, i.preDragWidth = i.img.width || i.img.naturalWidth, i.setCursor(i.dragBox.style.cursor), document.addEventListener("mousemove", i.handleDrag, !1), document.addEventListener("mouseup", i.handleMouseup, !1);
-        }, i.handleMouseup = function () {
-          i.setCursor(""), document.removeEventListener("mousemove", i.handleDrag), document.removeEventListener("mouseup", i.handleMouseup);
-        }, i.handleDrag = function (t) {
-          if (i.img) {
-            var e = t.clientX - i.dragStartX;i.dragBox === i.boxes[0] || i.dragBox === i.boxes[3] ? i.img.width = Math.round(i.preDragWidth - e) : i.img.width = Math.round(i.preDragWidth + e), i.requestUpdate();
-          }
-        }, i.setCursor = function (t) {
-          [document.body, i.img].forEach(function (e) {
-            e.style.cursor = t;
-          });
-        }, a = n, r(i, a);
-      }return i(e, t), e;
-    }(a.a);
-  }, function (t, e, n) {
-    "use strict";
-    function o(t, e) {
-      if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
-    }function r(t, e) {
-      if (!t) throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return !e || "object" != (typeof e === "undefined" ? "undefined" : _typeof(e)) && "function" != typeof e ? t : e;
-    }function i(t, e) {
-      if ("function" != typeof e && null !== e) throw new TypeError("Super expression must either be null or a function, not " + (typeof e === "undefined" ? "undefined" : _typeof(e)));t.prototype = Object.create(e && e.prototype, { constructor: { value: t, enumerable: !1, writable: !0, configurable: !0 } }), e && (Object.setPrototypeOf ? Object.setPrototypeOf(t, e) : t.__proto__ = e);
-    }var a = n(105),
-        s = n.n(a),
-        u = n(104),
-        c = n.n(u),
-        l = n(106),
-        f = n.n(l),
-        p = n(9);n.d(e, "a", function () {
-      return b;
-    });var d = window.Quill.imports.parchment,
-        h = new d.Attributor.Style("float", "float"),
-        y = new d.Attributor.Style("margin", "margin"),
-        v = new d.Attributor.Style("display", "display"),
-        b = function (t) {
-      function e() {
-        var t, n, i, a;o(this, e);for (var u = arguments.length, l = Array(u), p = 0; p < u; p++) {
-          l[p] = arguments[p];
-        }return n = i = r(this, (t = e.__proto__ || Object.getPrototypeOf(e)).call.apply(t, [this].concat(l))), i.onCreate = function () {
-          i.toolbar = document.createElement("div"), Object.assign(i.toolbar.style, i.options.toolbarStyles), i.overlay.appendChild(i.toolbar), i._defineAlignments(), i._addToolbarButtons();
-        }, i.onDestroy = function () {}, i.onUpdate = function () {}, i._defineAlignments = function () {
-          i.alignments = [{ icon: s.a, apply: function apply() {
-              v.add(i.img, "inline"), h.add(i.img, "left"), y.add(i.img, "0 1em 1em 0");
-            }, isApplied: function isApplied() {
-              return "left" == h.value(i.img);
-            } }, { icon: c.a, apply: function apply() {
-              v.add(i.img, "block"), h.remove(i.img), y.add(i.img, "auto");
-            }, isApplied: function isApplied() {
-              return "auto" == y.value(i.img);
-            } }, { icon: f.a, apply: function apply() {
-              v.add(i.img, "inline"), h.add(i.img, "right"), y.add(i.img, "0 0 1em 1em");
-            }, isApplied: function isApplied() {
-              return "right" == h.value(i.img);
-            } }];
-        }, i._addToolbarButtons = function () {
-          var t = [];i.alignments.forEach(function (e, n) {
-            var o = document.createElement("span");t.push(o), o.innerHTML = e.icon, o.addEventListener("click", function () {
-              t.forEach(function (t) {
-                return t.style.filter = "";
-              }), e.isApplied() ? (h.remove(i.img), y.remove(i.img), v.remove(i.img)) : (i._selectButton(o), e.apply()), i.requestUpdate();
-            }), Object.assign(o.style, i.options.toolbarButtonStyles), n > 0 && (o.style.borderLeftWidth = "0"), Object.assign(o.children[0].style, i.options.toolbarButtonSvgStyles), e.isApplied() && i._selectButton(o), i.toolbar.appendChild(o);
-          });
-        }, i._selectButton = function (t) {
-          t.style.filter = "invert(20%)";
-        }, a = n, r(i, a);
-      }return i(e, t), e;
-    }(p.a);
-  }, function (t, e, n) {
-    var o = n(17),
-        r = n(20),
-        i = n(63),
-        a = n(101),
-        s = r(function (t) {
-      return t.push(void 0, i), o(a, void 0, t);
-    });t.exports = s;
-  }, function (t, e, n) {
-    "use strict";
-    function o(t, e) {
-      if (!(t instanceof e)) throw new TypeError("Cannot call a class as a function");
-    }Object.defineProperty(e, "__esModule", { value: !0 });var r = n(37),
-        i = n.n(r),
-        a = n(33),
-        s = n(34),
-        u = n(36),
-        c = n(35),
-        l = { DisplaySize: s.a, Toolbar: u.a, Resize: c.a },
-        f = function t(e) {
-      var n = this,
-          r = arguments.length > 1 && void 0 !== arguments[1] ? arguments[1] : {};o(this, t), this.initializeModules = function () {
-        n.removeModules(), n.modules = n.moduleClasses.map(function (t) {
-          return new (l[t] || t)(n);
-        }), n.modules.forEach(function (t) {
-          t.onCreate();
-        }), n.onUpdate();
-      }, this.onUpdate = function () {
-        n.repositionElements(), n.modules.forEach(function (t) {
-          t.onUpdate();
-        });
-      }, this.removeModules = function () {
-        n.modules.forEach(function (t) {
-          t.onDestroy();
-        }), n.modules = [];
-      }, this.handleClick = function (t) {
-        if (t.target && t.target.tagName && "IMG" === t.target.tagName.toUpperCase()) {
-          if (n.img === t.target) return;n.img && n.hide(), n.show(t.target);
-        } else n.img && n.hide();
-      }, this.show = function (t) {
-        n.img = t, n.showOverlay(), n.initializeModules();
-      }, this.showOverlay = function () {
-        n.overlay && n.hideOverlay(), n.quill.setSelection(null), n.setUserSelect("none"), document.addEventListener("keyup", n.checkImage, !0), n.quill.root.addEventListener("input", n.checkImage, !0), n.overlay = document.createElement("div"), Object.assign(n.overlay.style, n.options.overlayStyles), n.quill.root.parentNode.appendChild(n.overlay), n.repositionElements();
-      }, this.hideOverlay = function () {
-        n.overlay && (n.quill.root.parentNode.removeChild(n.overlay), n.overlay = void 0, document.removeEventListener("keyup", n.checkImage), n.quill.root.removeEventListener("input", n.checkImage), n.setUserSelect(""));
-      }, this.repositionElements = function () {
-        if (n.overlay && n.img) {
-          var t = n.quill.root.parentNode,
-              e = n.img.getBoundingClientRect(),
-              o = t.getBoundingClientRect();Object.assign(n.overlay.style, { left: e.left - o.left - 1 + t.scrollLeft + "px", top: e.top - o.top + t.scrollTop + "px", width: e.width + "px", height: e.height + "px" });
-        }
-      }, this.hide = function () {
-        n.hideOverlay(), n.removeModules(), n.img = void 0;
-      }, this.setUserSelect = function (t) {
-        ["userSelect", "mozUserSelect", "webkitUserSelect", "msUserSelect"].forEach(function (e) {
-          n.quill.root.style[e] = t, document.documentElement.style[e] = t;
-        });
-      }, this.checkImage = function (t) {
-        n.img && (46 != t.keyCode && 8 != t.keyCode || window.Quill.find(n.img).deleteAt(0), n.hide());
-      }, this.quill = e;var s = !1;r.modules && (s = r.modules.slice()), this.options = i()({}, r, a.a), s !== !1 && (this.options.modules = s), document.execCommand("enableObjectResizing", !1, "false"), this.quill.root.addEventListener("click", this.handleClick, !1), this.quill.root.parentNode.style.position = this.quill.root.parentNode.style.position || "relative", this.moduleClasses = this.options.modules, console.log("this.options.modules", this.options.modules), this.modules = [];
-    };e.default = f, window.Quill && window.Quill.register("modules/imageResize", f);
-  }, function (t, e, n) {
-    function o(t) {
-      var e = -1,
-          n = null == t ? 0 : t.length;for (this.clear(); ++e < n;) {
-        var o = t[e];this.set(o[0], o[1]);
-      }
-    }var r = n(66),
-        i = n(67),
-        a = n(68),
-        s = n(69),
-        u = n(70);o.prototype.clear = r, o.prototype.delete = i, o.prototype.get = a, o.prototype.has = s, o.prototype.set = u, t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = -1,
-          n = null == t ? 0 : t.length;for (this.clear(); ++e < n;) {
-        var o = t[e];this.set(o[0], o[1]);
-      }
-    }var r = n(80),
-        i = n(81),
-        a = n(82),
-        s = n(83),
-        u = n(84);o.prototype.clear = r, o.prototype.delete = i, o.prototype.get = a, o.prototype.has = s, o.prototype.set = u, t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = this.__data__ = new r(t);this.size = e.size;
-    }var r = n(3),
-        i = n(92),
-        a = n(93),
-        s = n(94),
-        u = n(95),
-        c = n(96);o.prototype.clear = i, o.prototype.delete = a, o.prototype.get = s, o.prototype.has = u, o.prototype.set = c, t.exports = o;
-  }, function (t, e, n) {
-    var o = n(1),
-        r = o.Uint8Array;t.exports = r;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = a(t),
-          o = !n && i(t),
-          l = !n && !o && s(t),
-          p = !n && !o && !l && c(t),
-          d = n || o || l || p,
-          h = d ? r(t.length, String) : [],
-          y = h.length;for (var v in t) {
-        !e && !f.call(t, v) || d && ("length" == v || l && ("offset" == v || "parent" == v) || p && ("buffer" == v || "byteLength" == v || "byteOffset" == v) || u(v, y)) || h.push(v);
-      }return h;
-    }var r = n(53),
-        i = n(27),
-        a = n(28),
-        s = n(29),
-        u = n(24),
-        c = n(31),
-        l = Object.prototype,
-        f = l.hasOwnProperty;t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e, n) {
-      var o = t[e];s.call(t, e) && i(o, n) && (void 0 !== n || e in t) || r(t, e, n);
-    }var r = n(10),
-        i = n(8),
-        a = Object.prototype,
-        s = a.hasOwnProperty;t.exports = o;
-  }, function (t, e, n) {
-    var o = n(0),
-        r = Object.create,
-        i = function () {
-      function t() {}return function (e) {
-        if (!o(e)) return {};if (r) return r(e);t.prototype = e;var n = new t();return t.prototype = void 0, n;
-      };
-    }();t.exports = i;
-  }, function (t, e, n) {
-    var o = n(62),
-        r = o();t.exports = r;
-  }, function (t, e, n) {
-    function o(t) {
-      return i(t) && r(t) == a;
-    }var r = n(5),
-        i = n(2),
-        a = "[object Arguments]";t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return !(!a(t) || i(t)) && (r(t) ? d : u).test(s(t));
-    }var r = n(13),
-        i = n(74),
-        a = n(0),
-        s = n(97),
-        u = /^\[object .+?Constructor\]$/,
-        c = Function.prototype,
-        l = Object.prototype,
-        f = c.toString,
-        p = l.hasOwnProperty,
-        d = RegExp("^" + f.call(p).replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, "$1.*?") + "$");t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return a(t) && i(t.length) && !!s[r(t)];
-    }var r = n(5),
-        i = n(30),
-        a = n(2),
-        s = {};s["[object Float32Array]"] = s["[object Float64Array]"] = s["[object Int8Array]"] = s["[object Int16Array]"] = s["[object Int32Array]"] = s["[object Uint8Array]"] = s["[object Uint8ClampedArray]"] = s["[object Uint16Array]"] = s["[object Uint32Array]"] = !0, s["[object Arguments]"] = s["[object Array]"] = s["[object ArrayBuffer]"] = s["[object Boolean]"] = s["[object DataView]"] = s["[object Date]"] = s["[object Error]"] = s["[object Function]"] = s["[object Map]"] = s["[object Number]"] = s["[object Object]"] = s["[object RegExp]"] = s["[object Set]"] = s["[object String]"] = s["[object WeakMap]"] = !1, t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      if (!r(t)) return a(t);var e = i(t),
-          n = [];for (var o in t) {
-        ("constructor" != o || !e && u.call(t, o)) && n.push(o);
-      }return n;
-    }var r = n(0),
-        i = n(25),
-        a = n(85),
-        s = Object.prototype,
-        u = s.hasOwnProperty;t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e, n, o, g, x, m) {
-      var _ = t[n],
-          j = e[n],
-          w = m.get(j);if (w) return void r(t, n, w);var O = x ? x(_, j, n + "", t, e, m) : void 0,
-          S = void 0 === O;if (S) {
-        var E = l(j),
-            A = !E && p(j),
-            z = !E && !A && v(j);O = j, E || A || z ? l(_) ? O = _ : f(_) ? O = s(_) : A ? (S = !1, O = i(j, !0)) : z ? (S = !1, O = a(j, !0)) : O = [] : y(j) || c(j) ? (O = _, c(_) ? O = b(_) : (!h(_) || o && d(_)) && (O = u(j))) : S = !1;
-      }S && (m.set(j, O), g(O, j, o, x, m), m.delete(j)), r(t, n, O);
-    }var r = n(18),
-        i = n(56),
-        a = n(57),
-        s = n(58),
-        u = n(71),
-        c = n(27),
-        l = n(28),
-        f = n(99),
-        p = n(29),
-        d = n(13),
-        h = n(0),
-        y = n(100),
-        v = n(31),
-        b = n(103);t.exports = o;
-  }, function (t, e, n) {
-    var o = n(98),
-        r = n(21),
-        i = n(26),
-        a = r ? function (t, e) {
-      return r(t, "toString", { configurable: !0, enumerable: !1, value: o(e), writable: !0 });
-    } : i;t.exports = a;
-  }, function (t, e) {
-    function n(t, e) {
-      for (var n = -1, o = Array(t); ++n < t;) {
-        o[n] = e(n);
-      }return o;
-    }t.exports = n;
-  }, function (t, e) {
-    function n(t) {
-      return function (e) {
-        return t(e);
-      };
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = new t.constructor(t.byteLength);return new r(e).set(new r(t)), e;
-    }var r = n(42);t.exports = o;
-  }, function (t, e, n) {
-    (function (t) {
-      function o(t, e) {
-        if (e) return t.slice();var n = t.length,
-            o = c ? c(n) : new t.constructor(n);return t.copy(o), o;
-      }var r = n(1),
-          i = "object" == (typeof e === "undefined" ? "undefined" : _typeof(e)) && e && !e.nodeType && e,
-          a = i && "object" == (typeof t === "undefined" ? "undefined" : _typeof(t)) && t && !t.nodeType && t,
-          s = a && a.exports === i,
-          u = s ? r.Buffer : void 0,
-          c = u ? u.allocUnsafe : void 0;t.exports = o;
-    }).call(e, n(14)(t));
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = e ? r(t.buffer) : t.buffer;return new t.constructor(n, t.byteOffset, t.length);
-    }var r = n(55);t.exports = o;
-  }, function (t, e) {
-    function n(t, e) {
-      var n = -1,
-          o = t.length;for (e || (e = Array(o)); ++n < o;) {
-        e[n] = t[n];
-      }return e;
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t, e, n, o) {
-      var a = !n;n || (n = {});for (var s = -1, u = e.length; ++s < u;) {
-        var c = e[s],
-            l = o ? o(n[c], t[c], c, n, t) : void 0;void 0 === l && (l = t[c]), a ? i(n, c, l) : r(n, c, l);
-      }return n;
-    }var r = n(44),
-        i = n(10);t.exports = o;
-  }, function (t, e, n) {
-    var o = n(1),
-        r = o["__core-js_shared__"];t.exports = r;
-  }, function (t, e, n) {
-    function o(t) {
-      return r(function (e, n) {
-        var o = -1,
-            r = n.length,
-            a = r > 1 ? n[r - 1] : void 0,
-            s = r > 2 ? n[2] : void 0;for (a = t.length > 3 && "function" == typeof a ? (r--, a) : void 0, s && i(n[0], n[1], s) && (a = r < 3 ? void 0 : a, r = 1), e = Object(e); ++o < r;) {
-          var u = n[o];u && t(e, u, o, a);
-        }return e;
-      });
-    }var r = n(20),
-        i = n(72);t.exports = o;
-  }, function (t, e) {
-    function n(t) {
-      return function (e, n, o) {
-        for (var r = -1, i = Object(e), a = o(e), s = a.length; s--;) {
-          var u = a[t ? s : ++r];if (n(i[u], u, i) === !1) break;
-        }return e;
-      };
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t, e, n, a, s, u) {
-      return i(t) && i(e) && (u.set(e, t), r(t, e, void 0, o, u), u.delete(e)), t;
-    }var r = n(19),
-        i = n(0);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = a.call(t, u),
-          n = t[u];try {
-        t[u] = void 0;
-      } catch (t) {}var o = s.call(t);return e ? t[u] = n : delete t[u], o;
-    }var r = n(16),
-        i = Object.prototype,
-        a = i.hasOwnProperty,
-        s = i.toString,
-        u = r ? r.toStringTag : void 0;t.exports = o;
-  }, function (t, e) {
-    function n(t, e) {
-      return null == t ? void 0 : t[e];
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o() {
-      this.__data__ = r ? r(null) : {}, this.size = 0;
-    }var r = n(7);t.exports = o;
-  }, function (t, e) {
-    function n(t) {
-      var e = this.has(t) && delete this.__data__[t];return this.size -= e ? 1 : 0, e;
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = this.__data__;if (r) {
-        var n = e[t];return n === i ? void 0 : n;
-      }return s.call(e, t) ? e[t] : void 0;
-    }var r = n(7),
-        i = "__lodash_hash_undefined__",
-        a = Object.prototype,
-        s = a.hasOwnProperty;t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = this.__data__;return r ? void 0 !== e[t] : a.call(e, t);
-    }var r = n(7),
-        i = Object.prototype,
-        a = i.hasOwnProperty;t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = this.__data__;return this.size += this.has(t) ? 0 : 1, n[t] = r && void 0 === e ? i : e, this;
-    }var r = n(7),
-        i = "__lodash_hash_undefined__";t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return "function" != typeof t.constructor || a(t) ? {} : r(i(t));
-    }var r = n(45),
-        i = n(23),
-        a = n(25);t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e, n) {
-      if (!s(n)) return !1;var o = typeof e === "undefined" ? "undefined" : _typeof(e);return !!("number" == o ? i(n) && a(e, n.length) : "string" == o && e in n) && r(n[e], t);
-    }var r = n(8),
-        i = n(12),
-        a = n(24),
-        s = n(0);t.exports = o;
-  }, function (t, e) {
-    function n(t) {
-      var e = typeof t === "undefined" ? "undefined" : _typeof(t);return "string" == e || "number" == e || "symbol" == e || "boolean" == e ? "__proto__" !== t : null === t;
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      return !!i && i in t;
-    }var r = n(60),
-        i = function () {
-      var t = /[^.]+$/.exec(r && r.keys && r.keys.IE_PROTO || "");return t ? "Symbol(src)_1." + t : "";
-    }();t.exports = o;
-  }, function (t, e) {
-    function n() {
-      this.__data__ = [], this.size = 0;
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = this.__data__,
-          n = r(e, t);return !(n < 0) && (n == e.length - 1 ? e.pop() : a.call(e, n, 1), --this.size, !0);
-    }var r = n(4),
-        i = Array.prototype,
-        a = i.splice;t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = this.__data__,
-          n = r(e, t);return n < 0 ? void 0 : e[n][1];
-    }var r = n(4);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return r(this.__data__, t) > -1;
-    }var r = n(4);t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = this.__data__,
-          o = r(n, t);return o < 0 ? (++this.size, n.push([t, e])) : n[o][1] = e, this;
-    }var r = n(4);t.exports = o;
-  }, function (t, e, n) {
-    function o() {
-      this.size = 0, this.__data__ = { hash: new r(), map: new (a || i)(), string: new r() };
-    }var r = n(39),
-        i = n(3),
-        a = n(15);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      var e = r(this, t).delete(t);return this.size -= e ? 1 : 0, e;
-    }var r = n(6);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return r(this, t).get(t);
-    }var r = n(6);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      return r(this, t).has(t);
-    }var r = n(6);t.exports = o;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = r(this, t),
-          o = n.size;return n.set(t, e), this.size += n.size == o ? 0 : 1, this;
-    }var r = n(6);t.exports = o;
-  }, function (t, e) {
-    function n(t) {
-      var e = [];if (null != t) for (var n in Object(t)) {
-        e.push(n);
-      }return e;
-    }t.exports = n;
-  }, function (t, e, n) {
-    (function (t) {
-      var o = n(22),
-          r = "object" == (typeof e === "undefined" ? "undefined" : _typeof(e)) && e && !e.nodeType && e,
-          i = r && "object" == (typeof t === "undefined" ? "undefined" : _typeof(t)) && t && !t.nodeType && t,
-          a = i && i.exports === r,
-          s = a && o.process,
-          u = function () {
-        try {
-          return s && s.binding && s.binding("util");
-        } catch (t) {}
-      }();t.exports = u;
-    }).call(e, n(14)(t));
-  }, function (t, e) {
-    function n(t) {
-      return r.call(t);
-    }var o = Object.prototype,
-        r = o.toString;t.exports = n;
-  }, function (t, e) {
-    function n(t, e) {
-      return function (n) {
-        return t(e(n));
-      };
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t, e, n) {
-      return e = i(void 0 === e ? t.length - 1 : e, 0), function () {
-        for (var o = arguments, a = -1, s = i(o.length - e, 0), u = Array(s); ++a < s;) {
-          u[a] = o[e + a];
-        }a = -1;for (var c = Array(e + 1); ++a < e;) {
-          c[a] = o[a];
-        }return c[e] = n(u), r(t, this, c);
-      };
-    }var r = n(17),
-        i = Math.max;t.exports = o;
-  }, function (t, e, n) {
-    var o = n(52),
-        r = n(91),
-        i = r(o);t.exports = i;
-  }, function (t, e) {
-    function n(t) {
-      var e = 0,
-          n = 0;return function () {
-        var a = i(),
-            s = r - (a - n);if (n = a, s > 0) {
-          if (++e >= o) return arguments[0];
-        } else e = 0;return t.apply(void 0, arguments);
-      };
-    }var o = 800,
-        r = 16,
-        i = Date.now;t.exports = n;
-  }, function (t, e, n) {
-    function o() {
-      this.__data__ = new r(), this.size = 0;
-    }var r = n(3);t.exports = o;
-  }, function (t, e) {
-    function n(t) {
-      var e = this.__data__,
-          n = e.delete(t);return this.size = e.size, n;
-    }t.exports = n;
-  }, function (t, e) {
-    function n(t) {
-      return this.__data__.get(t);
-    }t.exports = n;
-  }, function (t, e) {
-    function n(t) {
-      return this.__data__.has(t);
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t, e) {
-      var n = this.__data__;if (n instanceof r) {
-        var o = n.__data__;if (!i || o.length < s - 1) return o.push([t, e]), this.size = ++n.size, this;n = this.__data__ = new a(o);
-      }return n.set(t, e), this.size = n.size, this;
-    }var r = n(3),
-        i = n(15),
-        a = n(40),
-        s = 200;t.exports = o;
-  }, function (t, e) {
-    function n(t) {
-      if (null != t) {
-        try {
-          return r.call(t);
-        } catch (t) {}try {
-          return t + "";
-        } catch (t) {}
-      }return "";
-    }var o = Function.prototype,
-        r = o.toString;t.exports = n;
-  }, function (t, e) {
-    function n(t) {
-      return function () {
-        return t;
-      };
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      return i(t) && r(t);
-    }var r = n(12),
-        i = n(2);t.exports = o;
-  }, function (t, e, n) {
-    function o(t) {
-      if (!a(t) || r(t) != s) return !1;var e = i(t);if (null === e) return !0;var n = f.call(e, "constructor") && e.constructor;return "function" == typeof n && n instanceof n && l.call(n) == p;
-    }var r = n(5),
-        i = n(23),
-        a = n(2),
-        s = "[object Object]",
-        u = Function.prototype,
-        c = Object.prototype,
-        l = u.toString,
-        f = c.hasOwnProperty,
-        p = l.call(Object);t.exports = o;
-  }, function (t, e, n) {
-    var o = n(19),
-        r = n(61),
-        i = r(function (t, e, n, r) {
-      o(t, e, n, r);
-    });t.exports = i;
-  }, function (t, e) {
-    function n() {
-      return !1;
-    }t.exports = n;
-  }, function (t, e, n) {
-    function o(t) {
-      return r(t, i(t));
-    }var r = n(59),
-        i = n(32);t.exports = o;
-  }, function (t, e) {
-    t.exports = '<svg viewbox="0 0 18 18">\n  <line class="ql-stroke" x1="15" x2="3" y1="9" y2="9"></line>\n  <line class="ql-stroke" x1="14" x2="4" y1="14" y2="14"></line>\n  <line class="ql-stroke" x1="12" x2="6" y1="4" y2="4"></line>\n</svg>';
-  }, function (t, e) {
-    t.exports = '<svg viewbox="0 0 18 18">\n  <line class="ql-stroke" x1="3" x2="15" y1="9" y2="9"></line>\n  <line class="ql-stroke" x1="3" x2="13" y1="14" y2="14"></line>\n  <line class="ql-stroke" x1="3" x2="9" y1="4" y2="4"></line>\n</svg>';
-  }, function (t, e) {
-    t.exports = '<svg viewbox="0 0 18 18">\n  <line class="ql-stroke" x1="15" x2="3" y1="9" y2="9"></line>\n  <line class="ql-stroke" x1="15" x2="5" y1="14" y2="14"></line>\n  <line class="ql-stroke" x1="15" x2="9" y1="4" y2="4"></line>\n</svg>';
-  }, function (t, e) {
-    var n;n = function () {
-      return this;
-    }();try {
-      n = n || Function("return this")() || (0, eval)("this");
-    } catch (t) {
-      "object" == (typeof window === "undefined" ? "undefined" : _typeof(window)) && (n = window);
-    }t.exports = n;
-  }]);
-});
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/module.js */ "./node_modules/webpack/buildin/module.js")(module)))
 
 /***/ }),
 
@@ -57368,11 +56472,15 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _events = __webpack_require__(/*! events */ "./node_modules/events/events.js");
 
-var _LSEQTree = __webpack_require__(/*! LSEQTree */ "./node_modules/LSEQTree/lib/lseqtree.js");
+var _lseqtree = __webpack_require__(/*! lseqtree */ "./node_modules/lseqtree/lib/lseqtree.js");
 
-var _LSEQTree2 = _interopRequireDefault(_LSEQTree);
+var _lseqtree2 = _interopRequireDefault(_lseqtree);
 
 var _Communication = __webpack_require__(/*! ./communication/Communication */ "./src/communication/Communication.js");
+
+var _marker = __webpack_require__(/*! ./view/marker */ "./src/view/marker.js");
+
+var _marker2 = _interopRequireDefault(_marker);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -57455,7 +56563,8 @@ var Document = function (_EventEmitter) {
 
               case 10:
 
-                this.sequence = new _LSEQTree2.default(this._communication._data_comm.broadcast._causality.local.e);
+                this.sequence = new _lseqtree2.default(this._communication._data_comm.broadcast._causality.local.e);
+
                 this.delta = { ops: []
 
                   /* TODO:Think about the creation of modules without view */
@@ -57464,7 +56573,7 @@ var Document = function (_EventEmitter) {
                 // #1B if it is imported from an existing object, initialize it with these
 
                 // #2 grant fast access
-
+                this._foglet = this._communication._foglet;
                 this.broadcast = this._communication._data_comm.broadcast;
                 this.broadcastCaret = this._communication._behaviors_comm.broadcast;
                 this.rps = this._communication._data_comm.network.rps;
@@ -57481,7 +56590,7 @@ var Document = function (_EventEmitter) {
 
                 this.emit('connected');
 
-              case 21:
+              case 22:
               case 'end':
                 return _context.stop();
             }
@@ -57521,11 +56630,13 @@ var Document = function (_EventEmitter) {
       this.broadcast._causality = this.broadcast._causality.constructor.fromJSON(object.causality);
       var local = this.broadcast._causality.local;
 
-      this._behaviors_comm.broadcast._causality.local.e = local.e;
+      this._communication._behaviors_comm.broadcast._causality.local.e = local.e;
 
       this.sequence.fromJSON(object.sequence);
       this.sequence._s = local.e;
       this.sequence._c = local.v;
+
+      this.delta = this.getDeltaFromSequence();
     }
 
     /**
@@ -57588,7 +56699,7 @@ var Document = function (_EventEmitter) {
         var op = { insert: node.e.content, attributes: node.e.attributes };
         if (WhoWriteIt) {
           var id = node.t.s;
-          op.attributes.color = session.default.Marker.getColor(id);
+          op.attributes.color = _marker2.default.getColor(id);
         }
         ops.push(op);
       });
@@ -57758,16 +56869,19 @@ var DocumentBuilder = function (_EventEmitter) {
     value: function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(sessionId, sessionIndex) {
         var foglet = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-        var options, doc;
+        var specialOpts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+        var defaultOptions, options, doc;
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                _context.next = 2;
-                return this.prepareOptions(sessionId);
+                defaultOptions = _extends({}, this._defaultOptions, specialOpts);
+                _context.next = 3;
+                return this.prepareOptions(sessionId, defaultOptions);
 
-              case 2:
+              case 3:
                 options = _context.sent;
+
 
                 if (!foglet) {
                   foglet = this.getNewFoglet(options);
@@ -57776,7 +56890,7 @@ var DocumentBuilder = function (_EventEmitter) {
                 doc = new _Document2.default(options, sessionIndex, this._crate);
                 return _context.abrupt('return', doc);
 
-              case 7:
+              case 8:
               case 'end':
                 return _context.stop();
             }
@@ -57784,7 +56898,7 @@ var DocumentBuilder = function (_EventEmitter) {
         }, _callee, this);
       }));
 
-      function buildDocument(_x2, _x3) {
+      function buildDocument(_x3, _x4) {
         return _ref.apply(this, arguments);
       }
 
@@ -57798,27 +56912,24 @@ var DocumentBuilder = function (_EventEmitter) {
   }, {
     key: 'prepareOptions',
     value: function () {
-      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(sessionId) {
-        var options;
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(sessionId, options) {
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
             switch (_context2.prev = _context2.next) {
               case 0:
-                options = _extends({}, this._defaultOptions);
-
                 this.setSignalingOptions(options, sessionId);
                 this.getLocalStorageData(options);
-                _context2.next = 5;
+                _context2.next = 4;
                 return this.setWebRTCOptions(options);
 
-              case 5:
+              case 4:
                 this.setUser(options);
                 this.setDocumentTitle(options);
                 this.setTemporarySessionID(options);
                 this.setFogletOptions(options);
                 return _context2.abrupt('return', options);
 
-              case 10:
+              case 9:
               case 'end':
                 return _context2.stop();
             }
@@ -57826,7 +56937,7 @@ var DocumentBuilder = function (_EventEmitter) {
         }, _callee2, this);
       }));
 
-      function prepareOptions(_x4) {
+      function prepareOptions(_x5, _x6) {
         return _ref2.apply(this, arguments);
       }
 
@@ -57870,12 +56981,17 @@ var DocumentBuilder = function (_EventEmitter) {
     key: 'setUser',
     value: function setUser(options) {
       var uid = this.GUID();
-      options.user = {
+      var randomId = {
         id: uid,
         pseudo: 'Anonymous'
       };
+      var localStorageUser = {};
+      if (_store2.default.get('config')) {
+        var config = _store2.default.get('config');
+        localStorageUser = { id: config.id, pseudo: config.pseudo };
+      }
 
-      options.user = Object.assign(options.user, _store2.default.get('myId'));
+      options.user = Object.assign(randomId, localStorageUser);
     }
 
     //TODO: Make this global to use the same server for all the documents
@@ -57930,7 +57046,7 @@ var DocumentBuilder = function (_EventEmitter) {
         }, _callee3, this);
       }));
 
-      function setWebRTCOptions(_x5) {
+      function setWebRTCOptions(_x7) {
         return _ref3.apply(this, arguments);
       }
 
@@ -57978,7 +57094,7 @@ var DocumentBuilder = function (_EventEmitter) {
         }, _callee4, this);
       }));
 
-      function getICEs(_x6) {
+      function getICEs(_x8) {
         return _ref4.apply(this, arguments);
       }
 
@@ -58046,7 +57162,6 @@ var DocumentBuilder = function (_EventEmitter) {
     }
 
     /**
-     *
      * @param {*} room  this is the id of the session, in crate it is the id of the document
      * @param {*} signalingServer the signaling server of foglet
      * @param {*} webrtc {config:{iceServers:[],trickle: bool}}
@@ -58175,7 +57290,7 @@ var View = exports.View = function () {
 
     this._editor = new _editor.EditorController(this._document, this._options.signalingOptions.session, this._editorContainerID);
 
-    _CrateDecorator.CrateDecorator.addMoveShortcuts(crate);
+    _CrateDecorator.CrateDecorator.addMoveShortcuts(this.crate);
   }
 
   _createClass(View, [{
@@ -58202,8 +57317,8 @@ var View = exports.View = function () {
       });
 
       // make title editable
-      jQuery('#' + this._editorContainerID + ' #title').click(function () {
-        jQuery('#' + _this2._editorContainerID + ' #title').attr('contenteditable', 'true');
+      $('#' + this._editorContainerID + ' #title').click(function () {
+        $('#' + _this2._editorContainerID + ' #title').attr('contenteditable', 'true');
         $(document).on('scroll touchmove mousewheel', function (e) {
           e.preventDefault();
           e.stopPropagation();
@@ -58211,23 +57326,23 @@ var View = exports.View = function () {
         });
       });
 
-      jQuery('#' + this._editorContainerID + ' #closeDocument').click(function () {
+      $('#' + this._editorContainerID + ' #closeDocument').click(function () {
         _this2.closeDocument();
       });
 
       //Menu Bar events
-      jQuery('#' + this._editorContainerID + ' #saveicon').click(function () {
+      $('#' + this._editorContainerID + ' #saveicon').click(function () {
         _this2.saveDocument();
       });
 
-      jQuery('#' + this._editorContainerID + ' #title').focusout(function () {
+      $('#' + this._editorContainerID + ' #title').focusout(function () {
         _this2.changeTitle();
         //TODO: this.emit('thereAreChanges')
       });
 
-      var sharingLinkContainer = new _link.LinkView(jQuery('#' + this._editorContainerID + ' #sharinglink'));
+      var sharingLinkContainer = new _link.LinkView($('#' + this._editorContainerID + ' #sharinglink'));
 
-      var shareButton = jQuery('#' + this._editorContainerID + ' #shareicon');
+      var shareButton = $('#' + this._editorContainerID + ' #shareicon');
 
       this._statesHeader = new _statesheader.StatesHeader(this._document, sharingLinkContainer, shareButton, this._editorContainerID);
     }
@@ -58241,15 +57356,17 @@ var View = exports.View = function () {
     value: function createCRATE() {
       var _this3 = this;
 
-      var html = ' \n<div class="col-md-10 editorContainer" id="' + this._editorContainerID + '" style="width:' + this.getWidth() + 'vw !important" >\n <!-- Head -->\n   <div id="head">\n    \n      </div>\n      <div id="firstrow" class="row">\n\n         <div id="title">\n         ' + this._options.name + '\n          </div>\n          \n          <div id=\'menurow\'>\n          <div id="features">\n          <div id="shareicon">\n             <i class="fa fa-link fa-2x ficon2"></i>\n          </div>\n          <div id="saveicon"><i class="fa fa-floppy-o fa-2x ficon2"></i></div>\n          <div id="remotesave">\n             <i class="fa fa-cloud fa-2x ficon2"></i>\n          </div>\n          <div id="state">\n          <i class="fa fa-globe fa-2x ficon2 "></i>\n       </div>\n      \n          <div id="closeDocument">\n          <i class="fa fa-times-circle fa-2x ficon2" style="\n      " aria-hidden="true" ></i>\n          </div>\n       </div>\n      </div>\n      <div id=\'sharingContainer\'> \n    </div>\n   </div>\n   \n <!-- Content -->\n   <div id="content" class="content">\n      <div id="users" class="row">\n      </div>\n      <div id="editorSection">\n         <div id="editor" class="editor">\n         </div>\n         <div id="comments">\n         </div>\n      </div>\n   </div>\n\n\n  <div id="inputCommentModal" class="modal fade" role="dialog" style="display: none;">\n            <div class="modal-dialog">\n        \n                <!-- Modal content-->\n                <div class="modal-content">\n                    <div class="modal-body">\n                    <button type="button" class="close" data-dismiss="modal">\xD7</button>\n                    <h4>Comment</h4>\n                    <p><textarea name="commentInput" id="commentInput" style="width: 100%;" rows="5"></textarea></p>\n                    </div>\n                    <div class="modal-footer">\n                    <button type="button" class="btn btn-default" id="saveComment"data-dismiss="modal">Save</button>\n                    </div>\n                </div>\n        \n            </div>\n        </div>\n    ';
-      jQuery('#' + this._editorsHolderID).append(html);
+      var html = ' \n    <div class="col-md-10 editorContainer" id="' + this._editorContainerID + '" style="width:' + this.getWidth() + ' !important" >\n  <!-- editorContent -->\n      <div class="editorContent">\n          <!-- Head -->\n          <div id="head">\n          \n          </div><!-- Head -->\n  \n          <div id="firstrow" class="row">\n  \n              <div id="title">\n              ' + this._options.name + '\n                  </div>\n  \n                  <div id=\'menurow\'>\n                  <div id="features">\n                  <div id="shareicon">\n                  <i class="fa fa-link fa-2x ficon2"></i>\n                  </div>\n                  <div id="saveicon"><i class="fa fa-floppy-o fa-2x ficon2"></i></div>\n                  <div id="remotesave">\n                  <i class="fa fa-cloud fa-2x ficon2"></i>\n                  </div>\n                  <div id="state">\n                  <i class="fa fa-globe fa-2x ficon2 "></i>\n              </div>\n              \n                  <div id="closeDocument">\n                  <i class="fa fa-times-circle fa-2x ficon2" style="\n              " aria-hidden="true" ></i>\n                  </div>\n              </div>\n              </div>\n              <div id=\'sharingContainer\'> \n              </div>\n          </div>\n          \n          <!-- Content -->\n          <div id="content" class="content">\n              <div id="users" class="row">\n              </div>\n              <div id="editorSection">\n              <div id="editor" class="editor">\n              </div>\n              <div id="comments">\n              </div>\n              </div>\n          </div><!-- Content -->\n  \n          <!-- inputCommentModal -->\n          <div id="inputCommentModal" class="modal fade" role="dialog" style="display: none;">\n              <div class="modal-dialog">\n          \n                  <!-- Modal content-->\n                  <div class="modal-content">\n                      <div class="modal-body">\n                      <button type="button" class="close" data-dismiss="modal">\xD7</button>\n                      <h4>Comment</h4>\n                      <p><textarea name="commentInput" id="commentInput" style="width: 100%;" rows="5"></textarea></p>\n                      </div>\n                      <div class="modal-footer">\n                      <button type="button" class="btn btn-default" id="saveComment"data-dismiss="modal">Save</button>\n                      </div>\n                  </div>\n              \n              </div>\n          </div><!-- inputCommentModal -->\n      </div><!-- editorContent -->\n  </div>\n    ';
 
-      jQuery('#' + this._editorContainerID + ' #saveComment').click(function () {
+      var editorContainer = $('#' + this._editorsHolderID);
+      editorContainer.append(html);
+
+      $('#' + this._editorContainerID + ' #saveComment').click(function () {
         _this3.saveComment();
       });
 
-      jQuery('#' + this._editorContainerID + ' #remotesave').click(function () {
-        if (jQuery('#' + _this3._editorContainerID + ' #remotesave').hasClass('PIN')) {
+      $('#' + this._editorContainerID + ' #remotesave').click(function () {
+        if ($('#' + _this3._editorContainerID + ' #remotesave').hasClass('PIN')) {
           _this3.kill();
         } else {
           _this3.join();
@@ -58259,12 +57376,12 @@ var View = exports.View = function () {
   }, {
     key: 'getWidth',
     value: function getWidth() {
-      var width = 98;
+      var width = 100;
       var NumberOfDocuments = this._document.crate.getNumberOfDocuments();
       if (NumberOfDocuments > 1) {
-        width = 45;
+        width = 50;
       }
-      return width;
+      return width + '%';
     }
   }, {
     key: 'saveComment',
@@ -58291,24 +57408,24 @@ var View = exports.View = function () {
     key: 'changeTitle',
     value: function changeTitle() {
       $(document).unbind('scroll touchmove mousewheel');
-      jQuery('#' + this._editorContainerID + ' #title').attr('contenteditable', 'false');
-      if (jQuery('#' + this._editorContainerID + ' #title').text() == '') {
-        jQuery('#' + this._editorContainerID + ' #title').text('Untitled document');
+      $('#' + this._editorContainerID + ' #title').attr('contenteditable', 'false');
+      if ($('#' + this._editorContainerID + ' #title').text() == '') {
+        $('#' + this._editorContainerID + ' #title').text('Untitled document');
       }
 
       //TODO: Optimize change only if the text is changed from last state
-      this._document._communication.textManager._titleManager.sendChangeTitle(jQuery('#' + this._editorContainerID + ' #title').text());
+      this._document._communication.textManager._titleManager.sendChangeTitle($('#' + this._editorContainerID + ' #title').text());
     }
   }, {
     key: 'focusOut',
     value: function focusOut() {
-      jQuery('#container-' + this._document.documentId).removeClass('activeEditor');
+      $('#container-' + this._document.documentId).removeClass('activeEditor');
       console.log('FocusOuT', this._document.documentId);
     }
   }, {
     key: 'focusIn',
     value: function focusIn() {
-      jQuery('#container-' + this._document.documentId).addClass('activeEditor');
+      $('#container-' + this._document.documentId).addClass('activeEditor');
 
       var moveToIndex = this._document.documentIndex;
       if (moveToIndex >= 1) {
@@ -58316,32 +57433,22 @@ var View = exports.View = function () {
       }
 
       var moveToDocumentId = this._document.crate.getDocumentIdFromIndex(moveToIndex);
-      jQuery('html, body').animate({
-        scrollLeft: jQuery('#container-' + moveToDocumentId).offset().left - 10
-      }, 'slow');
+      if (this._document.crate.getNumberOfDocuments() > 1) {
+        $('html, body').animate({
+          scrollLeft: $('#container-' + moveToDocumentId).offset().left
+        }, 'slow');
+      }
       this._editor.viewEditor.focus();
     }
   }, {
     key: 'updateView',
     value: function updateView(numberOfDocuments) {
       console.log('uodateView', this._document.documentId);
+      $('#' + this._editorContainerID).css('cssText', 'width:' + this.getWidth() + ' !important');
+
       if (numberOfDocuments > 1) {
-        jQuery('#content-default').css('cssText', 'width:calc(53% * ' + numberOfDocuments + ') !important');
-        this.splitedScreen();
-      } else {
-        jQuery('#content-default').css('cssText', 'width:100% !important');
-        this.fullScreen();
+        jQuery('#content-default').css('cssText', 'width:calc(' + this.getWidth() + ' * ' + numberOfDocuments + ') !important');
       }
-    }
-  }, {
-    key: 'fullScreen',
-    value: function fullScreen() {
-      jQuery('#' + this._editorContainerID).css('cssText', 'width:98vw !important');
-    }
-  }, {
-    key: 'splitedScreen',
-    value: function splitedScreen() {
-      jQuery('#' + this._editorContainerID).css('cssText', 'width:calc(50vw - 17.5px) !important');
     }
   }, {
     key: 'close',
@@ -58351,7 +57458,7 @@ var View = exports.View = function () {
         clearInterval(marker.timer);
       }
       // remove it from the browser
-      jQuery('#' + this._editorContainerID).remove();
+      $('#' + this._editorContainerID).remove();
     }
 
     //TODO:Create a special class for remote session
@@ -58362,7 +57469,7 @@ var View = exports.View = function () {
       var _this4 = this;
 
       var sessionID = this._options.signalingOptions.session;
-      var remotesave = jQuery('#' + this._editorContainerID + ' #remotesave');
+      var remotesave = $('#' + this._editorContainerID + ' #remotesave');
       // There is a configured server
       if (this._options.storageServer) {
         var url = this._options.storageServer + '/exist/' + sessionID;
@@ -60247,7 +59354,7 @@ var ErrorHandler = exports.ErrorHandler = function () {
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 exports.GUID = GUID;
 
@@ -60257,8 +59364,9 @@ var _shortid2 = _interopRequireDefault(_shortid);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+_shortid2.default.characters('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-');
 function GUID() {
-    return _shortid2.default.generate();
+  return 'c' + _shortid2.default.generate();
 }
 
 /***/ }),
@@ -60297,6 +59405,15 @@ function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, a
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+/**
+ * @typedef {Object} Core
+ * @property {Object} documentBuilder the builder of the documents
+ * @property {Document[]} _documents the list of the documents in the session
+ * @property {number[]} _documentsIds The index ids of the documents
+ * @property {number} actualSessionIndex the index id of the actual document
+ *
+ */
+
 var Crate = function () {
   function Crate() {
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
@@ -60315,12 +59432,23 @@ var Crate = function () {
     this.actualSessionIndex = -1;
   }
 
+  /**
+   * Get all document indexes
+   */
+
+
   _createClass(Crate, [{
     key: 'getDocumentIndexs',
     value: function getDocumentIndexs() {
       var keys = Array.from(this._documents.keys());
       return keys;
     }
+
+    /**
+     * Get doucument by its index
+     * @param {*} index  it is index in the core
+     */
+
   }, {
     key: 'getDocument',
     value: function getDocument(index) {
@@ -60332,13 +59460,20 @@ var Crate = function () {
       return this._documents.length;
     }
 
-    //TODO: Prevent creating two session with the same id
+    /**
+     * Create a new document ans set it as actual document
+     * @param {string} documentId the id of the document
+     * @param {Object} specialOpts special options that override the default options
+     * @returns {void|Core}
+     */
 
   }, {
     key: 'createNewDocument',
     value: function () {
       var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(documentId) {
         var _this = this;
+
+        var specialOpts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
         var documentIndex, _documentIndex, doc;
 
@@ -60355,7 +59490,7 @@ var Crate = function () {
 
                 _documentIndex = this.getNumberOfDocuments();
                 _context.next = 5;
-                return this.documentBuilder.buildDocument(documentId, _documentIndex);
+                return this.documentBuilder.buildDocument(documentId, _documentIndex, null, specialOpts);
 
               case 5:
                 doc = _context.sent;
@@ -60365,7 +59500,8 @@ var Crate = function () {
                 doc.init().then(function () {
                   _this.setActualDocument(documentId);
                 });
-                return _context.abrupt('return', this);
+
+                return _context.abrupt('return', doc);
 
               case 12:
                 throw new Error('The session exist');
@@ -60378,25 +59514,38 @@ var Crate = function () {
         }, _callee, this);
       }));
 
-      function createNewDocument(_x3) {
+      function createNewDocument(_x4) {
         return _ref.apply(this, arguments);
       }
 
       return createNewDocument;
     }()
+
+    /**
+     * add document to list of documents
+     * @param {Document} document
+     */
+
   }, {
     key: 'addDocument',
     value: function addDocument(document) {
       this._documents.push(document);
       this.updateView();
     }
+
+    /**
+     *  remove document and update the status of the different documents
+     * @param {number} documentIndex
+     */
+
   }, {
     key: 'removeDocument',
     value: function removeDocument(documentIndex) {
       var _this2 = this;
 
       if (this.exist(documentIndex)) {
-        //change the index off all the sessuib index more than this
+        //Change the index off all the documentIndexs that are greater than documentIndex
+
         this.getDocumentIndexs().filter(function (index) {
           return index > documentIndex;
         }).map(function (index) {
@@ -60417,6 +59566,12 @@ var Crate = function () {
         throw new _ErrorHandler.ErrorHandler().SESSION_NOT_FOUND(documentIndex);
       }
     }
+
+    /**
+     * Update the actual document index after removing a document
+     * @param {number} removedIndex
+     */
+
   }, {
     key: 'updateActualDocumentIndex',
     value: function updateActualDocumentIndex(removedIndex) {
@@ -60429,10 +59584,16 @@ var Crate = function () {
         } else {
           this.actualSessionIndex = -1;
         }
-      } else if (this.actualSessionIndex > documentIndex) {
+      } else if (this.actualSessionIndex > removedIndex) {
         this.actualSessionIndex--;
       }
     }
+
+    /**
+     * Emit FocusIn event to the document with documentIndex index
+     * @param {number} documentIndex
+     */
+
   }, {
     key: 'focusInToDocument',
     value: function focusInToDocument(documentIndex) {
@@ -60442,6 +59603,12 @@ var Crate = function () {
         throw new _ErrorHandler.ErrorHandler().SESSION_NOT_FOUND(documentIndex);
       }
     }
+
+    /**
+     * Emit FocusOut event to the document with documentIndex index
+     * @param {number} documentIndex
+     */
+
   }, {
     key: 'focusOutToDocument',
     value: function focusOutToDocument(documentIndex) {
@@ -60451,23 +59618,46 @@ var Crate = function () {
         throw (0, _ErrorHandler.ErrorHandler)().SESSION_NOT_FOUND(documentIndex);
       }
     }
+
+    /**
+     * get Document Index from document Id
+     * @param {string} documentId
+     * @returns {number} documentIndex
+     */
+
   }, {
     key: 'getIndexFromDocumentId',
     value: function getIndexFromDocumentId(documentId) {
       return this._documentsIds.get(documentId);
     }
+
+    /**
+     * get Document Id from document Index
+     * @param {number} documentIndex
+     * @returns {string} documentId
+     */
+
   }, {
     key: 'getDocumentIdFromIndex',
     value: function getDocumentIdFromIndex(documentIndex) {
       return this.getDocument(documentIndex).documentId;
     }
+
+    /**
+     * Set actual document by document Id. The actual document is the document that w're editing
+     * @param {string} documentId
+     */
+
   }, {
     key: 'setActualDocument',
     value: function setActualDocument(documentId) {
       var _this3 = this;
 
       var documentIndex = this.getIndexFromDocumentId(documentId);
-      if (documentIndex !== undefined && this.actualSessionIndex != documentIndex) {
+
+      if (documentIndex === undefined) {
+        throw Error('Document ' + documentId + ' dose not exist');
+      } else if (this.actualSessionIndex != documentIndex) {
         this.actualSessionIndex = documentIndex;
         this.focusInToDocument(documentIndex);
 
@@ -60477,57 +59667,24 @@ var Crate = function () {
         }).forEach(function (documentIndex) {
           return _this3.focusOutToDocument(documentIndex);
         });
-      } else {
-        throw Error('Session ' + documentId + ' dose not exist');
       }
     }
+
+    /**
+     * get actual document index
+     * @returns {Document}
+     *    */
+
   }, {
     key: 'getActualDocument',
     value: function getActualDocument() {
       return this.getDocument(this.actualSessionIndex);
     }
 
-    //TODO: remove this function
+    /**
+     * Emit 'UpdateView' to all the documents
+     */
 
-  }, {
-    key: 'addNewDocument',
-    value: function () {
-      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(sessionId) {
-        var documentIndex;
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
-          while (1) {
-            switch (_context2.prev = _context2.next) {
-              case 0:
-                documentIndex = this.getIndexFromDocumentId(sessionId);
-
-                if (!(!documentIndex && documentIndex != 0)) {
-                  _context2.next = 5;
-                  break;
-                }
-
-                _context2.next = 4;
-                return this.createNewDocument(sessionId);
-
-              case 4:
-                documentIndex = this.getIndexFromDocumentId(sessionId);
-
-              case 5:
-                return _context2.abrupt('return', this);
-
-              case 6:
-              case 'end':
-                return _context2.stop();
-            }
-          }
-        }, _callee2, this);
-      }));
-
-      function addNewDocument(_x4) {
-        return _ref2.apply(this, arguments);
-      }
-
-      return addNewDocument;
-    }()
   }, {
     key: 'updateView',
     value: function updateView() {
@@ -60539,7 +59696,7 @@ var Crate = function () {
     }
 
     /**
-     * focus on the next session of it is possible
+     * Focus on the next document (it dose exist)
      */
 
   }, {
@@ -60549,7 +59706,7 @@ var Crate = function () {
     }
 
     /**
-     * focus on the previous session
+     * Focus on the Previous document (it dose exist)
      */
 
   }, {
@@ -60557,6 +59714,13 @@ var Crate = function () {
     value: function moveToPrevious() {
       return this.moveTo(this.actualSessionIndex - 1);
     }
+
+    /**
+     * Move to a given document index
+     * @param {number} documentIndex
+     * @returns {Core} document
+     */
+
   }, {
     key: 'moveTo',
     value: function moveTo(documentIndex) {
@@ -60565,11 +59729,23 @@ var Crate = function () {
       }
       return this;
     }
+
+    /**
+     * Dose the given documment index exist in the list of documents
+     * @param {number} documentIndex
+     */
+
   }, {
     key: 'exist',
     value: function exist(documentIndex) {
       return this.getDocument(documentIndex) !== undefined;
     }
+
+    /**
+     * Get random Id, this used for documents and for users
+     * @returns {string} random Id
+     */
+
   }], [{
     key: 'getRandomId',
     value: function getRandomId() {
@@ -60823,10 +59999,10 @@ Object.defineProperty(exports, "__esModule", {
 exports.QuillManager = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+//import { ImageResize } from 'quill-image-resize-module'
+
 
 var _quillImageDropModule = __webpack_require__(/*! quill-image-drop-module */ "./node_modules/quill-image-drop-module/index.js");
-
-var _quillImageResizeModule = __webpack_require__(/*! quill-image-resize-module */ "./node_modules/quill-image-resize-module/image-resize.min.js");
 
 var _randomID = __webpack_require__(/*! ../helpers/randomID */ "./src/helpers/randomID.js");
 
@@ -61014,7 +60190,7 @@ var QuillManager = exports.QuillManager = function () {
 
 
 Object.defineProperty(exports, "__esModule", {
-	value: true
+  value: true
 });
 exports.Comments = undefined;
 
@@ -61030,247 +60206,251 @@ function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, a
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var debug = __webpack_require__(/*! debug */ "./node_modules/debug/src/browser.js")('crate:view:comments');
 /**
  * This class is for managing the comments for quill
  */
+
 var Comments = exports.Comments = function () {
-	/**
-  * [constructor description]
-  * @param  {[type]} editorContainerID [description]
-  * @return {[type]}                   [description]
-  */
-
-	function Comments() {
-		_classCallCheck(this, Comments);
-
-		// Selectors
-		this._commentCallback = {};
-		this.commentAddClick = this.commentAddClick.bind(this);
-		this.commentsClick = this.commentsClick.bind(this);
-	}
-
-	_createClass(Comments, [{
-		key: 'init',
-		value: function init(editor) {
-			this._editor = editor;
-			this._authorId = this._editor._document.uid;
-			this._editorContainerID = this._editor._editorContainerID;
-			this._viewEditor = this._editor.viewEditor;
-			this._markerManager = this._editor._MarkerViewManager;
-
-			this.setSelectors();
-			return this;
-		}
-	}, {
-		key: 'addAuthorInformation',
-		value: function addAuthorInformation() {
-			var commentOpt = this._viewEditor.options.modules.comment;
-			commentOpt.commentAuthorId = this._authorId;
-			commentOpt.commentAddOn = this._markerManager.getMarker(this._authorId).animal;
-			commentOpt.color = this._markerManager.getMarker(this._authorId).colorRGB;
-			return this;
-		}
-	}, {
-		key: 'setSelectors',
-		value: function setSelectors() {
-			this._inputCommentModel = $('#' + this._editorContainerID + ' #inputCommentModal');
-			this._comments = $('#' + this._editorContainerID + ' #comments');
-			this._ql_editor = $('#' + this._editorContainerID + ' .ql-editor');
-			this._editor = $('#' + this._editorContainerID + ' .editor');
-			this._commentInput = $('#' + this._editorContainerID + ' #commentInput');
-		}
-	}, {
-		key: 'commentAddClick',
-		value: function commentAddClick(cb, self) {
-			console.log('commentAddClick is clicked');
-			this._commentCallback = cb.bind(self);
-			this._inputCommentModel.modal('show');
-		}
-	}, {
-		key: 'getCurrentTimestamp',
-		value: function getCurrentTimestamp() {
-			return new Promise(function (resolve, reject) {
-				var currentTimestamp = Math.round(new Date().getTime() / 1000); // call from server
-				resolve(currentTimestamp);
-			});
-		}
-	}, {
-		key: 'commentsClick',
-		value: function commentsClick() {
-			if (this._comments.is(":visible")) {
-
-				if (this._ql_editor.hasClass('ql-comments')) {
-					this._ql_editor.removeClass('ql-comments');
-				}
-
-				this._comments.hide();
-				this._comments.css('width', '0%');
-				this._editor.css('width', '100%');
-			} else {
-				this._comments.addClass('comment');
-				if (!this._editor.hasClass('ql-comments')) {
-					this._editor.addClass('ql-comments');
-				}
-
-				this._comments.css('width', '30%');
-				this._editor.css('width', '70%');
-				this._comments.show();
-			}
-		}
-	}, {
-		key: 'addCommentToList',
-		value: function () {
-			var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(_ref) {
-				var comment = _ref.comment,
-				    currentTimestamp = _ref.currentTimestamp,
-				    authorId = _ref.authorId;
-				var marker, date, divId, opts, cmtBox;
-				return regeneratorRuntime.wrap(function _callee$(_context) {
-					while (1) {
-						switch (_context.prev = _context.next) {
-							case 0:
-								marker = this._markerManager.addMarker(authorId, false, {
-									lifetime: -1
-								});
-								date = dateFormat(new Date(), "dddd, mmmm dS, yyyy, h:MM:ss TT");
-								divId = 'ql-comment-' + authorId + '-' + currentTimestamp;
-								opts = {
-									id: divId,
-									date: date,
-									pseudoName: marker.pseudoName,
-									colorRGB: marker.colorRGB,
-									comment: comment,
-									iconURL: './icons/' + marker.animal + '.png'
-								};
-								cmtBox = this.getCommentBoxDiv(opts);
-
-								this._comments.append(cmtBox);
-								this.addFocusEffects(divId);
-
-							case 7:
-							case 'end':
-								return _context.stop();
-						}
-					}
-				}, _callee, this);
-			}));
-
-			function addCommentToList(_x) {
-				return _ref2.apply(this, arguments);
-			}
-
-			return addCommentToList;
-		}()
-	}, {
-		key: 'getCommentBoxDiv',
-		value: function getCommentBoxDiv(opts) {
-
-			var cmtbox = $('<div class=\'comment-box ' + opts.id + ' row\' id=\'comment-box-' + opts.id + '\' tabindex="1" title=\'' + opts.date + '\'>\n      <div class=\'comment-head row\'>\n        <div id="' + opts.id + '"style="background-color:' + opts.colorRGB + ';width: 40px;" ><img class="imageuser" src="' + opts.iconURL + '" alt="' + opts.pseudoName + '"></div>\n    \n        <div class=\'comment-details\'>\n          <div class=\'comment-author\'>' + opts.pseudoName + '</div>\n        </div>\n      </div>\n      <div class=\'comment-body row\' >' + opts.comment + '</div>\n  \n    </div>');
-			return cmtbox;
-		}
-	}, {
-		key: 'addFocusEffects',
-		value: function addFocusEffects(divId) {
-			var _this = this;
-
-			console.log('#comment-box-' + divId);
-
-			$('#comment-box-' + divId).focusin(function () {
-				_this.commentBoxFocus(divId, 'in');
-			});
-
-			$('#comment-box-' + divId).focusout(function () {
-				_this.commentBoxFocus(divId, 'out');
-			});
-		}
-	}, {
-		key: 'saveComment',
-		value: function () {
-			var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
-				var comment, currentTimestamp;
-				return regeneratorRuntime.wrap(function _callee2$(_context2) {
-					while (1) {
-						switch (_context2.prev = _context2.next) {
-							case 0:
-								comment = this._commentInput.val();
-
-								this._commentInput.val("");
-								_context2.next = 4;
-								return this.getCurrentTimestamp();
-
-							case 4:
-								currentTimestamp = _context2.sent;
-								_context2.next = 7;
-								return this.addCommentToList({ comment: comment, currentTimestamp: currentTimestamp, authorId: this._authorId });
-
-							case 7:
-								this._commentCallback({ comment: comment, currentTimestamp: currentTimestamp });
-
-							case 8:
-							case 'end':
-								return _context2.stop();
-						}
-					}
-				}, _callee2, this);
-			}));
-
-			function saveComment() {
-				return _ref3.apply(this, arguments);
-			}
-
-			return saveComment;
-		}()
-	}, {
-		key: 'commentBoxFocus',
-		value: function commentBoxFocus(id, type) {
-			console.log(type, '.ql-comments #' + id);
-			if (type !== 'out') {
-				$('.ql-comments #' + id).addClass('commentFocus');
-				this._comments.find('.' + id).css('border-color', 'red');
-			} else {
-				$('.ql-comments #' + id).removeClass('commentFocus');
-				this._comments.find('.comment-box').css('border-color', '#F0F0F0');
-			}
-		}
-
-		/**
-   * UpdateComments This function to extract the comments form the editor and show them in #comments
+  /**
+   * [constructor description]
+   * @param  {[type]} editorContainerID [description]
+   * @return {[type]}                   [description]
    */
 
-	}, {
-		key: 'UpdateComments',
-		value: function UpdateComments() {
-			var _this2 = this;
+  function Comments() {
+    _classCallCheck(this, Comments);
 
-			console.log("cmments updated");
-			// clear comments 
-			this.clearComments();
-			// for each insert check att if it contains the author then insert comment 
-			this.viewEditor.editor.delta.ops.forEach(function (op) {
-				if (op.insert && op.attributes && op.attributes.commentAuthor) {
-					var authorId = op.attributes.commentAuthor;
-					var comment = op.attributes.comment;
-					var currentTimestamp = op.attributes.commentTimestamp;
-					_this2.addCommentToList({ comment: comment, currentTimestamp: currentTimestamp, authorId: authorId });
-				}
-			});
-		}
-	}, {
-		key: 'clearComments',
-		value: function clearComments() {
-			jQuery('#' + this._editorContainerID + ' #comments').empty();
-		}
-	}, {
-		key: 'viewEditor',
-		get: function get() {
-			return this._viewEditor;
-		},
-		set: function set(Editor) {
-			this._viewEditor = Editor;
-		}
-	}]);
+    // Selectors
+    this._commentCallback = {};
+    this.commentAddClick = this.commentAddClick.bind(this);
+    this.commentsClick = this.commentsClick.bind(this);
+  }
 
-	return Comments;
+  _createClass(Comments, [{
+    key: 'init',
+    value: function init(editor) {
+      this._editor = editor;
+      this._authorId = this._editor._document.uid;
+      this._editorContainerID = this._editor._editorContainerID;
+      this._viewEditor = this._editor.viewEditor;
+      this._markerManager = this._editor._MarkerViewManager;
+
+      this.setSelectors();
+      return this;
+    }
+  }, {
+    key: 'addAuthorInformation',
+    value: function addAuthorInformation() {
+      var commentOpt = this._viewEditor.options.modules.comment;
+      commentOpt.commentAuthorId = this._authorId;
+      commentOpt.commentAddOn = this._markerManager.getMarker(this._authorId).animal;
+      commentOpt.color = this._markerManager.getMarker(this._authorId).colorRGB;
+      return this;
+    }
+  }, {
+    key: 'setSelectors',
+    value: function setSelectors() {
+      this._inputCommentModel = $('#' + this._editorContainerID + ' #inputCommentModal');
+      this._comments = $('#' + this._editorContainerID + ' #comments');
+      this._ql_editor = $('#' + this._editorContainerID + ' .ql-editor');
+      this._editor = $('#' + this._editorContainerID + ' .editor');
+      this._commentInput = $('#' + this._editorContainerID + ' #commentInput');
+    }
+  }, {
+    key: 'commentAddClick',
+    value: function commentAddClick(cb, self) {
+      console.log('commentAddClick is clicked');
+      this._commentCallback = cb.bind(self);
+      this._inputCommentModel.modal('show');
+    }
+  }, {
+    key: 'getCurrentTimestamp',
+    value: function getCurrentTimestamp() {
+      return new Promise(function (resolve, reject) {
+        var currentTimestamp = Math.round(new Date().getTime() / 1000); // call from server
+        resolve(currentTimestamp);
+      });
+    }
+  }, {
+    key: 'commentsClick',
+    value: function commentsClick() {
+      if (this._comments.is(':visible')) {
+        if (this._ql_editor.hasClass('ql-comments')) {
+          this._ql_editor.removeClass('ql-comments');
+        }
+
+        this._comments.hide();
+        this._comments.css('width', '0%');
+        this._editor.css('width', '100%');
+      } else {
+        this._comments.addClass('comment');
+        if (!this._editor.hasClass('ql-comments')) {
+          this._editor.addClass('ql-comments');
+        }
+
+        this._comments.css('width', '30%');
+        this._editor.css('width', '70%');
+        this._comments.show();
+      }
+    }
+  }, {
+    key: 'addCommentToList',
+    value: function () {
+      var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(_ref) {
+        var comment = _ref.comment,
+            currentTimestamp = _ref.currentTimestamp,
+            authorId = _ref.authorId;
+        var marker, date, divId, opts, cmtBox;
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                marker = this._markerManager.addMarker(authorId, false, {
+                  lifetime: -1
+                });
+                date = dateFormat(new Date(), 'dddd, mmmm dS, yyyy, h:MM:ss TT');
+                divId = 'ql-comment-' + authorId + '-' + currentTimestamp;
+                opts = {
+                  id: divId,
+                  date: date,
+                  pseudoName: marker.pseudoName,
+                  colorRGB: marker.colorRGB,
+                  comment: comment,
+                  iconURL: './icons/' + marker.animal + '.png'
+                };
+                cmtBox = this.getCommentBoxDiv(opts);
+
+                this._comments.append(cmtBox);
+                this.addFocusEffects(divId);
+
+              case 7:
+              case 'end':
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function addCommentToList(_x) {
+        return _ref2.apply(this, arguments);
+      }
+
+      return addCommentToList;
+    }()
+  }, {
+    key: 'getCommentBoxDiv',
+    value: function getCommentBoxDiv(opts) {
+      var cmtbox = $('<div class=\'comment-box ' + opts.id + ' row\' id=\'comment-box-' + opts.id + '\' tabindex="1" title=\'' + opts.date + '\'>\n      <div class=\'comment-head row\'>\n        <div id="' + opts.id + '"style="background-color:' + opts.colorRGB + ';width: 40px;" ><img class="imageuser" src="' + opts.iconURL + '" alt="' + opts.pseudoName + '"></div>\n    \n        <div class=\'comment-details\'>\n          <div class=\'comment-author\'>' + opts.pseudoName + '</div>\n        </div>\n      </div>\n      <div class=\'comment-body row\' >' + opts.comment + '</div>\n  \n    </div>');
+      return cmtbox;
+    }
+  }, {
+    key: 'addFocusEffects',
+    value: function addFocusEffects(divId) {
+      var _this = this;
+
+      console.log('#comment-box-' + divId);
+
+      $('#comment-box-' + divId).focusin(function () {
+        _this.commentBoxFocus(divId, 'in');
+      });
+
+      $('#comment-box-' + divId).focusout(function () {
+        _this.commentBoxFocus(divId, 'out');
+      });
+    }
+  }, {
+    key: 'saveComment',
+    value: function () {
+      var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+        var comment, currentTimestamp;
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                comment = this._commentInput.val();
+
+                this._commentInput.val('');
+                _context2.next = 4;
+                return this.getCurrentTimestamp();
+
+              case 4:
+                currentTimestamp = _context2.sent;
+                _context2.next = 7;
+                return this.addCommentToList({
+                  comment: comment,
+                  currentTimestamp: currentTimestamp,
+                  authorId: this._authorId
+                });
+
+              case 7:
+                this._commentCallback({ comment: comment, currentTimestamp: currentTimestamp });
+
+              case 8:
+              case 'end':
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function saveComment() {
+        return _ref3.apply(this, arguments);
+      }
+
+      return saveComment;
+    }()
+  }, {
+    key: 'commentBoxFocus',
+    value: function commentBoxFocus(id, type) {
+      console.log(type, '.ql-comments #' + id);
+      if (type !== 'out') {
+        $('.ql-comments #' + id).addClass('commentFocus');
+        this._comments.find('.' + id).css('border-color', 'red');
+      } else {
+        $('.ql-comments #' + id).removeClass('commentFocus');
+        this._comments.find('.comment-box').css('border-color', '#F0F0F0');
+      }
+    }
+
+    /**
+     * UpdateComments This function to extract the comments form the editor and show them in #comments
+     */
+
+  }, {
+    key: 'UpdateComments',
+    value: function UpdateComments() {
+      var _this2 = this;
+
+      debug('cmments updated');
+      // clear comments
+      this.clearComments();
+      // for each insert check att if it contains the author then insert comment
+      this.viewEditor.editor.delta.ops.forEach(function (op) {
+        if (op.insert && op.attributes && op.attributes.commentAuthor) {
+          var authorId = op.attributes.commentAuthor;
+          var comment = op.attributes.comment;
+          var currentTimestamp = op.attributes.commentTimestamp;
+          _this2.addCommentToList({ comment: comment, currentTimestamp: currentTimestamp, authorId: authorId });
+        }
+      });
+    }
+  }, {
+    key: 'clearComments',
+    value: function clearComments() {
+      jQuery('#' + this._editorContainerID + ' #comments').empty();
+    }
+  }, {
+    key: 'viewEditor',
+    get: function get() {
+      return this._viewEditor;
+    },
+    set: function set(Editor) {
+      this._viewEditor = Editor;
+    }
+  }]);
+
+  return Comments;
 }();
 
 /***/ }),
@@ -61626,7 +60806,7 @@ var EditorController = exports.EditorController = function (_EventEmitter) {
   }, {
     key: 'sendDelete',
     value: function sendDelete(index, operation, isItInsertWithAtt) {
-      console.log('Send delete', index, operation, isItInsertWithAtt);
+      debug('Send delete', index, operation, isItInsertWithAtt);
       //to ensure that the editor contains just \n without any attributes
       if (!isItInsertWithAtt) {
         this._comments.UpdateComments();
@@ -62037,7 +61217,7 @@ var Marker = function () {
   /**
    * Marker Module manages the Carets, avatars, pseudo names for the different users of the document
    * @param {[string]}  origin the id of the the user
-   * @param {Number}  lifeTime After this time, if no ping or Caret position is received => 
+   * @param {Number}  lifeTime After this time, if no ping or Caret position is received =>
    * remove caret and avatar. if lifetime is -1 we didn't add the avatar
    * @param {[{index: index,length: 0}]}  range  range stars from index with the specified length
    * @param {[cursor module]}  cursorsp the used cursor module for quilljs
@@ -62050,16 +61230,15 @@ var Marker = function () {
 
     //lifeTime = -1, range, cursorsp, cursor, isItME = false, editor) {
 
-
     if (origin === undefined) {
-      console.error("origin not defined", origin);
+      console.error('origin not defined', origin);
     }
     if (editor === undefined) {
-      console.error("editor not defined", editor);
+      console.error('editor not defined', editor);
     }
 
     if (Object.keys(editor).length === 0 && editor.constructor === Object) {
-      console.error("editor is empty", editor);
+      console.error('editor is empty', editor);
     }
 
     if (options == null) {
@@ -62079,7 +61258,7 @@ var Marker = function () {
     this.origin = origin;
 
     /**
-     * lifeTime After this time, if no ping or Caret position is received => 
+     * lifeTime After this time, if no ping or Caret position is received =>
      * remove caret and avatar. if lifetime is -1 we don't add the avatar
      * @type {[type]}
      */
@@ -62116,7 +61295,7 @@ var Marker = function () {
     this.pseudoName = this.constructor.getPseudoname(this.origin);
 
     /**
-     * add or not the avatar 
+     * add or not the avatar
      * @type {Boolean}
      */
     this.avatarAdd = false;
@@ -62134,7 +61313,7 @@ var Marker = function () {
     }
 
     if (this.lifeTime != -1) {
-      // -1 => created without timer avatar cursor 
+      // -1 => created without timer avatar cursor
       if (options.isItMe) {
         this.addAvatar();
       } else if (this.cursor) {
@@ -62151,7 +61330,7 @@ var Marker = function () {
 
 
   _createClass(Marker, [{
-    key: "update",
+    key: 'update',
 
     /**
      * update the time to keep the avatar and cursor if it exist
@@ -62160,8 +61339,8 @@ var Marker = function () {
      */
     value: function update(range, cursor) {
       this.time = new Date().getTime();
-      var editor = $("#" + this._editorContainerID);
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      var editor = $('#' + this._editorContainerID);
+      var avatar = $('#' + this._editorContainerID + ' #' + this.origin);
 
       if (!avatar.length && editor.length) {
         this.addAvatar();
@@ -62181,17 +61360,17 @@ var Marker = function () {
       }
       return this;
     }
-  }, {
-    key: "checkIfOutdated",
-
 
     /**
-     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar 
+     * checkIfOutdated check if the user is outdated and if it is the case remove its caret and avatar
      */
+
+  }, {
+    key: 'checkIfOutdated',
     value: function checkIfOutdated() {
       var timeNow = new Date().getTime();
       var dff = timeNow - this.time;
-      // if  cursor  is outdated 
+      // if  cursor  is outdated
       if (timeNow - this.time >= this.lifeTime) {
         // Remve cursor and avatar
         if (this.cursor) {
@@ -62212,15 +61391,14 @@ var Marker = function () {
      */
 
   }, {
-    key: "addAvatar",
+    key: 'addAvatar',
     value: function addAvatar() {
       var _this = this;
 
-      var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : "#users";
+      var divID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '#users';
 
-
-      jQuery("#" + this._editorContainerID + " " + divID).append(this.getAvatar());
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      jQuery('#' + this._editorContainerID + ' ' + divID).append(this.getAvatar());
+      var avatar = $('#' + this._editorContainerID + ' #' + this.origin);
       avatar.attr('data-toggle', 'tooltip');
       avatar.attr('title', this.pseudoName);
       this.avatarAdd = true;
@@ -62237,19 +61415,27 @@ var Marker = function () {
       }
       return this;
     }
-  }, {
-    key: "getAvatar",
-
 
     /**
      * getAvatar return a div that contains this user id
      * @return {[type]} [description]
      */
-    value: function getAvatar() {
-      return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="./icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
-    }
+
   }, {
-    key: "removeAvatar",
+    key: 'getAvatar',
+    value: function getAvatar() {
+      var subDomain = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '/CRATE';
+
+      return '<div id="' + this.origin + '"style="background-color:' + this.colorRGB + ';"><img class="imageuser" src="' + subDomain + '/icons/' + this.animal + '.png" alt="' + this.pseudoName + '"></div>';
+    }
+
+    /**
+     * getAvatar return the div that contains this user id
+     * @return {[type]} [description]
+     */
+
+  }, {
+    key: 'removeAvatar',
 
 
     /**
@@ -62257,64 +61443,62 @@ var Marker = function () {
      * @return {[type]} [description]
      */
     value: function removeAvatar() {
-
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      var avatar = $('#' + this._editorContainerID + ' #' + this.origin);
       avatar.remove();
       this.avatarAdd = false;
       clearInterval(this.timer);
       return this;
     }
-  }, {
-    key: "setPseudo",
-
 
     /**
      * setPseudo set pseudo  for the user
      * @param {[type]} Pseudo [description]
      */
 
+  }, {
+    key: 'setPseudo',
     value: function setPseudo(Pseudo) {
       this.pseudoName = Pseudo;
-      var avatar = $("#" + this._editorContainerID + " #" + this.origin);
+      var avatar = $('#' + this._editorContainerID + ' #' + this.origin);
       if (avatar.length) {
         avatar.attr('title', this.pseudoName);
       }
       return this;
     }
-  }, {
-    key: "addCursor",
-
 
     /**
      * addCursor add the cursor to the editor
      * @param {[{index: index,length: 0}]} range [description]
      */
+
+  }, {
+    key: 'addCursor',
     value: function addCursor(range) {
       this.cursor = true;
       this._editor.viewEditor.getModule('cursors').setCursor(this.origin, range, this.pseudoName, this.colorRGB);
       return this;
     }
   }], [{
-    key: "capitalize",
+    key: 'capitalize',
     value: function capitalize(s) {
       return s.charAt(0).toUpperCase() + s.slice(1);
     }
-  }, {
-    key: "getColor",
-
 
     /**
      * getColor for a specific id, get a unique color
      * @param  {[string]} str [the id of the user]
      * @return {[(r,g,b))]}     [the corresponding rgb color]
      */
+
+  }, {
+    key: 'getColor',
     value: function getColor(str) {
       var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'rgb';
 
       var h1 = (0, _stringHash2.default)(str) % 206;
       var h2 = h1 * 7 % 206;
       var h3 = h1 * 11 % 206;
-      var color = Math.floor(h1 + 50) + ", " + Math.floor(h2 + 50) + ", " + Math.floor(h3 + 50);
+      var color = Math.floor(h1 + 50) + ', ' + Math.floor(h2 + 50) + ', ' + Math.floor(h3 + 50);
       if (format === 'rgb') {
         return 'rgb(' + color + ')';
       }
@@ -62326,10 +61510,9 @@ var Marker = function () {
       return color;
     }
   }, {
-    key: "getPseudoname",
+    key: 'getPseudoname',
     value: function getPseudoname(id) {
       var format = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'Anonymous';
-
 
       if (format === 'Anonymous') {
         return 'Anonymous ' + this.capitalize(_animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length]);
@@ -62337,15 +61520,11 @@ var Marker = function () {
       return _animals2.default.words[(0, _stringHash2.default)(id) % _animals2.default.words.length];
     }
   }, {
-    key: "getAvatar",
-
-
-    /**
-     * getAvatar return the div that contains this user id
-     * @return {[type]} [description]
-     */
+    key: 'getAvatar',
     value: function getAvatar(id) {
-      return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="./icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
+      var subDomain = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '/CRATE';
+
+      return '<div id="' + id + '"style="background-color:' + this.getColor(id, 'rgb') + ';"><img class="imageuser" src="' + subDomain + '/icons/' + this.getPseudoname(id, null) + '.png" alt="' + this.getPseudoname(id) + '"></div>';
     }
   }]);
 
@@ -62382,7 +61561,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-//require('jquery-qrcode')
+//require('$-qrcode')
 /**
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
  */
@@ -62411,7 +61590,7 @@ var StatesHeader = exports.StatesHeader = function () {
     this.green = '#228b22';
     this.blue = '#00BFFF';
     this._editorContainerID = editorContainerID;
-    this.networkState = jQuery('#' + this._editorContainerID + ' #state');
+    this.networkState = $('#' + this._editorContainerID + ' #state');
 
     (0, _tippy2.default)('#' + this._editorContainerID + ' #state', {
       content: 'Network state',
@@ -62434,11 +61613,13 @@ var StatesHeader = exports.StatesHeader = function () {
       arrow: true
     });
 
-    var sharingContainer = jQuery('#' + this._editorContainerID + ' #sharingContainer');
+    var sharingContainer = $('#' + this._editorContainerID + ' #sharingContainer');
 
-    var shareIcon = jQuery('#' + this._editorContainerID + ' #shareicon');
-    var link = window.location.href.split('?')[0];
-    link = link + '?' + this.model.documentId;
+    var shareIcon = $('#' + this._editorContainerID + ' #shareicon');
+
+    var link = window.location.href.split('/');
+    link.splice(-1, 1);
+    link = link.join('/') + '/' + this.model.documentId;
 
     var getTitle = function getTitle() {
       var title = $('#' + _this._editorContainerID + ' #title').text().replace(/(\r\n\t|\n|\r\t)/gm, '');
@@ -62456,9 +61637,9 @@ var StatesHeader = exports.StatesHeader = function () {
     sharingContainer.append('<div id="link" style="display: none;">' + link + '</i>');
     sharingContainer.prepend('<h5>Share!</h5>');
 
-    jQuery('#' + this._editorContainerID + ' #sharingContainer .jssocials-shares').append('<div class="jssocials-share"><i id="copy" class="fa fa-copy jssocials-share-logo"></i></div>');
+    $('#' + this._editorContainerID + ' #sharingContainer .jssocials-shares').append('<div class="jssocials-share"><i id="copy" class="fa fa-copy jssocials-share-logo"></i></div>');
 
-    jQuery('#' + this._editorContainerID + ' #sharingContainer #copy').click(function () {
+    $('#' + this._editorContainerID + ' #sharingContainer #copy').click(function () {
       _this.copyToClipboard(link);
     });
 
