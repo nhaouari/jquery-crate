@@ -23,7 +23,9 @@ export default class Crate {
     // key=sessionId,value=documentIndex
     this._documentsIds = new Map()
     this.actualSessionIndex = -1
-    window.crate = this
+
+    // Documents that are started creating them, this is to avoid to create twice the same document
+    this._documentsWaiting = new Map()
   }
 
   /**
@@ -71,8 +73,10 @@ export default class Crate {
    * @returns {void|Core}
    */
   async createNewDocument(documentId, specialOpts = {}) {
-    let documentIndex = this.getIndexFromDocumentId(documentId)
-    if (!documentIndex && documentIndex != 0) {
+    const searchIndex = this.getIndexFromDocumentId(documentId)
+    const waitingCreation = this._documentsWaiting.get(documentId)
+    if (!searchIndex && searchIndex != 0 && !waitingCreation) {
+      this._documentsWaiting.set(documentId, 1)
       const documentIndex = this.getNumberOfDocuments()
       const doc = await this.documentBuilder.buildDocument(
         documentId,
@@ -88,7 +92,7 @@ export default class Crate {
 
       return doc
     } else {
-      throw new Error('The session exist')
+      this.setActualDocument(documentId)
     }
   }
 

@@ -83,16 +83,21 @@ export default class Document extends EventEmitter {
     if (this.state === 'sleep') {
       //TODO:wake up the server if it existes
     }
-
     this.state = 'active'
-    clearTimeout(this.documentActivityWatcher)
+    this.resetSleepTimer()
+  }
 
+  /**
+   * Reset the sleep timer
+   */
+  resetSleepTimer() {
+    clearTimeout(this.documentActivityWatcher)
+    console.log('document SleepTimer Reset ', this.documentId)
     this.documentActivityWatcher = setTimeout(() => {
       this.state = 'sleep'
       this.emit('sleep')
     }, this._options.documentActivityTimeout)
   }
-
   /*!
    * \brief create the core from an existing object
    * \param object the object to initialize the core model of crate containing a 

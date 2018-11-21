@@ -84,8 +84,8 @@ export class Communication {
     this._document.emit(event, { ...packet, originID })
   }
   close() {
-    this.markerManager.close()
-    this.textManager.close()
+    if (this.markerManager) this.markerManager.close()
+    if (this.textManager) this.textManager.close()
 
     this._foglet.unshare()
     this._foglet._networkManager._rps.network._rps.disconnect()

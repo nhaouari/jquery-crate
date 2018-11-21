@@ -114,7 +114,7 @@ export class View {
 
   createCRATE() {
     const html = ` 
-    <div class="col-md-10 editorContainer" id="${
+    <div autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="col-md-10 editorContainer" id="${
       this._editorContainerID
     }" style="width:${this.getWidth()} !important" >
   <!-- editorContent -->

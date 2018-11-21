@@ -34,6 +34,17 @@ export class EditorController extends EventEmitter {
 
     this._comments = {}
     this._sessionID = sessionID
+
+    //if it is true the events will not be disseminated
+    this._silent = false
+  }
+
+  /**
+   *
+   * @param {*} silent if it is true the events will not be disseminated, else the events will be treated
+   */
+  silent(silent) {
+    this._silent = silent
   }
 
   /**
@@ -127,7 +138,9 @@ export class EditorController extends EventEmitter {
    * @return {[type]}          [description]
    */
   textChange(delta, oldDelta, source) {
-    this.applyChanges(delta, 0)
+    if (!this._silent) {
+      this.applyChanges(delta, 0)
+    }
   }
 
   /**
@@ -403,6 +416,7 @@ export class EditorController extends EventEmitter {
   }
 
   updateLink(l) {
+    this.silent(true)
     const link = $(l)
     const documentId = link.attr('id') || link.attr('href').split('?')[1]
     link.attr('href', '#')
@@ -413,6 +427,10 @@ export class EditorController extends EventEmitter {
     link.click(() => {
       this._document.createNewDocument(documentId)
     })
+
+    setTimeout(() => {
+      this.silent(false)
+    }, 0)
   }
 
   getAllLinksToCrate() {

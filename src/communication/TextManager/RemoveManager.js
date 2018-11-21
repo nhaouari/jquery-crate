@@ -1,79 +1,77 @@
-import {TextEvent} from './TextEvent'
+import { TextEvent } from './TextEvent'
 
 var debug = require('debug')('CRATE:Communication:TextManager:RemoveManager')
 export class RemoveManager extends TextEvent {
-    constructor(opts) {
+  constructor(opts) {
+    const EventName = opts.EventName || 'Remove'
+    super({ EventName, ...opts })
 
-        const EventName = opts.EventName || 'Remove'
-        super({EventName,...opts})
-        
-        this._lastSentId = null
-        this._textManager=opts.TextManager
-        this.action= this.remove
-        this._pairs=[]
-    }
+    this._lastSentId = null
+    this._textManager = opts.TextManager
+    this.action = this.remove
+    this._pairs = []
+  }
 
-    /*!
+  /*!
      * \brief local deletion of a character from the sequence structure. It 
      * broadcasts the operation to the rest of the network.
      * \param index the index of the element to remove
      * \return the identifier freshly removed
      */
-    remove(index) {
-        const lseqNode= this._sequence._get(index+1)
-        const isReady=this.getCausalID(lseqNode)
-        const reference = this.removeFromSequence(index)
-        this._document.delta.ops.splice(index,1)   
-        debug("Remove",{index,reference})  
-        if(reference) {
-            this._sequence._c += 1;
-            this.broadcast({
-                id: this._document.uid, 
-                isReady,
-                reference
-            })     
-        } 
-      this.setLastChangesTime()
-    };
-
-    removeFromSequence(index){
-       if(this._sequence.root.subCounter===2) {
-           console.warn('remove from sequence is empty')
-       } else if (index>=this._sequence.root.subCounter-2) {
-           console.warn('Lseq, index is out Of Bounds')
-       } else {
-       const reference= this._sequence.remove(index)
-       return reference
-        }
-       return null
+  remove(index) {
+    const lseqNode = this._sequence._get(index + 1)
+    const isReady = this.getCausalID(lseqNode)
+    const reference = this.removeFromSequence(index)
+    this._document.delta.ops.splice(index, 1)
+    debug('Remove', { index, reference })
+    if (reference) {
+      this._sequence._c += 1
+      this.broadcast({
+        id: this._document.uid,
+        isReady,
+        reference
+      })
     }
+    debugger
+    this.setLastChangesTime()
+  }
 
-    /*!
+  removeFromSequence(index) {
+    if (this._sequence.root.subCounter === 2) {
+      console.warn('remove from sequence is empty')
+    } else if (index >= this._sequence.root.subCounter - 2) {
+      console.warn('Lseq, index is out Of Bounds')
+    } else {
+      const reference = this._sequence.remove(index)
+      return reference
+    }
+    return null
+  }
+
+  /*!
      * \brief removal of an element from a remote site.  It emits 'remoteRemove'
      * with the index of the element to remove, -1 if does not exist
      * \param id the result of the remote insert operation
      * \param origin the origin id of the removal
      */
-    receive({id,reference,isReady}) {
-        debug("receive remove",{id,reference})
-        const index = this._sequence.applyRemove(reference);
-       // this.emit('remoteRemove', index);
-       this._document.delta.ops.splice(index-1,1)   
+  receive({ id, reference, isReady }) {
+    debug('receive remove', { id, reference })
+    const index = this._sequence.applyRemove(reference)
+    // this.emit('remoteRemove', index);
+    this._document.delta.ops.splice(index - 1, 1)
 
-        if (index >= 0) {
-            const range = {
-                index: index-1  ,
-                length: 0
-            }
-            const msg = {
-                range,
-                id
-            }
-            this.Event('Caret', msg)
-       } 
-        
-        this.setLastChangesTime()
+    if (index >= 0) {
+      const range = {
+        index: index - 1,
+        length: 0
+      }
+      const msg = {
+        range,
+        id
+      }
+      this.Event('Caret', msg)
     }
 
-
+    this.setLastChangesTime()
+  }
 }
