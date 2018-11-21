@@ -43,17 +43,24 @@ export class EditorController extends EventEmitter {
    *
    * @param {*} silent if it is true the events will not be disseminated, else the events will be treated
    */
-  silent(silent) {
-    this._silent = silent
+  silent(silent) {}
+
+  startSilence() {
+    this._silent = true
   }
 
+  stopSilence() {
+    setTimeout(() => {
+      this._silent = false
+    }, 0)
+  }
   /**
    * loadDocument load the document if it exist in the local storage
    * @param {string} sessionID the session ID of the document
    * @return {[type]} [description]
    */
   loadDocument() {
-    this._comments = new Comments(this)
+    this._comments = new Comments()
     this._quillManager = new QuillManager(
       this._editorContainerID,
       this._comments,
@@ -416,7 +423,7 @@ export class EditorController extends EventEmitter {
   }
 
   updateLink(l) {
-    this.silent(true)
+    this.startSilence()
     const link = $(l)
     const documentId = link.attr('id') || link.attr('href').split('?')[1]
     link.attr('href', '#')
@@ -427,10 +434,7 @@ export class EditorController extends EventEmitter {
     link.click(() => {
       this._document.createNewDocument(documentId)
     })
-
-    setTimeout(() => {
-      this.silent(false)
-    }, 0)
+    this.stopSilence()
   }
 
   getAllLinksToCrate() {

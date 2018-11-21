@@ -25,7 +25,7 @@ export default class Crate {
     this.actualSessionIndex = -1
 
     // Documents that are started creating them, this is to avoid to create twice the same document
-    this._documentsWaiting = new Map()
+    this._documentsWaiting = new Set()
   }
 
   /**
@@ -74,9 +74,9 @@ export default class Crate {
    */
   async createNewDocument(documentId, specialOpts = {}) {
     const searchIndex = this.getIndexFromDocumentId(documentId)
-    const waitingCreation = this._documentsWaiting.get(documentId)
+    const waitingCreation = this._documentsWaiting.has(documentId)
     if (!searchIndex && searchIndex != 0 && !waitingCreation) {
-      this._documentsWaiting.set(documentId, 1)
+      this._documentsWaiting.add(documentId)
       const documentIndex = this.getNumberOfDocuments()
       const doc = await this.documentBuilder.buildDocument(
         documentId,
@@ -84,15 +84,25 @@ export default class Crate {
         null,
         specialOpts
       )
-      this._documentsIds.set(documentId, documentIndex)
-      this.addDocument(doc)
-      doc.init().then(() => {
-        this.setActualDocument(documentId)
-      })
+
+      doc
+        .init()
+        .then(() => {
+          this.addDocument(doc)
+          this._documentsIds.set(documentId, documentIndex)
+          this._documentsWaiting.delete(documentId)
+          this.setActualDocument(documentId)
+        })
+        .catch(err => {
+          this._documentsWaiting.delete(documentId)
+          console.error('problem in the creation of the document', err)
+        })
 
       return doc
-    } else {
+    } else if (!waitingCreation) {
       this.setActualDocument(documentId)
+    } else {
+      console.warn('The document is under creation')
     }
   }
 

@@ -42,10 +42,10 @@ export class Comments {
     this._inputCommentModel = $(
       `#${this._editorContainerID} #inputCommentModal`
     )
-    this._comments = $(`#${this._editorContainerID} #comments`)
-    this._ql_editor = $(`#${this._editorContainerID} .ql-editor`)
-    this._editor = $(`#${this._editorContainerID} .editor`)
-    this._commentInput = $(`#${this._editorContainerID} #commentInput`)
+    this._commentsSelector = $(`#${this._editorContainerID} #comments`)
+    this._ql_editorSelector = $(`#${this._editorContainerID} .ql-editor`)
+    this._editorSelector = $(`#${this._editorContainerID} .editor`)
+    this._commentInputSelector = $(`#${this._editorContainerID} #commentInput`)
   }
 
   get viewEditor() {
@@ -70,23 +70,23 @@ export class Comments {
   }
 
   commentsClick() {
-    if (this._comments.is(':visible')) {
-      if (this._ql_editor.hasClass('ql-comments')) {
-        this._ql_editor.removeClass('ql-comments')
+    if (this._commentsSelector.is(':visible')) {
+      if (this._ql_editorSelector.hasClass('ql-comments')) {
+        this._ql_editorSelector.removeClass('ql-comments')
       }
 
-      this._comments.hide()
-      this._comments.css('width', '0%')
-      this._editor.css('width', '100%')
+      this._commentsSelector.hide()
+      this._commentsSelector.css('width', '0%')
+      this._editorSelector.css('width', '100%')
     } else {
-      this._comments.addClass('comment')
-      if (!this._editor.hasClass('ql-comments')) {
-        this._editor.addClass('ql-comments')
+      this._commentsSelector.addClass('comment')
+      if (!this._editorSelector.hasClass('ql-comments')) {
+        this._editorSelector.addClass('ql-comments')
       }
 
-      this._comments.css('width', '30%')
-      this._editor.css('width', '70%')
-      this._comments.show()
+      this._commentsSelector.css('width', '30%')
+      this._editorSelector.css('width', '70%')
+      this._commentsSelector.show()
     }
   }
 
@@ -108,7 +108,7 @@ export class Comments {
     }
 
     const cmtBox = this.getCommentBoxDiv(opts)
-    this._comments.append(cmtBox)
+    this._commentsSelector.append(cmtBox)
     this.addFocusEffects(divId)
   }
 
@@ -136,6 +136,7 @@ export class Comments {
   }
 
   addFocusEffects(divId) {
+    //this._editor.startSilence()
     console.log('#comment-box-' + divId)
 
     $('#comment-box-' + divId).focusin(() => {
@@ -145,11 +146,12 @@ export class Comments {
     $('#comment-box-' + divId).focusout(() => {
       this.commentBoxFocus(divId, 'out')
     })
+    //  this._editor.stopSilence()
   }
 
   async saveComment() {
-    let comment = this._commentInput.val()
-    this._commentInput.val('')
+    let comment = this._commentInputSelector.val()
+    this._commentInputSelector.val('')
     const currentTimestamp = await this.getCurrentTimestamp()
     await this.addCommentToList({
       comment,
@@ -163,10 +165,10 @@ export class Comments {
     console.log(type, '.ql-comments #' + id)
     if (type !== 'out') {
       $('.ql-comments #' + id).addClass('commentFocus')
-      this._comments.find('.' + id).css('border-color', 'red')
+      this._commentsSelector.find('.' + id).css('border-color', 'red')
     } else {
       $('.ql-comments #' + id).removeClass('commentFocus')
-      this._comments.find('.comment-box').css('border-color', '#F0F0F0')
+      this._commentsSelector.find('.comment-box').css('border-color', '#F0F0F0')
     }
   }
 
