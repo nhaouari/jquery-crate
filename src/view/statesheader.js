@@ -118,7 +118,6 @@ export class StatesHeader {
   checkNetworkState() {
     const neighborhoodSize = this.document._foglet.getNeighbours(Infinity)
       .length
-    console.log('neighborhoodSize==', neighborhoodSize)
     if (neighborhoodSize > 0) {
       this.setNetworkState('connected')
     } else if (neighborhoodSize === 0) {

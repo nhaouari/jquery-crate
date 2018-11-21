@@ -401,14 +401,12 @@ export class EditorController extends EventEmitter {
   updateCommentsLinks() {
     clearTimeout(this._timeout)
     this._timeout = setTimeout(() => {
-      console.log('update comments and links')
       this.convertLocalLinks()
       this._comments.UpdateComments()
     }, 500)
   }
 
   convertLocalLinks() {
-    console.log(`#${this._document._view._editorContainerID} a`)
     $(`#${this._document._view._editorContainerID} a`)
       .toArray()
       .filter(

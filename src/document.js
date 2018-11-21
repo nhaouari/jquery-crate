@@ -63,7 +63,7 @@ export default class Document extends EventEmitter {
     this.signalingOptions = options.signalingOptions
 
     if (options.importFromJSON) {
-      this.loadFromJSON(options.importFromJSON)
+      await this.loadFromJSON(options.importFromJSON)
     }
 
     if (options.display) {
@@ -103,7 +103,7 @@ export default class Document extends EventEmitter {
    * \param object the object to initialize the core model of crate containing a 
    * sequence and causality tracking metadata
    */
-  loadFromJSON(object) {
+  async loadFromJSON(object) {
     this.broadcast._causality = this.broadcast._causality.constructor.fromJSON(
       object.causality
     )
@@ -114,8 +114,14 @@ export default class Document extends EventEmitter {
     this.sequence.fromJSON(object.sequence)
     this.sequence._s = local.e
     this.sequence._c = local.v
-
-    this.delta = this.getDeltaFromSequence()
+    debugger
+    this.getDeltaFromSequence()
+      .then(delta => {
+        this.delta = delta
+      })
+      .catch(err => {
+        console.error(err)
+      })
   }
 
   /**
@@ -151,10 +157,18 @@ export default class Document extends EventEmitter {
       clearTimeout(this.refreshDocumentTimeout)
       this.refreshDocumentTimeout = setTimeout(() => {
         let range = this._view._editor.viewEditor.getSelection()
-
         this._view._editor.viewEditor.setContents(this.getDelta(), 'silent')
         this._view._editor.viewEditor.setSelection(range, 'silent')
         this._view._editor.updateCommentsLinks()
+        console.log('directe content')
+        this.getDeltaFromSequence().then(delta => {
+          this.delta = delta
+          let range = this._view._editor.viewEditor.getSelection()
+          this._view._editor.viewEditor.setContents(this.getDelta(), 'silent')
+          this._view._editor.viewEditor.setSelection(range, 'silent')
+          this._view._editor.updateCommentsLinks()
+          console.log('corrected content')
+        })
       }, 10)
     }
   }
@@ -164,31 +178,24 @@ export default class Document extends EventEmitter {
     ops.push({ insert: '\n' })
     return { ops }
   }
+
   getDeltaFromSequence(WhoWriteIt = false) {
-    let LSEQNodes = this.getLSEQNodes()
-    let ops = []
+    return new Promise((resolve, reject) => {
+      let LSEQNodes = this.getLSEQNodes()
+      let ops = []
 
-    LSEQNodes.forEach(node => {
-      let op = { insert: node.e.content, attributes: node.e.attributes }
-      if (WhoWriteIt) {
-        const id = node.t.s
-        op.attributes.color = Marker.getColor(id)
-      }
-      ops.push(op)
+      LSEQNodes.forEach(node => {
+        let op = { insert: node.e.content, attributes: node.e.attributes }
+        if (WhoWriteIt) {
+          const id = node.t.s
+          op.attributes.color = Marker.getColor(id)
+        }
+        ops.push(op)
+      })
+
+      const delta = { ops }
+      resolve(delta)
     })
-
-    /*const length = ops.length
-
-    if (
-      length >= 2 &&
-      ops[length - 1].insert === '\n' &&
-      ops[length - 2].insert != '\n'
-    ) {
-      ops.push({ insert: '\n' })
-    }*/
-
-    this.delta = this.getDelta({ ops })
-    return this.delta
   }
 
   getLSEQNodes() {
