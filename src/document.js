@@ -152,13 +152,18 @@ export default class Document extends EventEmitter {
       this.refreshDocumentTimeout = setTimeout(() => {
         let range = this._view._editor.viewEditor.getSelection()
 
-        this._view._editor.viewEditor.setContents(this.delta, 'silent')
+        this._view._editor.viewEditor.setContents(this.getDelta(), 'silent')
         this._view._editor.viewEditor.setSelection(range, 'silent')
         this._view._editor.updateCommentsLinks()
       }, 10)
     }
   }
 
+  getDelta(delta = this.delta) {
+    let ops = delta.ops.slice(0)
+    ops.push({ insert: '\n' })
+    return { ops }
+  }
   getDeltaFromSequence(WhoWriteIt = false) {
     let LSEQNodes = this.getLSEQNodes()
     let ops = []
@@ -172,7 +177,7 @@ export default class Document extends EventEmitter {
       ops.push(op)
     })
 
-    const length = ops.length
+    /*const length = ops.length
 
     if (
       length >= 2 &&
@@ -180,9 +185,10 @@ export default class Document extends EventEmitter {
       ops[length - 2].insert != '\n'
     ) {
       ops.push({ insert: '\n' })
-    }
-    this.delta = { ops }
-    return { ops }
+    }*/
+
+    this.delta = this.getDelta({ ops })
+    return this.delta
   }
 
   getLSEQNodes() {
