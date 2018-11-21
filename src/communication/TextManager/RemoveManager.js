@@ -32,7 +32,6 @@ export class RemoveManager extends TextEvent {
         reference
       })
     }
-    debugger
     this.setLastChangesTime()
   }
 

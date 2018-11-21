@@ -32,7 +32,6 @@ export class InsertManager extends TextEvent {
             id: this._document.uid,
             pair
           })
-          debugger
           this.setLastChangesTime()
         }
       }

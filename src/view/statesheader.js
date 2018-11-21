@@ -3,6 +3,7 @@ import tippy from 'tippy.js'
 /**
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
  */
+import neighborhoodJs from '../../docs/ast/source/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js.json'
 
 export class StatesHeader {
   /**
@@ -13,7 +14,7 @@ export class StatesHeader {
    * @return {[type]}           [description]
    */
   constructor(model, linkView, shareView, editorContainerID) {
-    this.model = model
+    this.document = model
     this.startSharingText = '<i class="fa fa-link fa-2x ficon2"></i>'
     this.startSharingTooltip = 'start sharing'
     this.stopSharingText = '<i class="fa fa-unlink fa-2x ficon2"></i>'
@@ -53,7 +54,7 @@ export class StatesHeader {
 
     let link = window.location.href.split('/')
     link.splice(-1, 1)
-    link = link.join('/') + '/' + this.model.documentId
+    link = link.join('/') + '/' + this.document.documentId
 
     const getTitle = () => {
       const title = $(`#${this._editorContainerID} #title`)
@@ -88,17 +89,41 @@ export class StatesHeader {
       content: document.querySelector('#sharingContainer')
     })
 
-    this.setNetworkState('connected')
-    model.rps.on('open', () => {
-      this.setNetworkState('connected')
+    this.setNetworkState('partiallyConnected')
+
+    this.document.rps.on('connect', () => {
+      this.checkNetworkState()
     })
 
-    model.rps.on('close', id => {
-      setTimeout(() => {
-        if (model._foglet.getNeighbours(Infinity).length <= 0)
-          this.setNetworkState('disconnected')
-      }, 5000)
+    this.document.rps.on('data', () => {
+      this.checkNetworkState()
     })
+    this.document.rps.on('stream', () => {
+      this.checkNetworkState()
+    })
+    this.document.rps.on('receive', () => {
+      this.checkNetworkState()
+    })
+    this.document.rps.on('open', () => {
+      this.checkNetworkState()
+    })
+
+    this.document.rps.on('close', id => {
+      setTimeout(() => {
+        this.checkNetworkState()
+      }, 0)
+    })
+  }
+
+  checkNetworkState() {
+    const neighborhoodSize = this.document._foglet.getNeighbours(Infinity)
+      .length
+    console.log('neighborhoodSize==', neighborhoodSize)
+    if (neighborhoodSize > 0) {
+      this.setNetworkState('connected')
+    } else if (neighborhoodSize === 0) {
+      this.setNetworkState('partiallyConnected')
+    }
   }
 
   /**
