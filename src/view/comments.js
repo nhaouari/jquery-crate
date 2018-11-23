@@ -136,7 +136,6 @@ export class Comments {
   }
 
   addFocusEffects(divId) {
-    //this._editor.startSilence()
     console.log('#comment-box-' + divId)
 
     $('#comment-box-' + divId).focusin(() => {
@@ -146,7 +145,6 @@ export class Comments {
     $('#comment-box-' + divId).focusout(() => {
       this.commentBoxFocus(divId, 'out')
     })
-    //  this._editor.stopSilence()
   }
 
   async saveComment() {

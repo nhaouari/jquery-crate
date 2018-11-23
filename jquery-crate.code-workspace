@@ -12,8 +12,8 @@
     "eslint.autoFixOnSave": true,
     "editor.formatOnSave": true,
     "javascript.format.enable": false,
-    "prettier.eslintIntegration": true,
-    "saveAndRunExt": {
+    "prettier.eslintIntegration": true
+    /*"saveAndRunExt": {
       "commands": [
         {
           "match": "\\.js$",
@@ -30,6 +30,6 @@
           "silent": false
         }
       ]
-    }
+    }*/
   }
 }

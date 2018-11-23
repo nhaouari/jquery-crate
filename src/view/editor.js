@@ -146,7 +146,7 @@ export class EditorController extends EventEmitter {
    */
   textChange(delta, oldDelta, source) {
     if (!this._silent) {
-      this.applyChanges(delta, 0)
+      this.applyChanges(this.getDeltaWithoutRetainWithAttributes(delta), 0)
     }
   }
 
@@ -167,6 +167,32 @@ export class EditorController extends EventEmitter {
   }
 
   /**
+   * this function converts retain with attributes to delete and insert, this is because Lseq ({@link https://github.com/Chat-Wane/LSEQ})
+   * dose not support updating, thus UPDATE=DELETE+INSERT.
+   * For more information about Delta Object, see the following link: {@link https://github.com/quilljs/delta}
+   * @param {*} delta
+   */
+  getDeltaWithoutRetainWithAttributes(delta) {
+    const ops = delta.ops
+    let index = 0
+    const newOPS = ops.reduce((newOps, op) => {
+      if (op.retain && !op.attributes) {
+        index += op.retain
+        newOps.push({ retain: index })
+      } else if (op.retain) {
+        newOps.push({ delete: op.retain })
+        const delta = this.getDelta(index, index + op.retain)
+        newOps.push.apply(newOps, delta.ops)
+        index += op.retain
+      } else {
+        newOps.push(op)
+      }
+      return newOps
+    }, [])
+    return { ops: newOPS }
+  }
+
+  /**
    * sendIt Send the changes character by character
    * @param  {[type]}  text              [description]
    * @param  {[type]}  operation.Attributes               [description]
@@ -179,10 +205,6 @@ export class EditorController extends EventEmitter {
    */
   sendIt(operation, start, isItInsertWithAtt) {
     switch (operation.Name) {
-      case 'retain':
-        this.sendFormat(start, operation)
-        break
-
       case 'insert':
         this.sendInsert(start, operation)
         break
@@ -214,10 +236,12 @@ export class EditorController extends EventEmitter {
     return nextIndex
   }
 
-  /**inline operations */
-
+  /**
+   * Is it Line operation: 'blockquote','header','indent','list','align','direction','code-block'
+   * @param {*} Attributes
+   */
   isItBlock(Attributes) {
-    const props = [
+    const lineOps = [
       'blockquote',
       'header',
       'indent',
@@ -226,71 +250,21 @@ export class EditorController extends EventEmitter {
       'direction',
       'code-block'
     ]
-    let a = Object.getOwnPropertyNames(Attributes)
+    let propertyNames = Object.getOwnPropertyNames(Attributes)
 
-    let found = false
-    a.forEach(att => {
-      const index = props.indexOf(att)
-      if (index > -1) {
-        found = true
+    const f = propertyNames.reduce((found, propertyName) => {
+      if (lineOps.indexOf(propertyName) >= 0) {
+        return found || true
+      } else {
+        return found || false
       }
-    })
-    return found
-  }
+    }, false)
 
-  /**
- *   the value in this case is the end of format 
-
-  insert the changed text with the new attributes
-
- 1 delete the changed text  from retain to value
-
- If there is attributes than delete and then insert 
- * @param {*} operation 
- * @param {*} start 
- */
-
-  sendFormat(start, operation) {
-    if (operation.Attributes != '') {
-      let isItInsertWithAtt = true
-      let s = start
-      let length = operation.Value
-
-      let blocAttributes = null
-      /* if(this.isItBlock(operation.Attributes)&&s>0){
-        s-=1
-        blocAttributes=operation.Attributes
-        const range= this.viewEditor.getSelection()
-
-        if(range.index>=s){
-          s-=1
-        } else {
-          //length= s+operation.Value
-          s=range.index
-          length= s+operation.Value
-        }
-      }
-*/
-      // 2 Get delta of the insert text with attributes
-      const delta = this.getDelta(s, s + length)
-      const operations = this.getOperations(delta)
-      const insertOperations = operations.filter(op => op.Name === 'insert')
-
-      insertOperations.map(op => {
-        if (this.isItComplete(op.Attributes)) {
-          let opp = op
-          if (blocAttributes) {
-            opp.Attributes = { ...opp.Attributes, ...blocAttributes }
-          }
-          this.sendDelete(s, opp, isItInsertWithAtt)
-          s = this.sendInsert(s, opp)
-        }
-      })
-    }
+    return f
   }
 
   /** sometimes we receive the attributes one by one if they are not complete yet we wait
-   * we have to specify the first attrubyte that appears and the their number
+   * we have to specify the first attributes that appears and the their number
    */
   isItComplete(attributes) {
     if (
@@ -323,7 +297,7 @@ export class EditorController extends EventEmitter {
     if (!isItInsertWithAtt) {
       this._comments.UpdateComments()
     }
-    // Delete caracter by caracter
+    // Delete character by character
     for (var i = index; i < index + operation.Length; ++i) {
       this.textManager._removeManager.remove(index)
     }
@@ -438,7 +412,6 @@ export class EditorController extends EventEmitter {
   getAllLinksToCrate() {
     const linksToCrate = []
     const links = $(`#${this._document._view._editorContainerID} a`)
-    debugger
     for (let l of links) {
       const link = $(l)
       if (
