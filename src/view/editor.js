@@ -175,11 +175,14 @@ export class EditorController extends EventEmitter {
   getDeltaWithoutRetainWithAttributes(delta) {
     const ops = delta.ops
     let index = 0
-    const newOPS = ops.reduce((newOps, op) => {
+    const newOPS = ops.reduce((newOps, op, curr) => {
       if (op.retain && !op.attributes) {
+        newOps.push(op)
         index += op.retain
-        newOps.push({ retain: index })
       } else if (op.retain) {
+        if (curr === 0) {
+          newOps.push({ retain: index })
+        }
         newOps.push({ delete: op.retain })
         const delta = this.getDelta(index, index + op.retain)
         newOps.push.apply(newOps, delta.ops)
