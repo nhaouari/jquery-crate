@@ -10,19 +10,26 @@ export class Communication {
   constructor(opts) {
     this._options = opts
     this._document = this._options.document
-    this._foglet = this._options._foglet
   }
 
-  initModules(opts = {}) {
+  async initModules(opts = {}) {
     this.causality = this._data_comm.broadcast._causality
     this.markerManager = new MarkerManager(this._options)
     this.textManager = new TextManager(this._options)
   }
 
   async initConnection() {
+    // get ICEs
+    await this.setWebRTCOptions(this._options)
+
+    //connection between foglets
     if (this._options.foglet) {
+      this._foglet = this._options.foglet
       await this._foglet.connection(this._options.foglet)
     } else {
+      //Connection using the signaling server
+      this._foglet = this.getNewFoglet(this._options)
+      this._options._foglet = this._foglet
       this._foglet.share()
       await this._foglet.connection()
     }
@@ -31,6 +38,68 @@ export class Communication {
 
     this._foglet.emit('connected')
     debug('application connected!')
+  }
+
+  async waitAntientropy() {}
+  //TODO: Make this global to use the same server for all the documents
+
+  /**
+   * set WebRTCOptions
+   * @description  set the default options of ice Servers and replace them by the ice server if it is possible. if it run in node js use wrtc.
+   */
+  async setWebRTCOptions(options) {
+    if (!options.foglet) {
+      const defaultICE = [
+        {
+          url: options.stun,
+          urls: options.stun
+        }
+      ]
+
+      let twilioICEs = await this.getICEs(options)
+
+      const iceServers = Object.assign(defaultICE, twilioICEs)
+
+      options.webRTCOptions = {
+        trickle: true,
+        config: {
+          iceServers
+        }
+      }
+
+      if (options.wrtc) {
+        options.webRTCOptions.wrtc = options.wrtc
+      }
+    }
+  }
+
+  /**
+   * Get ICES
+   * @description  Twillo is used to get list of ICEs servers, the script that generates the list of the servers is in the configuration "https://carteserver.herokuapp.com/ice"
+   * @return arrays of ICE objects {url, urls, username, credential}
+   */
+  async getICEs(options) {
+    return new Promise((resolve, reject) => {
+      const url = options.ICEsURL || 'https://carteserver.herokuapp.com/ice'
+      if (url) {
+        fetch(url)
+          .then(resp => resp.json()) // Transform the data into json
+          .then(addresses => {
+            let ICEs = addresses.ice.map(ice => {
+              ice.urls = ice.url
+              return ice
+            })
+
+            resolve(ICEs)
+          })
+      } else {
+        reject('no ICEsURL in url')
+      }
+    })
+  }
+
+  getNewFoglet(options) {
+    return new Foglet(options.fogletOptions)
   }
 
   setCommunicationChannels() {
@@ -83,6 +152,7 @@ export class Communication {
     debug('communication receive ', event, packet)
     this._document.emit(event, { ...packet, originID })
   }
+
   close() {
     if (this.markerManager) this.markerManager.close()
     if (this.textManager) this.textManager.close()

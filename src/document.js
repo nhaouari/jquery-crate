@@ -28,6 +28,12 @@ export default class Document extends EventEmitter {
    */
   async init() {
     let options = this._options
+    if (options.display) {
+      const {
+        View
+      } = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ './View.js')
+      this._view = new View(options, this, options.containerID)
+    }
 
     this._communication = new Communication({
       document: this,
@@ -35,13 +41,6 @@ export default class Document extends EventEmitter {
     })
 
     await this._communication.initConnection()
-
-    if (options.display) {
-      const {
-        View
-      } = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ './View.js')
-      this._view = new View(options, this, options.containerID)
-    }
 
     this.sequence = new LSEQTree(
       this._communication._data_comm.broadcast._causality.local.e
@@ -70,6 +69,12 @@ export default class Document extends EventEmitter {
       this._view.init()
     }
 
+    this.documentLoaded()
+  }
+
+  documentLoaded() {
+    $(`#${this._view._editorContainerID} #loading`).hide()
+    $(`#${this._view._editorContainerID} .editorContent`).show()
     this.emit('connected')
   }
 
@@ -213,6 +218,15 @@ export default class Document extends EventEmitter {
     return LSEQNodeArray
   }
 
+  reload() {
+    this._communication.close()
+
+    if (this._view) {
+      this._view.close()
+    }
+
+    this.init()
+  }
   close() {
     this._communication.close()
 

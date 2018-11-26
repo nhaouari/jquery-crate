@@ -31,7 +31,7 @@ export default class DocumentBuilder extends EventEmitter {
     specialOpts = {}
   ) {
     let defaultOptions = { ...this._defaultOptions, ...specialOpts }
-    let options = await this.prepareOptions(sessionId, defaultOptions)
+    let options = this.prepareOptions(sessionId, defaultOptions)
 
     if (!foglet) {
       foglet = this.getNewFoglet(options)
@@ -44,10 +44,9 @@ export default class DocumentBuilder extends EventEmitter {
   /**
    * set the different options for the created document
    */
-  async prepareOptions(sessionId, options) {
+   prepareOptions(sessionId, options) {
     this.setSignalingOptions(options, sessionId)
     this.getLocalStorageData(options)
-    await this.setWebRTCOptions(options)
     this.setUser(options)
     this.setDocumentTitle(options)
     this.setTemporarySessionID(options)
@@ -98,37 +97,6 @@ export default class DocumentBuilder extends EventEmitter {
     options.user = Object.assign(randomId, localStorageUser)
   }
 
-  //TODO: Make this global to use the same server for all the documents
-
-  /**
-   * set WebRTCOptions
-   * @description  set the default options of ice Servers and replace them by the ice server if it is possible. if it run in node js use wrtc.
-   */
-  async setWebRTCOptions(options) {
-    if (!options.foglet) {
-      const defaultICE = [
-        {
-          url: options.stun,
-          urls: options.stun
-        }
-      ]
-
-      let twilioICEs = await this.getICEs(options)
-
-      const iceServers = Object.assign(defaultICE, twilioICEs)
-
-      options.webRTCOptions = {
-        trickle: true,
-        config: {
-          iceServers
-        }
-      }
-
-      if (options.wrtc) {
-        options.webRTCOptions.wrtc = options.wrtc
-      }
-    }
-  }
 
   /**
    * Get ICES

@@ -101,8 +101,10 @@ export default class Crate {
       return doc
     } else if (!waitingCreation) {
       this.setActualDocument(documentId)
+      return this.getDocumentByDocumentId(documentId)
     } else {
       console.warn('The document is under creation')
+      return null
     }
   }
 

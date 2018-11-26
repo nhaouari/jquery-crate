@@ -118,7 +118,23 @@ export class View {
       this._editorContainerID
     }" style="width:${this.getWidth()} !important" >
   <!-- editorContent -->
-      <div class="editorContent">
+    <div id="loading" style="
+      width: 50%;
+      margin: auto;
+      text-align: center;
+      opacity: 0.5;
+      filter: alpha(opacity=50);
+    ">
+      <img class="imageuser" src="/icons/loading.gif"> 
+          
+        <h1 style="
+        
+            font-size: xx-large;
+            /* text-align: center; */
+            color: gray;
+          ">Connecting...</h1>
+    </div>
+      <div class="editorContent" style="display: none;">
           <!-- Head -->
           <div id="head">
           
