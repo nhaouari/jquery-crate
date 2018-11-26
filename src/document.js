@@ -92,7 +92,6 @@ export default class Document extends EventEmitter {
    */
   resetSleepTimer() {
     clearTimeout(this.documentActivityWatcher)
-    console.log('document SleepTimer Reset ', this.documentId)
     this.documentActivityWatcher = setTimeout(() => {
       this.state = 'sleep'
       this.emit('sleep')
@@ -160,14 +159,12 @@ export default class Document extends EventEmitter {
         this._view._editor.viewEditor.setContents(this.getDelta(), 'silent')
         this._view._editor.viewEditor.setSelection(range, 'silent')
         this._view._editor.updateCommentsLinks()
-        console.log('directe content')
         this.getDeltaFromSequence().then(delta => {
           this.delta = delta
           let range = this._view._editor.viewEditor.getSelection()
           this._view._editor.viewEditor.setContents(this.getDelta(), 'silent')
           this._view._editor.viewEditor.setSelection(range, 'silent')
           this._view._editor.updateCommentsLinks()
-          console.log('corrected content')
         })
       }, 10)
     }
