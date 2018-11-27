@@ -132,7 +132,7 @@ export class View {
             font-size: xx-large;
             /* text-align: center; */
             color: gray;
-          ">Connecting...</h1>
+          "></h1>
     </div>
       <div class="editorContent" style="display: none;">
           <!-- Head -->

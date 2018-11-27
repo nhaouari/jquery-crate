@@ -64,13 +64,13 @@ export class Event extends EventEmitter {
     this.sendStream(stream, msg)
   }
 
-  unicast(id, message, causal = false, causalId = null) {
+  async unicast(id, message, causal = false, causalId = null) {
     if (!causalId) {
       causalId = this.getCausalId()
     }
     const msg = this.getPacket({ pairs: [{ ...message, causalId }] })
     id = this.formatId(id)
-    this.unicastStream(id, { ...msg, stream: causal })
+    await this.unicastStream(id, { ...msg, stream: causal })
   }
 
   formatId(id) {
@@ -100,20 +100,32 @@ export class Event extends EventEmitter {
     return s
   }
 
-  unicastStream(id, msg) {
+  async unicastStream(id, msg) {
     debug('message sent on stream unicast')
     const stream = this._communicationChannel.streamUnicast(id)
-    this.sendStream(stream, msg)
+    await this.sendStream(stream, msg)
   }
 
-  sendStream(stream, msg, maxSize = 10000) {
-    const msgString = JSON.stringify(msg)
-    const chunks = this.chunkSubstr(msgString, maxSize)
-    chunks.forEach(chunk => {
-      stream.write(chunk)
-    })
+  sendStream(stream, msg, maxSize = 1000) {
+    new Promise((resolve, reject) => {
+      let msgString = ''
+      try {
+        msgString = JSON.stringify(msg)
+      } catch (e) {
+        console.error('Error in JSON.stringify of object', e)
+        reject('Error in JSON.stringify of object')
+      }
 
-    stream.end()
+      const chunks = this.chunkSubstr(msgString, maxSize)
+      const info = { numberOfChunks: chunks.length }
+      stream.write(info)
+      chunks.forEach(chunk => {
+        stream.write(chunk)
+      })
+
+      stream.end()
+      resolve()
+    })
   }
 
   sendLocalBroadcast(msg) {
@@ -208,14 +220,19 @@ export class Event extends EventEmitter {
   }
 
   chunkSubstr(str, size) {
-    const numChunks = Math.ceil(str.length / size)
-    const chunks = new Array(numChunks)
+    try {
+      const numChunks = Math.ceil(str.length / size)
+      const chunks = new Array(numChunks)
 
-    for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
-      chunks[i] = str.substr(o, size)
+      for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
+        chunks[i] = str.substr(o, size)
+      }
+
+      return chunks
+    } catch (e) {
+      console.error('Error in spliting the object ', e)
+      throw new Error('Error in spliting the object ', e)
     }
-
-    return chunks
   }
 
   getCausalID(lseqNode) {

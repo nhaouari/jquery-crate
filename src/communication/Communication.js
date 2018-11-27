@@ -4,10 +4,13 @@ import { TextManager } from './TextManager/TextManager'
 
 import { Foglet, communication } from 'foglet-core'
 
+import { EventEmitter } from 'events'
+
 var debug = require('debug')('CRATE:Communication')
 
-export class Communication {
+export class Communication extends EventEmitter {
   constructor(opts) {
+    super()
     this._options = opts
     this._document = this._options.document
   }
@@ -16,31 +19,76 @@ export class Communication {
     this.causality = this._data_comm.broadcast._causality
     this.markerManager = new MarkerManager(this._options)
     this.textManager = new TextManager(this._options)
+    await this.waitAntientropy()
   }
 
   async initConnection() {
     // get ICEs
+
+    this._document.setMessageState('Connecting: getting ICEs ...')
     await this.setWebRTCOptions(this._options)
 
+    this._document.setMessageState('Connecting: establishing connection ...')
     //connection between foglets
     if (this._options.foglet) {
       this._foglet = this._options.foglet
-      await this._foglet.connection(this._options.foglet)
     } else {
       //Connection using the signaling server
       this._foglet = this.getNewFoglet(this._options)
       this._options._foglet = this._foglet
       this._foglet.share()
-      await this._foglet.connection()
+    }
+    try {
+      await this.fogletConnection()
+      this._document.setMessageState('Connecting: connection established...')
+    } catch (error) {
+      this._document.setMessageState(
+        'Connecting: Could not establish connection!'
+      )
     }
 
     this.setCommunicationChannels()
-
     this._foglet.emit('connected')
     debug('application connected!')
   }
 
-  async waitAntientropy() {}
+  async fogletConnection(maxRetry = 3) {
+    const connect = async retry => {
+      try {
+        await this._foglet.connection(this._options.foglet)
+      } catch (err) {
+        if (retry > 0) {
+          console.error(err)
+          await connect(retry - 1)
+        } else {
+          throw new Error('Could not establish connection!', err)
+        }
+      }
+    }
+
+    await connect(maxRetry)
+  }
+
+  async waitAntientropy() {
+    return new Promise((resolve, reject) => {
+      const neighborhoodSize = this._foglet.getNeighbours(Infinity).length
+      if (neighborhoodSize === 0) {
+        console.log('->resolve neighborhoodSize === 0 ')
+        resolve()
+      } else {
+        this._document.setMessageState('Loading Content...')
+        console.log('-> neighborhoodSize > 0 ')
+        this.on('startReceivingStream', () => {
+          console.log('startReceivingStream')
+        })
+
+        this.on('endReceivingStream', () => {
+          console.log('-> endReceivingStream')
+          resolve()
+        })
+      }
+    })
+  }
   //TODO: Make this global to use the same server for all the documents
 
   /**
@@ -136,15 +184,40 @@ export class Communication {
 
   receiveStream(id, stream) {
     debug('document', 'receiving a stream from ', id)
+    this.emit('startReceivingStream')
+
     let content = ''
+    let first = true
+    let numberOfChunks = 1
+    let receivedChunks = 0
+    let percentage = 0
     stream.on('data', data => {
-      content += data
+      if (first) {
+        numberOfChunks = data.numberOfChunks
+        debug('numberOfChunks === ', numberOfChunks)
+        first = false
+      } else {
+        receivedChunks++
+
+        const percentageNow = Math.floor(
+          (receivedChunks * 100) / numberOfChunks
+        )
+        if (percentageNow > percentage) {
+          percentage = percentageNow
+          debug('percentage === ', percentage)
+          this._document.setMessageState('Loading Content ' + percentage + '%')
+        }
+
+        content += data
+      }
     })
+
     stream.on('end', () => {
       const packet = JSON.parse(content)
       content = ''
       debug('document', 'Message received', packet.pairs, 'from', id)
       this.receive(packet.event, packet, id)
+      this.emit('endReceivingStream')
     })
   }
 

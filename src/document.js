@@ -49,7 +49,7 @@ export default class Document extends EventEmitter {
     this.delta = { ops: [] }
 
     /* TODO:Think about the creation of modules without view */
-    this._communication.initModules()
+    await this._communication.initModules()
 
     // #1B if it is imported from an existing object, initialize it with these
 
@@ -68,7 +68,6 @@ export default class Document extends EventEmitter {
     if (options.display) {
       this._view.init()
     }
-
     this.documentLoaded()
   }
 
@@ -78,6 +77,9 @@ export default class Document extends EventEmitter {
     this.emit('connected')
   }
 
+  setMessageState(msg) {
+    $(`#${this._view._editorContainerID} #loading h1`).text(msg)
+  }
   /**
    * setLastChangesTime set the last time of changes
    */

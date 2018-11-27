@@ -32,11 +32,6 @@ export default class DocumentBuilder extends EventEmitter {
   ) {
     let defaultOptions = { ...this._defaultOptions, ...specialOpts }
     let options = this.prepareOptions(sessionId, defaultOptions)
-
-    if (!foglet) {
-      foglet = this.getNewFoglet(options)
-    }
-    options._foglet = foglet
     const doc = new Document(options, sessionIndex, this._crate)
     return doc
   }
@@ -44,7 +39,7 @@ export default class DocumentBuilder extends EventEmitter {
   /**
    * set the different options for the created document
    */
-   prepareOptions(sessionId, options) {
+  prepareOptions(sessionId, options) {
     this.setSignalingOptions(options, sessionId)
     this.getLocalStorageData(options)
     this.setUser(options)
@@ -95,32 +90,6 @@ export default class DocumentBuilder extends EventEmitter {
     }
 
     options.user = Object.assign(randomId, localStorageUser)
-  }
-
-
-  /**
-   * Get ICES
-   * @description  Twillo is used to get list of ICEs servers, the script that generates the list of the servers is in the configuration "https://carteserver.herokuapp.com/ice"
-   * @return arrays of ICE objects {url, urls, username, credential}
-   */
-  async getICEs(options) {
-    return new Promise((resolve, reject) => {
-      const url = options.ICEsURL || 'https://carteserver.herokuapp.com/ice'
-      if (url) {
-        fetch(url)
-          .then(resp => resp.json()) // Transform the data into json
-          .then(addresses => {
-            let ICEs = addresses.ice.map(ice => {
-              ice.urls = ice.url
-              return ice
-            })
-
-            resolve(ICEs)
-          })
-      } else {
-        reject('no ICEsURL in url')
-      }
-    })
   }
 
   /**
@@ -203,10 +172,6 @@ export default class DocumentBuilder extends EventEmitter {
 
     const rpsOptions = Object.assign(defaultRps, rps)
     return rpsOptions
-  }
-
-  getNewFoglet(options) {
-    return new Foglet(options.fogletOptions)
   }
 
   setDocumentActivityTimeout(options) {
