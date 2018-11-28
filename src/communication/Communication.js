@@ -73,17 +73,12 @@ export class Communication extends EventEmitter {
     return new Promise((resolve, reject) => {
       const neighborhoodSize = this._foglet.getNeighbours(Infinity).length
       if (neighborhoodSize === 0) {
-        console.log('->resolve neighborhoodSize === 0 ')
         resolve()
       } else {
         this._document.setMessageState('Loading Content...')
-        console.log('-> neighborhoodSize > 0 ')
-        this.on('startReceivingStream', () => {
-          console.log('startReceivingStream')
-        })
+        this.on('startReceivingStream', () => {})
 
         this.on('endReceivingStream', () => {
-          console.log('-> endReceivingStream')
           resolve()
         })
       }

@@ -123,7 +123,6 @@ export default class Document extends EventEmitter {
     this.sequence.fromJSON(object.sequence)
     this.sequence._s = local.e
     this.sequence._c = local.v
-    debugger
     this.getDeltaFromSequence()
       .then(delta => {
         this.delta = delta

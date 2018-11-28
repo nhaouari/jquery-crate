@@ -2,7 +2,7 @@ import { LinkView } from './view/link.js'
 import { StatesHeader } from './view/statesheader.js'
 import { EditorController } from './view/editor'
 import { CrateDecorator } from './view/CrateDecorator'
-
+var debug = require('debug')('CRATE:View')
 export class View {
   constructor(options, document, editorsContainerID) {
     this._options = options
@@ -23,7 +23,7 @@ export class View {
     })
 
     this._document.on('UpdateView', NumberOfDocuments => {
-      console.log('UpdateView')
+      debug('UpdateView')
       this.updateView(NumberOfDocuments)
     })
     this.createCRATE()
@@ -263,7 +263,7 @@ export class View {
 
   focusOut() {
     $(`#container-${this._document.documentId}`).removeClass('activeEditor')
-    console.log('FocusOuT', this._document.documentId)
+    debug('FocusOuT', this._document.documentId)
   }
 
   focusIn() {
@@ -291,7 +291,7 @@ export class View {
   }
 
   updateView(numberOfDocuments) {
-    console.log('uodateView', this._document.documentId)
+    debug('uodateView', this._document.documentId)
     $(`#${this._editorContainerID}`).css(
       'cssText',
       `width:${this.getWidth()} !important`
@@ -339,7 +339,7 @@ export class View {
           }
         })
         .catch(thrownError => {
-          console.log(thrownError)
+          debug(thrownError)
           clearInterval(this._timerStorageServer)
           this.unpin(remotesave)
         })
