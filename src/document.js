@@ -23,18 +23,20 @@ export default class Document extends EventEmitter {
     this.lastSentMsgId = null
   }
 
+  async initView() {
+    if (this._options.display) {
+      const {
+        View
+      } = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ './View.js')
+      this._view = new View(this._options, this, this._options.containerID)
+    }
+  }
+
   /**
    * connect to the session of the document
    */
   async init() {
     let options = this._options
-    if (options.display) {
-      const {
-        View
-      } = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ './View.js')
-      this._view = new View(options, this, options.containerID)
-    }
-
     this._communication = new Communication({
       document: this,
       ...this._options
@@ -68,6 +70,7 @@ export default class Document extends EventEmitter {
     if (options.display) {
       this._view.init()
     }
+
     this.documentLoaded()
   }
 

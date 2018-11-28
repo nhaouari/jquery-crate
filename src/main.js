@@ -85,18 +85,18 @@ export default class Crate {
         specialOpts
       )
 
-      doc
-        .init()
-        .then(() => {
-          this.addDocument(doc)
-          this._documentsIds.set(documentId, documentIndex)
-          this._documentsWaiting.delete(documentId)
-          this.setActualDocument(documentId)
-        })
-        .catch(err => {
-          this._documentsWaiting.delete(documentId)
-          console.error('problem in the creation of the document', err)
-        })
+      try {
+        await doc.initView()
+        this.addDocument(doc)
+        this._documentsIds.set(documentId, documentIndex)
+        this._documentsWaiting.delete(documentId)
+        this.setActualDocument(documentId)
+        await doc.init()
+      } catch (err) {
+        this._documentsWaiting.delete(documentId)
+        this.removeDocument(documentId)
+        console.error('problem in the creation of the document', err)
+      }
 
       return doc
     } else if (!waitingCreation) {

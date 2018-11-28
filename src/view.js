@@ -54,6 +54,7 @@ export class View {
   init() {
     //TODO: session.default.updateViews()
     this._editor.initDocument()
+
     /**
      * if there are any changes local or remote then we have to wake up the storageServer
      * @param  {[type]} "thereAreChanges" [description]
@@ -284,7 +285,9 @@ export class View {
         'slow'
       )
     }
-    this._editor.viewEditor.focus()
+    if (this._editor.viewEditor) {
+      this._editor.viewEditor.focus()
+    }
   }
 
   updateView(numberOfDocuments) {

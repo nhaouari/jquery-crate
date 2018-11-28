@@ -165,7 +165,8 @@ export default class DocumentBuilder extends EventEmitter {
         delta: 120 * 1000, // spray-wrtc shuffle interval
         signaling: {
           address: signalingServer,
-          room: room
+          room: room,
+          timeout: 5000
         } // signaling options
       }
     }
