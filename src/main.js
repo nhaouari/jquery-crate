@@ -86,15 +86,15 @@ export default class Crate {
       )
 
       try {
-        await doc.initView()
         this.addDocument(doc)
         this._documentsIds.set(documentId, documentIndex)
+        await doc.initView()
         this._documentsWaiting.delete(documentId)
         this.setActualDocument(documentId)
         await doc.init()
       } catch (err) {
         this._documentsWaiting.delete(documentId)
-        this.removeDocument(documentId)
+        this.removeDocument(documentIndex)
         console.error('problem in the creation of the document', err)
       }
 

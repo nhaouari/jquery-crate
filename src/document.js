@@ -71,17 +71,13 @@ export default class Document extends EventEmitter {
       this._view.init()
     }
 
-    this.documentLoaded()
-  }
-
-  documentLoaded() {
-    $(`#${this._view._editorContainerID} #loading`).hide()
-    $(`#${this._view._editorContainerID} .editorContent`).show()
     this.emit('connected')
   }
 
   setMessageState(msg) {
-    $(`#${this._view._editorContainerID} #loading h1`).text(msg)
+    if (this._options.display) {
+      this._view.setMessageState(msg)
+    }
   }
   /**
    * setLastChangesTime set the last time of changes

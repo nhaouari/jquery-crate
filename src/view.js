@@ -107,6 +107,17 @@ export class View {
       shareButton,
       this._editorContainerID
     )
+
+    this.documentLoaded()
+  }
+
+  setMessageState(msg) {
+    $(`#${this._editorContainerID} #loading h1`).text(msg)
+  }
+
+  documentLoaded() {
+    $(`#${this._editorContainerID} #loading`).hide()
+    $(`#${this._editorContainerID} .editorContent`).show()
   }
 
   closeDocument() {
