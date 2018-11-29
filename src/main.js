@@ -78,14 +78,14 @@ export default class Crate {
     if (!searchIndex && searchIndex != 0 && !waitingCreation) {
       this._documentsWaiting.add(documentId)
       const documentIndex = this.getNumberOfDocuments()
-      const doc = await this.documentBuilder.buildDocument(
-        documentId,
-        documentIndex,
-        null,
-        specialOpts
-      )
-
+      let doc = null
       try {
+        doc = await this.documentBuilder.buildDocument(
+          documentId,
+          documentIndex,
+          null,
+          specialOpts
+        )
         this.addDocument(doc)
         this._documentsIds.set(documentId, documentIndex)
         await doc.initView()
@@ -94,7 +94,8 @@ export default class Crate {
         await doc.init()
       } catch (err) {
         this._documentsWaiting.delete(documentId)
-        this.removeDocument(documentIndex)
+
+        if (this.exist(documentIndex)) this.removeDocument(documentIndex)
         console.error('problem in the creation of the document', err)
       }
 
