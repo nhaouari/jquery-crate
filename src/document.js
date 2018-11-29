@@ -229,7 +229,8 @@ export default class Document extends EventEmitter {
   }
   close() {
     this._communication.close()
-
+    clearTimeout(this.documentActivityWatcher)
+    clearTimeout(this.refreshDocumentTimeout)
     if (this._view) {
       this._view.close()
     }

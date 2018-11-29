@@ -113,6 +113,8 @@ export class Communication extends EventEmitter {
       if (options.wrtc) {
         options.webRTCOptions.wrtc = options.wrtc
       }
+
+      options.fogletOptions.rps.options.webrtc = options.webRTCOptions
     }
   }
 
