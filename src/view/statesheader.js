@@ -91,33 +91,22 @@ export class StatesHeader {
 
     this.setNetworkState('partiallyConnected')
 
-    this.document.rps.on('connect', () => {
+    this.document.on('connected', () => {
       this.checkNetworkState()
     })
 
-    this.document.rps.on('data', () => {
-      this.checkNetworkState()
-    })
-    this.document.rps.on('stream', () => {
-      this.checkNetworkState()
-    })
-    this.document.rps.on('receive', () => {
-      this.checkNetworkState()
-    })
-    this.document.rps.on('open', () => {
-      this.checkNetworkState()
-    })
-
-    this.document.rps.on('close', id => {
-      setTimeout(() => {
+    const rpsEvents = ['connect', 'data', 'stream', 'receive', 'open', 'close']
+    rpsEvents.forEach(eventName => {
+      this.document.rps.on(eventName, () => {
         this.checkNetworkState()
-      }, 0)
+      })
     })
   }
 
   checkNetworkState() {
     const neighborhoodSize = this.document._foglet.getNeighbours(Infinity)
       .length
+
     if (neighborhoodSize > 0) {
       this.setNetworkState('connected')
     } else if (neighborhoodSize === 0) {

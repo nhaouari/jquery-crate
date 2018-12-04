@@ -193,9 +193,9 @@ export default class Marker {
    */
   checkIfOutdated() {
     var timeNow = new Date().getTime()
-    var dff = timeNow - this.time
+    var diff = timeNow - this.time
     // if  cursor  is outdated
-    if (timeNow - this.time >= this.lifeTime) {
+    if (diff >= this.lifeTime) {
       // Remve cursor and avatar
       if (this.cursor) {
         this._editor.viewEditor.getModule('cursors').removeCursor(this.origin)

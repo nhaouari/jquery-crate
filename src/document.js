@@ -19,8 +19,8 @@ export default class Document extends EventEmitter {
     //User ID
     this.user = options.user
     this.uid = this.user.id
-
     this.lastSentMsgId = null
+    this.sleepingMonitor = false
   }
 
   async initView() {
@@ -60,13 +60,13 @@ export default class Document extends EventEmitter {
     this.broadcast = this._communication._data_comm.broadcast
     this.broadcastCaret = this._communication._behaviors_comm.broadcast
     this.rps = this._communication._data_comm.network.rps
-    this.causality = this._communication.causality
+
     this.signalingOptions = options.signalingOptions
 
     if (options.importFromJSON) {
       await this.loadFromJSON(options.importFromJSON)
     }
-
+    this.causality = this.broadcast._causality
     if (options.display) {
       this._view.init()
     }
@@ -86,11 +86,28 @@ export default class Document extends EventEmitter {
     this._lastChanges = new Date().getTime()
     this.refreshDocument(this.sequence)
     this.emit('changed')
-    if (this.state === 'sleep') {
-      //TODO:wake up the server if it existes
+    this.activityDetected()
+  }
+
+  activityDetected() {
+    if (this.sleepingMonitor) {
+      if (this.state === 'sleep') {
+        //TODO:wake up the server if it exists
+      }
+      this.state = 'active'
+      this.resetSleepTimer()
     }
+  }
+  startSleepMonitor() {
+    this.sleepingMonitor = true
     this.state = 'active'
     this.resetSleepTimer()
+  }
+
+  stopSleepMonitor() {
+    clearTimeout(this.documentActivityWatcher)
+    this.state = 'active'
+    this.sleepingMonitor = false
   }
 
   /**
@@ -126,6 +143,8 @@ export default class Document extends EventEmitter {
       .catch(err => {
         console.error(err)
       })
+
+    debugger
   }
 
   /**

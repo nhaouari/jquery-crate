@@ -285,6 +285,14 @@ export default class Crate {
   }
 
   /**
+   * Dose the given documment index exist in the list of documents
+   * @param {number} documentIndex
+   */
+  exist(documentIndex) {
+    return this.getDocument(documentIndex) !== undefined
+  }
+
+  /**
    * Get random Id, this used for documents and for users
    * @returns {string} random Id
    */

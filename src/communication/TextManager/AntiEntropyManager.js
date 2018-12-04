@@ -43,7 +43,7 @@ export class AntiEntropyManager extends TextEvent {
   }
 
   async receiveRequest({ id, causality }) {
-    const localVVwE = this._document._communication.causality.clone()
+    const localVVwE = this._document._communication._data_comm.broadcast._causality.clone()
     const remoteVVwE = new VVwE(null).constructor.fromJSON(causality) // cast
 
     debug('receiveRequest', {
@@ -52,24 +52,7 @@ export class AntiEntropyManager extends TextEvent {
       remoteVVwE,
       localVVwE
     })
-    let missingLSEQIDs = []
-
-    // #1 for each entry of our VVwE, look if the remote VVwE knows less
-
-    const localEntries = localVVwE.vector.arr
-
-    localEntries.forEach(localEntry => {
-      const remoteEntryIndex = remoteVVwE.vector.indexOf(localEntry)
-      let remoteEntry = null
-      if (remoteEntryIndex > 0) {
-        remoteEntry = remoteVVwE.vector.arr[remoteEntryIndex]
-      }
-      const missingLSEQIDsEntry = this.getMissingLSEQIDs(
-        localEntry,
-        remoteEntry
-      )
-      Array.prototype.push.apply(missingLSEQIDs, missingLSEQIDsEntry)
-    })
+    const missingLSEQIDs = this.getMissingLSEQIDsForVVWE(localVVwE, remoteVVwE)
 
     const elements = this.getElements(missingLSEQIDs)
     // #2 send back the found elements
@@ -80,15 +63,45 @@ export class AntiEntropyManager extends TextEvent {
       localVVwE,
       elements
     )
+
     await this.sendAntiEntropyResponse(id, localVVwE, elements)
 
     if (missingLSEQIDs.length > 0) {
       console.log('sendAction', 'Title', this._document.name)
       this.sendAction('Title', this._document.name, id)
     }
+
+    const inverseMissingLSEQIds = this.getMissingLSEQIDsForVVWE(
+      remoteVVwE,
+      localVVwE
+    )
+    if (inverseMissingLSEQIds.length > 0) {
+      this.sendAntiEntropyRequest(id)
+    }
+    debugger
   }
 
-  getMissingLSEQIDs(localEntry, remoteEntry) {
+  getMissingLSEQIDsForVVWE(VVWE1, VVWE2) {
+    let missingLSEQIDs = []
+
+    // #1 for each entry of our VVwE, look if the remote VVwE knows less
+
+    VVWE1.vector.arr.forEach(VVWE1Entry => {
+      const VVWE2EntryIndex = VVWE2.vector.indexOf(VVWE1Entry)
+      let VVWE2Entry = null
+      if (VVWE2EntryIndex > 0) {
+        VVWE2Entry = VVWE2.vector.arr[VVWE2EntryIndex]
+      }
+      const missingLSEQIDsEntry = this.getMissingLSEQIDsForOneEntry(
+        VVWE1Entry,
+        VVWE2Entry
+      )
+      Array.prototype.push.apply(missingLSEQIDs, missingLSEQIDsEntry)
+    })
+    return missingLSEQIDs
+  }
+
+  getMissingLSEQIDsForOneEntry(localEntry, remoteEntry) {
     let start = 1
     if (remoteEntry) {
       start = remoteEntry.v + 1
@@ -217,17 +230,23 @@ export class AntiEntropyManager extends TextEvent {
     }, delta)
   }
 
-  sendAntiEntropyRequest() {
+  sendAntiEntropyRequest(neighbourId = null) {
     let id = this._document._options.editingSessionID
-    this.sendLocalBroadcast({
+    const msg = {
       type: 'Request',
       id,
-      causality: this._document._communication.causality
-    })
+      causality: this._document._communication._data_comm.broadcast._causality
+    }
+    if (!neighbourId) {
+      this.sendLocalBroadcast(msg)
+    } else {
+      this.unicast(neighbourId, msg, false, this.getCausalId())
+    }
+    debugger
     debug('sendAntiEntropyRequest', {
       type: 'Request',
       id,
-      causality: this._document._communication.causality
+      causality: this._document.causality
     })
   }
 
@@ -248,7 +267,6 @@ export class AntiEntropyManager extends TextEvent {
       causalityAtReceipt,
       elements
     })
-
     debug('sendAntiEntropyResponse', {
       type: 'Response',
       id,

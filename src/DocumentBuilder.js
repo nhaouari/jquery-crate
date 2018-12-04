@@ -31,6 +31,7 @@ export default class DocumentBuilder extends EventEmitter {
     specialOpts = {}
   ) {
     let defaultOptions = { ...this._defaultOptions, ...specialOpts }
+
     let options = this.prepareOptions(sessionId, defaultOptions)
     const doc = new Document(options, sessionIndex, this._crate)
     return doc
@@ -132,12 +133,12 @@ export default class DocumentBuilder extends EventEmitter {
     const userId = options.editingSessionID
     const room = options.signalingOptions.session
     const address = options.signalingOptions.address
-    const webrtc = options.webRTCOptions
+    //const webrtc = options.webRTCOptions
     const rps = options.rps
     const fogletOptions = {
       id: userId,
       verbose: true, // want some logs ? switch to false otherwise
-      rps: this.getRpsOptions(room, address, webrtc, rps)
+      rps: this.getRpsOptions(room, address, rps)
     }
 
     options = Object.assign(options, {
@@ -151,7 +152,7 @@ export default class DocumentBuilder extends EventEmitter {
    * @param {*} webrtc {config:{iceServers:[],trickle: bool}}
    * @param {*} rps rps might be cyclon (maxPeers) or spray-wrtc (a,b)
    */
-  getRpsOptions(room, signalingServer, webrtc, rps = {}) {
+  getRpsOptions(room, signalingServer, rps = {}) {
     const defaultRps = {
       type: 'cyclon', //spray-wrtc,cyclon
       options: {
@@ -159,14 +160,14 @@ export default class DocumentBuilder extends EventEmitter {
         a: 1,
         b: 5,
         protocol: room, // foglet running on the protocol foglet-example, defined for spray-wrtc
-        webrtc: webrtc,
+        //webrtc: webrtc,
         timeout: 10 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
         pendingTimeout: 5 * 1000,
         delta: 120 * 1000, // spray-wrtc shuffle interval
         signaling: {
           address: signalingServer,
           room: room,
-          timeout: 5000
+          timeout: 20000 //connection TimeOut
         } // signaling options
       }
     }
