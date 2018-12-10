@@ -95,7 +95,16 @@ export class StatesHeader {
       this.checkNetworkState()
     })
 
-    const rpsEvents = ['connect', 'data', 'stream', 'receive', 'open', 'close']
+    const rpsEvents = [
+      'connect',
+      'data',
+      'stream',
+      'receive',
+      'open',
+      'close',
+      'error',
+      'signal'
+    ]
     rpsEvents.forEach(eventName => {
       this.document.rps.on(eventName, () => {
         this.checkNetworkState()

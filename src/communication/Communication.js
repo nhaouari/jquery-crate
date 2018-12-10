@@ -41,10 +41,11 @@ export class Communication extends EventEmitter {
     try {
       await this.fogletConnection()
       this._document.setMessageState('Connecting: connection established...')
-    } catch (error) {
+    } catch (err) {
       this._document.setMessageState(
         'Connecting: Could not establish connection!'
       )
+      throw new Error('Could not establish connection!', err)
     }
 
     this.setCommunicationChannels()

@@ -78,7 +78,6 @@ export class AntiEntropyManager extends TextEvent {
     if (inverseMissingLSEQIds.length > 0) {
       this.sendAntiEntropyRequest(id)
     }
-    debugger
   }
 
   getMissingLSEQIDsForVVWE(VVWE1, VVWE2) {
@@ -242,7 +241,6 @@ export class AntiEntropyManager extends TextEvent {
     } else {
       this.unicast(neighbourId, msg, false, this.getCausalId())
     }
-    debugger
     debug('sendAntiEntropyRequest', {
       type: 'Request',
       id,

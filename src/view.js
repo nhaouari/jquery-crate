@@ -2,7 +2,10 @@ import { LinkView } from './view/link.js'
 import { StatesHeader } from './view/statesheader.js'
 import { EditorController } from './view/editor'
 import { CrateDecorator } from './view/CrateDecorator'
+import { remoteServer } from './view/remoteServer'
+import document from '../build/jquery-crate.bundle'
 var debug = require('debug')('CRATE:View')
+
 export class View {
   constructor(options, document, editorsContainerID) {
     this._options = options
@@ -26,20 +29,19 @@ export class View {
       debug('UpdateView')
       this.updateView(NumberOfDocuments)
     })
+
     this.createCRATE()
 
     if (this._options.storageServer) {
-      this._storageServerState = {}
-      this.findremote(true) // join if it is in the sleeping mode to download the last version of the document
-      this._timerStorageServer = setInterval(() => this.findremote(), 5000)
+      const opts = {
+        editorContainerID: this._editorContainerID,
+        documentId: this._document.documentId,
+        userId: this._document.uid,
+        storageServer: this._options.storageServer,
+        wakeUpTimeout: 10 * 60 * 1000
+      }
+      this.remoteServer = new remoteServer(opts)
     }
-
-    let sessionID = this._options.signalingOptions.session
-
-    /*TODO:
-    session.default.getCrateSession(sessionID).goTo(sessionID)
-    */
-    //TODO:this.viewEditor.focus()
 
     this._editor = new EditorController(
       this._document,
@@ -51,8 +53,7 @@ export class View {
     CrateDecorator.addResize(this.crate)
   }
 
-  init() {
-    //TODO: session.default.updateViews()
+  async init() {
     this._editor.initDocument()
 
     /**
@@ -62,11 +63,12 @@ export class View {
      * @return {[type]}                   [description]
      */
     this._editor.on('thereAreChanges', () => {
-      if (this._storageServerState === 2) {
-        this.join()
-      }
+      if (this.remoteServer) this.remoteServer.wakeUp()
     })
 
+    if (this.remoteServer) {
+      await this.remoteServer.wakeUp()
+    }
     $(window).resize(function() {
       $('#comments').height($('#editor').height())
     })
@@ -221,14 +223,6 @@ export class View {
     $(`#${this._editorContainerID} #saveComment`).click(() => {
       this.saveComment()
     })
-
-    $(`#${this._editorContainerID} #remotesave`).click(() => {
-      if ($(`#${this._editorContainerID} #remotesave`).hasClass('PIN')) {
-        this.kill()
-      } else {
-        this.join()
-      }
-    })
   }
 
   getWidth() {
@@ -323,83 +317,5 @@ export class View {
     }
     // remove it from the browser
     $(`#${this._editorContainerID}`).remove()
-  }
-
-  //TODO:Create a special class for remote session
-  findremote(firsttime) {
-    let sessionID = this._options.signalingOptions.session
-    let remotesave = $(`#${this._editorContainerID} #remotesave`)
-    // There is a configured server
-    if (this._options.storageServer) {
-      const url = this._options.storageServer + '/exist/' + sessionID
-      fetch(url)
-        .then(resp => resp.json()) // Transform the data into json
-        .then(data => {
-          this._storageServerState = data.results
-          if (data.results == 0) {
-            this.unpin(remotesave)
-          } else if (data.results == 1) {
-            // the session is active on the server
-            this.pin(remotesave, 'active')
-          } else {
-            if (firsttime) {
-              this.join()
-            } else {
-              this.pin(remotesave, 'sleep')
-            }
-          }
-        })
-        .catch(thrownError => {
-          debug(thrownError)
-          clearInterval(this._timerStorageServer)
-          this.unpin(remotesave)
-        })
-    }
-  }
-
-  pin(remotesave, type) {
-    if (type === 'active') {
-      remotesave.css('color', 'green')
-    } else {
-      remotesave.css('color', 'gray')
-    }
-    remotesave.removeClass('UNPIN')
-    remotesave.addClass('PIN')
-  }
-
-  unpin(remotesave) {
-    remotesave.css('color', 'red')
-    remotesave.removeClass('PIN')
-    remotesave.addClass('UNPIN')
-  }
-
-  join() {
-    let sessionID = this._options.signalingOptions.session
-    $.ajax({
-      type: 'GET',
-      url: this._options.storageServer + '/join/' + sessionID,
-      success: (data, status) => {
-        this.findremote()
-      },
-      error: () => {
-        this.findremote()
-      },
-      async: true
-    })
-  }
-
-  kill() {
-    let sessionID = this._options.signalingOptions.session
-    var r = confirm('Do you want remove document from remote server!')
-    if (r == true) {
-      $.ajax({
-        type: 'GET',
-        url: this._options.storageServer + '/kill/' + sessionID,
-        success: (data, status) => {
-          this.findremote(sessionID)
-        },
-        async: false
-      })
-    }
   }
 }

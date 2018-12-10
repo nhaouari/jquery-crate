@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-
 import LSEQTree from 'lseqtree'
 import { Communication } from './communication/Communication'
 import Marker from './view/marker'
@@ -14,7 +13,7 @@ export default class Document extends EventEmitter {
     this.documentId = this._options.signalingOptions.session
     this._lastChanges = new Date().getTime()
     this.documentActiveWatcher
-    this.state = 'active'
+    this.setState('active')
     this.name = options.name
     //User ID
     this.user = options.user
@@ -42,7 +41,11 @@ export default class Document extends EventEmitter {
       ...this._options
     })
 
-    await this._communication.initConnection()
+    try {
+      await this._communication.initConnection()
+    } catch (err) {
+      throw new Error('Could not establish connection!', err)
+    }
 
     this.sequence = new LSEQTree(
       this._communication._data_comm.broadcast._causality.local.e
@@ -68,7 +71,7 @@ export default class Document extends EventEmitter {
     }
     this.causality = this.broadcast._causality
     if (options.display) {
-      this._view.init()
+      await this._view.init()
     }
 
     this.emit('connected')
@@ -94,19 +97,25 @@ export default class Document extends EventEmitter {
       if (this.state === 'sleep') {
         //TODO:wake up the server if it exists
       }
-      this.state = 'active'
+      this.setState('active')
       this.resetSleepTimer()
     }
   }
+
+  setState(state) {
+    this.state = state
+    this.emit('stateChanged', state)
+  }
+
   startSleepMonitor() {
     this.sleepingMonitor = true
-    this.state = 'active'
+    this.setState('active')
     this.resetSleepTimer()
   }
 
   stopSleepMonitor() {
     clearTimeout(this.documentActivityWatcher)
-    this.state = 'active'
+    this.setState('active')
     this.sleepingMonitor = false
   }
 
@@ -116,8 +125,7 @@ export default class Document extends EventEmitter {
   resetSleepTimer() {
     clearTimeout(this.documentActivityWatcher)
     this.documentActivityWatcher = setTimeout(() => {
-      this.state = 'sleep'
-      this.emit('sleep')
+      this.setState('sleep')
     }, this._options.documentActivityTimeout)
   }
   /*!
@@ -143,8 +151,6 @@ export default class Document extends EventEmitter {
       .catch(err => {
         console.error(err)
       })
-
-    debugger
   }
 
   /**

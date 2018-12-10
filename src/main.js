@@ -86,6 +86,7 @@ export default class Crate {
           null,
           specialOpts
         )
+
         this.addDocument(doc)
         this._documentsIds.set(documentId, documentIndex)
         await doc.initView()
@@ -97,6 +98,7 @@ export default class Crate {
 
         if (this.exist(documentIndex)) this.removeDocument(documentIndex)
         console.error('problem in the creation of the document', err)
+        throw new Error('problem in the creation of the document', err)
       }
 
       return doc
