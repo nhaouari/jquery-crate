@@ -1,4 +1,4 @@
-# CRATE back-end
+# Soocrate core
 
 <i>Keywords: distributed, decentralized, collaborative editor </i>
 
