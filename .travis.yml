@@ -1,0 +1,18 @@
+language: node_js
+node_js: node
+
+script:
+  - npm test
+
+after_success:
+  - npm doc
+
+deploy:
+  provider: npm
+  email: haouarin@gmail.com
+  api_key: $NPM
+  on:
+    tags: true
+    repo: soocrate/soocrate-core
+notifications:
+  email: false
