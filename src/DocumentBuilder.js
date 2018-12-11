@@ -58,8 +58,7 @@ export default class DocumentBuilder extends EventEmitter {
    */
 
   setTemporarySessionID(options) {
-    this._editingSessionID = options.user.id + '-' + GUID()
-    options.editingSessionID = this._editingSessionID
+    options.editingSessionID = options.user.id + '-' + GUID()
   }
 
   /**

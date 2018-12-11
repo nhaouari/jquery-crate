@@ -36,7 +36,7 @@ export class View {
       const opts = {
         editorContainerID: this._editorContainerID,
         documentId: this._document.documentId,
-        userId: this._document.uid,
+        userId: this._document._options.editingSessionID,
         storageServer: this._options.storageServer,
         wakeUpTimeout: 10 * 60 * 1000
       }
