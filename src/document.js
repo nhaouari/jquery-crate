@@ -44,7 +44,7 @@ export default class Document extends EventEmitter {
     try {
       await this._communication.initConnection()
     } catch (err) {
-      throw new Error('Could not establish connection!', err)
+      throw new Error('Could not establish connection!' + err)
     }
 
     this.sequence = new LSEQTree(
@@ -253,6 +253,7 @@ export default class Document extends EventEmitter {
 
     this.init()
   }
+
   close() {
     this._communication.close()
     clearTimeout(this.documentActivityWatcher)

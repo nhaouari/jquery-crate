@@ -2,6 +2,8 @@ import { MarkerManager } from './MarkerManager/MarkerManager'
 import { TextManager } from './TextManager/TextManager'
 import { Foglet, communication } from 'foglet-core'
 import { EventEmitter } from 'events'
+import fetch from 'node-fetch'
+
 var debug = require('debug')('CRATE:Communication')
 
 export class Communication extends EventEmitter {

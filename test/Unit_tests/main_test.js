@@ -1,8 +1,6 @@
 'use strict'
 
 import { EventEmitter } from 'events'
-import { unitTestGenerator } from '../generateTempalte'
-import DocumentBuilder from '../../src/DocumentBuilder'
 import Crate from '../../src/main'
 
 let chai = require('chai')
@@ -18,6 +16,7 @@ class DocumentMock extends EventEmitter {
     this.documentIndex = documentIndex
     this.crate = crate
   }
+  async initView() {}
   async init() {}
 }
 

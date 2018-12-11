@@ -1,5 +1,5 @@
 import DocumentBuilder from '../../src/DocumentBuilder'
-
+import wrtc from 'wrtc'
 let chai = require('chai')
 let expect = chai.expect
 let assert = chai.assert
@@ -15,17 +15,6 @@ describe('DocumentBuilder', () => {
 
     assert(documentBuilder.GUID().length > 0, 'GUID is not working')
     done()
-  })
-
-  it('getICEs', function(done) {
-    let options = {
-      ICEsURL: 'https://carteserver.herokuapp.com/ice'
-    }
-    this.timeout(10000)
-    documentBuilder.getICEs(options).then(ICEs => {
-      assert(ICEs.length > 0, 'return ICEs = ' + ICEs.length)
-      done()
-    })
   })
 
   it('getLocalStorageData (Not yet)', done => {
@@ -54,33 +43,6 @@ describe('DocumentBuilder', () => {
     }
     documentBuilder.setDocumentTitle(options)
     assert(options.name === 'test', 'when it is a document saved locally')
-    done()
-  })
-
-  it('setFogletOptions', done => {
-    let options = {
-      editingSessionID: 1,
-      signalingOptions: { address: 'url', session: 'doc01' },
-      webrtc: { iceServers: [1], trickle: true }
-    }
-
-    documentBuilder.setFogletOptions(options)
-
-    assert(options.fogletOptions, 'there is fogletOptions')
-
-    const fogletOptions = options.fogletOptions
-    assert(options.fogletOptions.id, 'there is userid')
-    const rps = fogletOptions.rps
-    assert(rps, 'there is rps')
-
-    assert(
-      rps.type && (rps.type === 'cyclon' || rps.type === 'spray-wrtc'),
-      'there is rps type cyclon or spray-wrtc'
-    )
-
-    assert(rps.options.webrtc, 'there is webrtc')
-    assert(rps.options.signaling.address, 'there is the signaling server ')
-    assert(rps.options.signaling.room, 'there is the signaling server ')
     done()
   })
 
@@ -113,20 +75,6 @@ describe('DocumentBuilder', () => {
     done()
   })
 
-  it('setWebRTCOptions', function(done) {
-    let options = { wrtc: 'wrtc' }
-    documentBuilder.setWebRTCOptions(options).then(() => {
-      assert(options.hasOwnProperty('webRTCOptions'), 'there is webRTCOptions')
-      assert(
-        options.webRTCOptions.hasOwnProperty('trickle'),
-        'there is trickle'
-      )
-      assert(options.webRTCOptions.hasOwnProperty('config'), 'there is config')
-      assert(options.webRTCOptions.hasOwnProperty('wrtc'), 'there is wrtc')
-      done()
-    })
-  })
-
   it('prepareOptions', done => {
     assert(true, ' it is just composed of the other methods')
     done()
@@ -134,26 +82,26 @@ describe('DocumentBuilder', () => {
 
   it('buildDocument', function(done) {
     this.timeout(10000)
-    var configuration = {
-      //    signalingServer: "https://172.16.9.236:3000",
+    const configuration = {
+      id: 'idtest',
+      pseudo: 'test',
       signalingServer: 'https://carteserver.herokuapp.com',
       ICEsURL: 'https://carteserver.herokuapp.com/ice',
-      storageServer: 'https://storagecrate.herokuapp.com',
-      stun: '23.21.150.121' // default google ones if xirsys not
+      stunTurn: '23.21.150.121'
     }
 
     const defaultConfig = {
       signalingOptions: {
-        session: 'TestDocument',
         address: configuration.signalingServer
       },
-      storageServer: configuration.storageServer,
-      stun: configuration.stun, // default google ones if xirsys not
+      stun: configuration.stunTurn, // default google ones if xirsys not
       ICEsURL: configuration.ICEsURL,
       containerID: 'content-default',
       display: false,
-      PingPeriod: 100000,
-      AntiEntropyPeriod: 100000
+      PingPeriod: 1000000000,
+      AntiEntropyPeriod: 1000000000,
+      documentActivityTimeout: 60 * 10 * 1000,
+      wrtc: wrtc
     }
 
     documentBuilder = new DocumentBuilder(defaultConfig, crate)
