@@ -1,9 +1,7 @@
 import Document from './Document.js'
-import { Foglet } from 'foglet-core'
 import { GUID } from './helpers/randomID'
 import store from 'store'
 import { EventEmitter } from 'events'
-import fetch from 'node-fetch'
 export default class DocumentBuilder extends EventEmitter {
   /**
    * @param {*} options the different options of the document.
@@ -24,12 +22,7 @@ export default class DocumentBuilder extends EventEmitter {
    for example in the case of a large number of linked document any change in any document will be broadcasted to all the users. 
   */
 
-  async buildDocument(
-    sessionId,
-    sessionIndex,
-    foglet = null,
-    specialOpts = {}
-  ) {
+  async buildDocument(sessionId, sessionIndex, specialOpts = {}) {
     let defaultOptions = { ...this._defaultOptions, ...specialOpts }
 
     let options = this.prepareOptions(sessionId, defaultOptions)

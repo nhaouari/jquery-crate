@@ -1,8 +1,6 @@
-import { Comments } from '../view/comments'
+import { Comments } from '../view/Comments'
 import { EventEmitter } from 'events'
-
 import { QuillManager } from './QuillManger'
-
 import { MarkerViewManager } from './MarkerViewManager'
 
 var debug = require('debug')('crate:view:editor')

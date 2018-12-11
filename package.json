@@ -1,8 +1,8 @@
 {
-  "name": "crate-core",
-  "version": "1.0.1",
+  "name": "soocrate-core",
+  "version": "1.0.0",
   "author": "Noureddine HAOUARi <haouarin@gmail.com>",
-  "description": "this is the core of CRATEv2 application",
+  "description": "this is the core of soocrate application",
   "main": "./src/main.js",
   "repository": {
     "type": "git",

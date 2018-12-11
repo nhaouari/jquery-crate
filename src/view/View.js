@@ -1,9 +1,9 @@
-import { LinkView } from './view/link.js'
-import { StatesHeader } from './view/statesheader.js'
-import { EditorController } from './view/editor'
-import { CrateDecorator } from './view/CrateDecorator'
-import { remoteServer } from './view/remoteServer'
-import document from '../build/jquery-crate.bundle'
+import { LinkView } from './Link.js'
+import { StatesHeader } from './StatesHeader.js'
+import { EditorController } from './Editor'
+import { CrateDecorator } from './CrateDecorator'
+import { RemoteServer } from './RemoteServer'
+
 var debug = require('debug')('CRATE:View')
 
 export class View {
@@ -40,7 +40,7 @@ export class View {
         storageServer: this._options.storageServer,
         wakeUpTimeout: 10 * 60 * 1000
       }
-      this.remoteServer = new remoteServer(opts)
+      this.remoteServer = new RemoteServer(opts)
     }
 
     this._editor = new EditorController(

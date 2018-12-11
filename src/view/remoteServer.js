@@ -1,5 +1,5 @@
 import io from 'socket.io-client'
-export class remoteServer {
+export class RemoteServer {
   constructor(options) {
     this._documentId = options.documentId
     this._editorContainerID = options.editorContainerID

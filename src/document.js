@@ -26,7 +26,7 @@ export default class Document extends EventEmitter {
     if (this._options.display) {
       const {
         View
-      } = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ './View.js')
+      } = await import(/* webpackMode: "eager", webpackChunkName: "Crate-View" */ './view/View.js')
       this._view = new View(this._options, this, this._options.containerID)
     }
   }
@@ -113,7 +113,8 @@ export default class Document extends EventEmitter {
     this.resetSleepTimer()
   }
 
-  stopSleepMonitor() {
+  stopSleepMonitor(timeout = null) {
+    if (timeout) this._options.documentActivityTimeout = timeout
     clearTimeout(this.documentActivityWatcher)
     this.setState('active')
     this.sleepingMonitor = false
