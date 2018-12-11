@@ -1,5 +1,4 @@
 import { TextEvent } from './TextEvent'
-
 var debug = require('debug')('CRATE:Communication:TextManager:InsertManager')
 export class InsertManager extends TextEvent {
   constructor(opts) {

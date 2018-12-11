@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import LSEQTree from 'lseqtree'
 import { Communication } from './communication/Communication'
-import Marker from './view/marker'
+import Marker from './view/Marker'
 var debug = require('debug')('CRATE:Document')
 
 export default class Document extends EventEmitter {

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events'
-
 var debug = require('debug')('CRATE:Event')
+
 export class Event extends EventEmitter {
   constructor(opts) {
     super()
@@ -71,7 +71,6 @@ export class Event extends EventEmitter {
     const msg = this.getPacket({ pairs: [{ ...message, causalId }] })
     id = this.formatId(id)
 
-    
     await this.unicastStream(id, { ...msg, stream: causal })
   }
 
@@ -119,8 +118,8 @@ export class Event extends EventEmitter {
       }
 
       const chunks = this.chunkSubstr(msgString, maxSize)
-      
-      const info = {numberOfChunks: chunks.length}
+
+      const info = { numberOfChunks: chunks.length }
       stream.write(info)
       chunks.forEach(chunk => {
         stream.write(chunk)
@@ -176,7 +175,7 @@ export class Event extends EventEmitter {
     )
 
     if (!(message.id && message.id.e)) {
-      throw(new Error("Message without Id"))
+      throw new Error('Message without Id')
     }
 
     broadcast._receive(causalId + '-O', message)

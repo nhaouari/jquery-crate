@@ -1,4 +1,4 @@
-import Marker from './view/marker'
+import Marker from './view/Marker'
 import { ErrorHandler } from './helpers/ErrorHandler'
 import DocumentBuilder from './DocumentBuilder'
 import { GUID } from './helpers/randomID'
@@ -11,7 +11,6 @@ import { GUID } from './helpers/randomID'
  * @property {number} actualSessionIndex the index id of the actual document
  *
  */
-
 export default class Crate {
   constructor(options = null, documentBuilder = null) {
     if (!documentBuilder) {

@@ -1,5 +1,4 @@
 import { TextEvent } from './TextEvent'
-
 var debug = require('debug')('CRATE:Communication:TextManager:RemoveManager')
 export class RemoveManager extends TextEvent {
   constructor(opts) {

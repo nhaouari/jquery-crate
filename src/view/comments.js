@@ -28,6 +28,7 @@ export class Comments {
     this.setSelectors()
     return this
   }
+
   addAuthorInformation() {
     const commentOpt = this._viewEditor.options.modules.comment
     commentOpt.commentAuthorId = this._authorId

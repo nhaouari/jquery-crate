@@ -1,0 +1,42 @@
+// //"strict": ["error", "global"],
+{
+  "env": {
+    "node": true,
+    "browser": true,
+    "es6": true,
+    "mocha": true
+  },
+  "globals": {
+    "assert": true
+  },
+  "extends": "eslint:recommended",
+  "rules": {
+    "lines-between-class-members": ["error", "always"],
+    "prettier/prettier": "error",
+    "indent": ["error", 2],
+    "quotes": ["error", "single"],
+    "semi": ["error", "never"],
+    "eqeqeq": 2,
+    "global-require": 2,
+    "no-mixed-requires": 2,
+    "array-bracket-spacing": ["warn", "always"],
+    "block-spacing": ["warn", "always"],
+    "spaced-comment": ["warn", "always"],
+    "guard-for-in": 2,
+    "no-case-declarations": 2,
+    "no-var": 2,
+    "dot-notation": 1,
+    "brace-style": 1,
+    "space-before-blocks": 1,
+    "space-before-function-paren": 1,
+    "comma-spacing": [
+      "warn",
+      {
+        "before": false,
+        "after": true
+      }
+    ],
+    "valid-jsdoc": 0,
+    "no-console": 0
+  }
+}

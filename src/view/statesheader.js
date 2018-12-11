@@ -3,7 +3,6 @@ import tippy from 'tippy.js'
 /**
  * Marker is class for managing the marker of one user,it includes the caret, avatar, and pseudo Names.
  */
-import neighborhoodJs from '../../docs/ast/source/crate-core/lib/spray-wrtc/lib/n2n-overlay-wrtc/lib/neighborhood-wrtc/lib/neighborhood.js.json'
 
 export class StatesHeader {
   /**
@@ -49,9 +48,6 @@ export class StatesHeader {
     })
 
     const sharingContainer = $(`#${this._editorContainerID} #sharingContainer`)
-
-    const shareIcon = $(`#${this._editorContainerID} #shareicon`)
-
     let link = window.location.href.split('/')
     link.splice(-1, 1)
     link = link.join('/') + '/' + this.document.documentId

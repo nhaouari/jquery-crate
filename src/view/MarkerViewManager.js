@@ -1,4 +1,4 @@
-import Marker from './marker'
+import Marker from './Marker'
 import { EventEmitter } from 'events'
 var debug = require('debug')('CRATE:View:MarkerViewManager')
 /**
