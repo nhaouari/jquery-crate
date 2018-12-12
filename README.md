@@ -1,4 +1,4 @@
-# Soocrate core
+# Soocrate core [![Build Status](https://travis-ci.org/soocrate/soocrate-core.svg?branch=master)](https://travis-ci.org/soocrate/soocrate-core)
 
 <i>Keywords: distributed, decentralized, collaborative editor </i>
 
