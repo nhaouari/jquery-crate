@@ -103,7 +103,6 @@ describe('DocumentBuilder', () => {
       documentActivityTimeout: 60 * 10 * 1000,
       wrtc: wrtc
     }
-
     documentBuilder = new DocumentBuilder(defaultConfig, crate)
     documentBuilder.buildDocument('TestDocument', 0).then(doc => {
       assert(doc.hasOwnProperty('_options'))
