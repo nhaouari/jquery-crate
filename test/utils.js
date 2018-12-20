@@ -1,4 +1,4 @@
-import session from './../src/main'
+import Crate from './../src/main'
 import { Tarjan } from './tarjan'
 import wrtc from 'wrtc'
 var debug = require('debug')('CRATE:test:utils')
@@ -7,43 +7,97 @@ export class Simulation {
 
   async init(options, startSessionId = 0) {
     this.setSimulationOptions(options)
-
+    this.crate = new Crate(this._crateOptions)
     this._unuglifySessionIDs = {}
-    // const s = new session(this._crateOptions)
     this._sessions = []
-
     let waitingSessions = []
+
     for (let i = 0; i < this._nbSessions; i++) {
-      waitingSessions.push(
-        this.startSession(i).then(session => {
-          debug(`session ${i}`)
+      // waitingSessions.push(
+      if (true) {
+        //(i % 5 === 0) {
+
+        const session = await this.startSession(i)
+        if (session) {
           session.id = i
           this._sessions.push(session)
-          this._unuglifySessionIDs[session._options.editingSessionID] = i
-        })
-      )
+          this._unuglifySessionIDs[session._foglet._id] = i
+        }
+      } else {
+        waitingSessions.push(
+          this.startSession(i).then(session => {
+            debug(`session ${i}`)
+            session.id = i
+            this._sessions.push(session)
+            this._unuglifySessionIDs[session._options.editingSessionID] = i
+          })
+        )
+      }
+      //)
     }
 
     const LoadSessions = await Promise.all(waitingSessions)
   }
 
-  async startSession(id) {
-    let s = new session({ ...this._options.crateOptions })
-    await this.documentLoaded(s)
-    debug('Foglet %f connected.', id)
-    return s
+  getDefaultOptions() {
+    const configuration = {
+      signalingServer: 'https://carteserver.herokuapp.com',
+      ICEsURL: '', //https://carteserver.herokuapp.com/ice
+      storageServer: 'https://storagecrate.herokuapp.com',
+      stun: '23.21.150.121' // default google ones if xirsys not
+    }
+
+    // default options
+    const defaultSimulationOptions = {
+      seed: 3,
+      nbSessions: 5,
+      maxRandomTime: 3 * 1000,
+      nbRounds: 5,
+      URL: 'http://127.0.0.1:8000/document.html?test',
+      nbOfEdits: 5,
+      preSimulationTime: 2 * 1000,
+      useSignalingServer: true,
+      crateOptions: {
+        signalingOptions: {
+          session: 'test' + this.getRandomDocumentId(),
+          address: configuration.signalingServer
+        },
+        storageServer: configuration.storageServer,
+        stun: configuration.stun, // default google ones if xirsys not
+        ICEsURL: configuration.ICEsURL,
+        containerID: 'content-default',
+        display: false,
+        PingPeriod: 100000,
+        AntiEntropyPeriod: 100000,
+        wrtc: wrtc
+      }
+    }
+    return defaultSimulationOptions
   }
 
+  async startSession(userId) {
+    try {
+      const doc = await this.crate.createNewDocument(
+        this._crateOptions.signalingOptions.session,
+        { foglet: this.getRandomFoglet() },
+        true
+      )
+      return doc
+    } catch (e) {
+      //console.log(e)
+      return null
+    }
+  }
   documentLoaded(session) {
     return new Promise((resolve, reject) => {
-      session.on('new_document', doc => {
+      session.on('connect', doc => {
         resolve()
       })
     })
   }
 
   setSimulationOptions(options) {
-    this._options = Object.assign(this.constructor.defaultOptions, options)
+    this._options = Object.assign(this.getDefaultOptions(), options)
     this._nbSessions = this._options.nbSessions
     this._maxRandomTime = this._options.maxRandomTime
     this._nbRounds = this._options.nbRounds
@@ -51,7 +105,10 @@ export class Simulation {
     this._preSimulationTime = this._options.preSimulationTime
     this._seed = this._options.seed
     this._useSignalingServer = this._options.useSignalingServer
-    this._crateOptions = this._options.crateOptions
+    this._crateOptions = Object.assign(
+      this.getDefaultOptions().crateOptions,
+      options.crateOptions
+    )
   }
 
   getSession(i) {
@@ -59,7 +116,7 @@ export class Simulation {
   }
 
   getDocument(i) {
-    return this._sessions[i]._documents[0]
+    return this._sessions[i]
   }
   getRandomTime() {
     return this.random() * this._maxRandomTime
@@ -117,8 +174,8 @@ export class Simulation {
     return char
   }
 
-  pickRandomNodeID() {
-    const chosenNode = Math.floor(this.random() * this._nbSessions)
+  pickRandomNodeID(size = this._nbSessions) {
+    const chosenNode = Math.floor(this.random() * size)
     debug(`Node ${chosenNode} is chosen`)
     return chosenNode
   }
@@ -140,9 +197,8 @@ export class Simulation {
 
   clear() {
     this._sessions.forEach(session => {
-      session.close()
+      session = null
     })
-
     this._seed = this._options.seed
   }
 
@@ -162,9 +218,26 @@ export class Simulation {
   }
 
   wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    const call = Date.now()
+    let timeOut
+    return new Promise(resolve => {
+      timeOut = setTimeout(() => {
+        const call2 = Date.now()
+        console.log('Difference=', call2 - call)
+        clearInterval(timeOut)
+        resolve()
+      }, ms)
+    })
   }
 
+  syncWait(ms) {
+    var start = new Date().getTime()
+    for (var i = 0; i < 1e7; i++) {
+      if (new Date().getTime() - start > ms) {
+        break
+      }
+    }
+  }
   /**
    * Convert array of arrays to array of objects using a specific prototype
    * @param {*} array  array of arrays [[1,2,3],[4,5,6]...]
@@ -183,53 +256,20 @@ export class Simulation {
     })
     return structuredArray
   }
+
+  getRandomDocumentId() {
+    return 'test' + Math.floor(Math.random() * 1000000)
+  }
+
+  // Mock the signaling server
+  getRandomFoglet() {
+    //  return null
+    if (this._sessions.length <= 1) return null
+
+    return this.foglet(this.pickRandomNodeID(this._sessions.length))
+  }
 }
 
 export function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
-
-var configuration = {
-  //    signalingServer: "https://172.16.9.236:3000",
-  signalingServer: 'https://carteserver.herokuapp.com',
-  ICEsURL: 'https://carteserver.herokuapp.com/ice',
-  storageServer: 'https://storagecrate.herokuapp.com',
-  stun: '23.21.150.121' // default google ones if xirsys not
-}
-
-/*var configuration = {
-    //    signalingServer: "https://172.16.9.236:3000",
-    signalingServer: "http://172.16.9.214:3000",
-    ICEsURL: "http://172.16.9.214:3000/ice",
-    storageServer: "https://storagecrate.herokuapp.com",
-    stun: "23.21.150.121" // default google ones if xirsys not
-  };
-*/
-// default options
-let simulationOptions = {
-  seed: 3,
-  nbSessions: 5,
-  maxRandomTime: 3 * 1000,
-  nbRounds: 5,
-  URL: 'http://127.0.0.1:8000/document.html?test',
-  nbOfEdits: 5,
-  preSimulationTime: 2 * 1000,
-  useSignalingServer: true,
-  crateOptions: {
-    signalingOptions: {
-      session: 'test',
-      address: configuration.signalingServer
-    },
-    storageServer: configuration.storageServer,
-    stun: configuration.stun, // default google ones if xirsys not
-    ICEsURL: configuration.ICEsURL,
-    containerID: 'content-default',
-    display: false,
-    PingPeriod: 100000,
-    AntiEntropyPeriod: 100000,
-    wrtc: wrtc
-  }
-}
-
-session.config = simulationOptions.crateOptions
-Simulation.defaultOptions = simulationOptions

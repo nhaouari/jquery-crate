@@ -67,7 +67,7 @@ export class AntiEntropyManager extends TextEvent {
     await this.sendAntiEntropyResponse(id, localVVwE, elements)
 
     if (missingLSEQIDs.length > 0) {
-      console.log('sendAction', 'Title', this._document.name)
+      //console.log('sendAction', 'Title', this._document.name)
       this.sendAction('Title', this._document.name, id)
     }
 

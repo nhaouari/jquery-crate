@@ -69,12 +69,15 @@ export default class Crate {
    * Create a new document ans set it as actual document
    * @param {string} documentId the id of the document
    * @param {Object} specialOpts special options that override the default options
-   * @returns {void|Core}
+   * @returns {void|Document}
    */
-  async createNewDocument(documentId, specialOpts = {}) {
+  async createNewDocument(documentId, specialOpts = {}, forceCreation = false) {
     const searchIndex = this.getIndexFromDocumentId(documentId)
     const waitingCreation = this._documentsWaiting.has(documentId)
-    if (!searchIndex && searchIndex != 0 && !waitingCreation) {
+    if (
+      (!searchIndex && searchIndex != 0 && !waitingCreation) ||
+      forceCreation
+    ) {
       this._documentsWaiting.add(documentId)
       const documentIndex = this.getNumberOfDocuments()
       let doc = null
@@ -82,7 +85,6 @@ export default class Crate {
         doc = await this.documentBuilder.buildDocument(
           documentId,
           documentIndex,
-          null,
           specialOpts
         )
 
@@ -93,11 +95,12 @@ export default class Crate {
         this.setActualDocument(documentId)
         await doc.init()
       } catch (err) {
+        debugger
         this._documentsWaiting.delete(documentId)
 
         if (this.exist(documentIndex)) this.removeDocument(documentIndex)
         console.error('problem in the creation of the document', err)
-        throw new Error('problem in the creation of the document', err)
+        throw new Error('problem in the creation of the document' + err)
       }
 
       return doc
@@ -219,7 +222,7 @@ export default class Crate {
     const documentIndex = this.getIndexFromDocumentId(documentId)
 
     if (documentIndex === undefined) {
-      throw Error('Document ' + documentId + ' dose not exist')
+      //  throw Error('Document ' + documentId + ' dose not exist')
     } else if (this.actualSessionIndex != documentIndex) {
       this.actualSessionIndex = documentIndex
       this.focusInToDocument(documentIndex)
@@ -286,19 +289,17 @@ export default class Crate {
   }
 
   /**
-   * Dose the given documment index exist in the list of documents
-   * @param {number} documentIndex
-   */
-  exist(documentIndex) {
-    return this.getDocument(documentIndex) !== undefined
-  }
-
-  /**
    * Get random Id, this used for documents and for users
    * @returns {string} random Id
    */
   static getRandomId() {
     return GUID()
+  }
+
+  close() {
+    this.getDocumentIndexs().forEach(index =>
+      this.getDocumentByIndex(index).close()
+    )
   }
 }
 

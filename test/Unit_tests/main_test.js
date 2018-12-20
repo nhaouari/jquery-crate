@@ -238,7 +238,6 @@ describe('Main class', () => {
     await crate.createNewDocument('b')
     await crate.createNewDocument('c')
     crate.setActualDocument('a')
-    debugger
     assert(
       crate.moveToNext().getActualDocument().documentId === 'b',
       ' NExt session is b but ' + crate.getActualDocument().documentId

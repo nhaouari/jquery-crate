@@ -12,6 +12,7 @@ export default class DocumentBuilder extends EventEmitter {
     super()
     this._defaultOptions = defaultOptions
     this._crate = crate
+    this._foglets = defaultOptions.foglets
   }
 
   /**
@@ -24,8 +25,12 @@ export default class DocumentBuilder extends EventEmitter {
 
   async buildDocument(sessionId, sessionIndex, specialOpts = {}) {
     let defaultOptions = { ...this._defaultOptions, ...specialOpts }
-
     let options = this.prepareOptions(sessionId, defaultOptions)
+
+    if (this._foglets) {
+      options = { ...options, _foglet: this._foglets[sessionIndex] }
+    }
+
     const doc = new Document(options, sessionIndex, this._crate)
     return doc
   }

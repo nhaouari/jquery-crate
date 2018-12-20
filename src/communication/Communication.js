@@ -17,50 +17,65 @@ export class Communication extends EventEmitter {
     this.causality = this._data_comm.broadcast._causality
     this.markerManager = new MarkerManager(this._options)
     this.textManager = new TextManager(this._options)
-    await this.waitAntientropy()
+
+    if (!this._options._foglet) {
+      await this.waitAntientropy()
+    }
   }
 
   async initConnection() {
-    // get ICEs
+    if (!this._options._foglet) {
+      this._document.setMessageState('Connecting: establishing connection ...')
 
-    this._document.setMessageState('Connecting: getting ICEs ...')
-    await this.setWebRTCOptions(this._options)
+      //Using foglet
+      let foglet = null
 
-    this._document.setMessageState('Connecting: establishing connection ...')
-    //connection between foglets
-    if (this._options.foglet) {
-      this._foglet = this._options.foglet
-    } else {
-      //Connection using the signaling server
+      if (this._options.foglet) {
+        foglet = this._options.foglet
+        console.log('this is with foglet')
+        await this.setWebRTCOptions(this._options, false)
+      } else {
+        //Singling Server
+        // get ICEs
+        this._document.setMessageState('Connecting: getting ICEs ...')
+        await this.setWebRTCOptions(this._options)
+      }
+
       this._foglet = this.getNewFoglet(this._options)
       this._options._foglet = this._foglet
-      this._foglet.share()
-    }
-    try {
-      await this.fogletConnection()
-      this._document.setMessageState('Connecting: connection established...')
-    } catch (err) {
-      this._document.setMessageState(
-        'Connecting: Could not establish connection!'
-      )
-      throw new Error('Could not establish connection!', err)
-    }
 
+      if (!this._options.foglet) {
+        this._foglet.share()
+      }
+      try {
+        await this.fogletConnection(3, foglet)
+        this._document.setMessageState('Connecting: connection established...')
+      } catch (err) {
+        this._document.setMessageState(
+          'Connecting: Could not establish connection!'
+        )
+        throw new Error('Could not establish connection!' + err)
+      }
+    } else {
+      this._foglet = this._options._foglet
+    }
     this.setCommunicationChannels()
     this._foglet.emit('connected')
     debug('application connected!')
   }
 
-  async fogletConnection(maxRetry = 3) {
+  async fogletConnection(maxRetry = 3, foglet = null) {
     const connect = async retry => {
       try {
-        await this._foglet.connection(this._options.foglet)
+        console.log('foglet= ', foglet)
+        await this._foglet.connection(foglet)
       } catch (err) {
+        debugger
         if (retry > 0) {
           console.error(err)
           await connect(retry - 1)
         } else {
-          throw new Error('Could not establish connection!', err)
+          throw new Error('Could not establish connection!' + err)
         }
       }
     }
@@ -89,32 +104,28 @@ export class Communication extends EventEmitter {
    * set WebRTCOptions
    * @description  set the default options of ice Servers and replace them by the ice server if it is possible. if it run in node js use wrtc.
    */
-  async setWebRTCOptions(options) {
-    if (!options.foglet) {
-      const defaultICE = [
-        {
-          url: options.stun,
-          urls: options.stun
-        }
-      ]
-
-      let twilioICEs = await this.getICEs(options)
-
-      const iceServers = Object.assign(defaultICE, twilioICEs)
-
-      options.webRTCOptions = {
-        trickle: true,
-        config: {
-          iceServers
-        }
+  async setWebRTCOptions(options, getICEs = true) {
+    const defaultICE = [
+      {
+        url: options.stun,
+        urls: options.stun
       }
+    ]
 
-      if (options.wrtc) {
-        options.webRTCOptions.wrtc = options.wrtc
+    let twilioICEs = getICEs ? await this.getICEs(options) : {}
+    const iceServers = Object.assign(defaultICE, twilioICEs)
+
+    options.webRTCOptions = {
+      trickle: true,
+      config: {
+        iceServers
       }
-
-      options.fogletOptions.rps.options.webrtc = options.webRTCOptions
     }
+    if (options.wrtc) {
+      options.webRTCOptions.wrtc = options.wrtc
+    }
+
+    options.fogletOptions.rps.options.webrtc = options.webRTCOptions
   }
 
   /**

@@ -17,24 +17,27 @@ export class InsertManager extends TextEvent {
      * \return the identifier freshly allocated
      */
   insert({ packet, position, source = 'user' }) {
-    if (this.isItConvertibleToJSON(packet)) {
-      var pair = this.insertLSEQ(packet, position)
-      this._document.delta.ops.splice(position, 0, {
-        insert: packet.content,
-        attributes: packet.attributes
-      })
+    return new Promise((resolve, reject) => {
+      if (this.isItConvertibleToJSON(packet)) {
+        var pair = this.insertLSEQ(packet, position)
+        this._document.delta.ops.splice(position, 0, {
+          insert: packet.content,
+          attributes: packet.attributes
+        })
 
-      debug('local Insert', { packet, position, source })
-      if (source === 'user') {
-        {
-          this.broadcast({
-            id: this._document.uid,
-            pair
-          })
-          this.setLastChangesTime()
+        debug('local Insert', { packet, position, source })
+        if (source === 'user') {
+          {
+            this.broadcast({
+              id: this._document.uid,
+              pair
+            })
+            this.setLastChangesTime()
+          }
         }
       }
-    }
+      resolve()
+    })
   }
 
   /**

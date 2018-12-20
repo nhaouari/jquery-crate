@@ -68,7 +68,6 @@ describe('DocumentBuilder', () => {
   it('setUser', done => {
     let options = {}
     documentBuilder.setUser(options)
-    debugger
     assert(options.user.id.length > 0, 'there is id')
     assert(options.user.pseudo.length > 0, 'there is pseudo')
 

@@ -40,13 +40,11 @@ export default class Document extends EventEmitter {
       document: this,
       ...this._options
     })
-
     try {
       await this._communication.initConnection()
     } catch (err) {
       throw new Error('Could not establish connection!' + err)
     }
-
     this.sequence = new LSEQTree(
       this._communication._data_comm.broadcast._causality.local.e
     )
@@ -55,7 +53,6 @@ export default class Document extends EventEmitter {
 
     /* TODO:Think about the creation of modules without view */
     await this._communication.initModules()
-
     // #1B if it is imported from an existing object, initialize it with these
 
     // #2 grant fast access
@@ -63,7 +60,6 @@ export default class Document extends EventEmitter {
     this.broadcast = this._communication._data_comm.broadcast
     this.broadcastCaret = this._communication._behaviors_comm.broadcast
     this.rps = this._communication._data_comm.network.rps
-
     this.signalingOptions = options.signalingOptions
 
     if (options.importFromJSON) {
@@ -73,7 +69,6 @@ export default class Document extends EventEmitter {
     if (options.display) {
       await this._view.init()
     }
-
     this.emit('connected')
   }
 
