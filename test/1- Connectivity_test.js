@@ -53,7 +53,6 @@ describe('Connectivity ', function() {
         })
         await utils.wait(test.timeOut)
         const isConnected = sim.isGraphConnected()
-
         sim.clear()
         if (isConnected) {
           NbofConnectedNetworks++

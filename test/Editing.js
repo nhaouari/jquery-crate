@@ -131,7 +131,6 @@ export class Editing {
       },
       true
     )
-
     return areTheSame
   }
 

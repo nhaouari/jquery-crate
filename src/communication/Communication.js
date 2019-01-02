@@ -32,7 +32,6 @@ export class Communication extends EventEmitter {
 
       if (this._options.foglet) {
         foglet = this._options.foglet
-        console.log('this is with foglet')
         await this.setWebRTCOptions(this._options, false)
       } else {
         //Singling Server
@@ -67,7 +66,6 @@ export class Communication extends EventEmitter {
   async fogletConnection(maxRetry = 3, foglet = null) {
     const connect = async retry => {
       try {
-        console.log('foglet= ', foglet)
         await this._foglet.connection(foglet)
       } catch (err) {
         debugger

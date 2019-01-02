@@ -1,6 +1,6 @@
 /* Testing utilities */
 const uuid = require('uuid/v4')
-const SimplePeerMoc = require('./simple-peer-moc.js')
+const SimplePeerMoc = require('./simple-peer-moc-before.js')
 const buildFog = (Foglet, size, overlays = [], ice = []) => {
   // eslint-disable-next-line no-debugger
   const fog = []
@@ -9,7 +9,7 @@ const buildFog = (Foglet, size, overlays = [], ice = []) => {
   for (let i = 0; i < size; i++) {
     const options = {
       rps: {
-        type: 'spray-wrtc',
+        type: 'spray-wrtc', //cyclon,spray-wrtc
         options: {
           protocol: `test-protocol-generated-${id}`,
           webrtc: {
@@ -19,6 +19,9 @@ const buildFog = (Foglet, size, overlays = [], ice = []) => {
           },
           timeout: 3600 * 1000, // spray-wrtc timeout before definitively close a WebRTC connection.
           delta: 3600 * 1000, // spray-wrtc shuffle interval
+          maxPeers: 10,
+          a: 1,
+          b: 5,
           socketClass: SimplePeerMoc,
           signaling: {
             address: 'http://localhost:8000/',
@@ -52,8 +55,8 @@ const signalingConnect = peers => {
     })
 }
 
-const clearFoglets = async peers => {
-  await new Promise((resolve, reject) => {
+const clearFoglets = peers => {
+  return new Promise((resolve, reject) => {
     try {
       resolve(
         peers.map(p => {
@@ -71,29 +74,18 @@ const clearFoglets = async peers => {
   })
 }
 
-const pathConnect = (peers, timeout, duplex = false) => {
-  const pairs = []
-  for (let ind = 0; ind < peers.length - 1; ind++) {
-    pairs.push([peers[ind], peers[ind + 1]])
-  }
+const pathConnect = async (peers, timeout, duplex = false) => {
+  const connectedPairs = []
+  await peers[0].connection(peers[1])
 
-  return Promise.all(
-    pairs.map(pair => {
-      return pair[0].connection(pair[1]).then(() => {
-        setTimeout(() => {
-          if (duplex) {
-            return pair[1].connection(pair[0]).then(() => {
-              setTimeout(() => {
-                return Promise.resolve()
-              }, timeout)
-            })
-          } else {
-            return Promise.resolve()
-          }
-        }, timeout)
-      })
-    })
-  )
+  connectedPairs.push(0)
+  connectedPairs.push(1)
+  for (let peerIndex = 2; peerIndex < peers.length; peerIndex++) {
+    await peers[peerIndex].connection(
+      peers[Math.floor(Math.random() * (connectedPairs.length - 1))]
+    )
+    connectedPairs.push(peerIndex)
+  }
 }
 
 const overlayConnect = (index, timeout, ...peers) => {
